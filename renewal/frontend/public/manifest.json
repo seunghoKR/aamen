@@ -1,0 +1,16 @@
+{
+  "name": "AAMEN — Asia Anabaptist Mennonite Education Network",
+  "short_name": "AAMEN",
+  "description": "13 nations connected across language barriers — learning, sharing, and growing together in faith",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#20c997",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
