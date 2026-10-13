@@ -1,5 +1,5 @@
 # 🌏 AAMEN (Asia Anabaptist Mennonite Education Network)
-### 아시아 아나밥티스트 메노나이트 교육 네트워크 플랫폼 (Release v1.2.0)
+### 아시아 아나밥티스트 메노나이트 교육 네트워크 플랫폼 (Release v1.3.0 - Lab Preview)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3.6-black.svg?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.8-blue.svg?style=flat&logo=react)](https://react.dev/)
@@ -67,6 +67,10 @@ AAMEN/
 
 ---
 
-## 🌐 실서버 배포 주소
-- **공식 운영 서버:** [https://aamen2.iwinv.net](https://aamen2.iwinv.net)
-- **버전:** `v1.2.0 (Stable Release)`
+## 🌐 서버 및 배포 버전 정보
+- **공식 운영 서버:** [https://aamen2.iwinv.net](https://aamen2.iwinv.net) (`v1.3.0 Stable Release` - MWC 7대 신념 13개국 완역 교안 및 관리자 대시보드 100% 한/영 이중화 지원)
+- **최신 릴리즈 기능:** 
+  1. MWC 7대 신념 13개국 공식 교안 완역본 및 노코드 관리자 편집기 탑재
+  2. 관리자 콘솔 전 페이지 100% 한/영 바이링궐 인터페이스 (사이드바 토글 지원)
+  3. 5단계 회원 등급 & 권한 매트릭스 실시간 동기화
+

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { getAdminTexts } from '@/lib/adminI18n'
 import {
   Member,
   MemberRole,
@@ -13,25 +15,15 @@ import {
 import {
   Users,
   Search,
-  ShieldCheck,
   UserPlus,
   Check,
-  Filter,
   Trash2,
-  Edit3,
   Sliders,
   Save,
-  CheckCircle2,
-  Lock,
-  Unlock,
-  AlertTriangle,
-  FileText,
-  MessageSquare,
-  FileCheck,
 } from 'lucide-react'
 
 // 등급 메타데이터 (0단계 비회원 ~ 5단계 총괄관리자)
-const tierLabels: Record<MemberLevel, { name: string; badgeClass: string; desc: string; roleKey: MemberRole }> = {
+const tierLabelsKo: Record<MemberLevel, { name: string; badgeClass: string; desc: string; roleKey: MemberRole }> = {
   0: {
     name: '0단계: 비회원 (손님)',
     badgeClass: 'bg-gray-100 text-gray-800 border-gray-300',
@@ -70,8 +62,47 @@ const tierLabels: Record<MemberLevel, { name: string; badgeClass: string; desc: 
   },
 }
 
-// 권한 라벨 정의
-const permissionDefinitions = [
+const tierLabelsEn: Record<MemberLevel, { name: string; badgeClass: string; desc: string; roleKey: MemberRole }> = {
+  0: {
+    name: 'Tier 0: Guest (Visitor)',
+    badgeClass: 'bg-gray-100 text-gray-800 border-gray-300',
+    desc: 'Non-logged in visitor (restricted access)',
+    roleKey: 'guest',
+  },
+  1: {
+    name: 'Tier 1: Associate Member',
+    badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+    desc: 'Pending registration approval & basic viewing',
+    roleKey: 'associate',
+  },
+  2: {
+    name: 'Tier 2: Regular Believer',
+    badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+    desc: 'General believer (create posts/comments, download)',
+    roleKey: 'regular',
+  },
+  3: {
+    name: 'Tier 3: Worker / Missionary',
+    badgeClass: 'bg-teal-100 text-teal-900 border-teal-300',
+    desc: 'Field minister (ministry news, prayer, photos)',
+    roleKey: 'level3_worker',
+  },
+  4: {
+    name: 'Tier 4: Leader / Board Admin',
+    badgeClass: 'bg-sky-100 text-sky-900 border-sky-300',
+    desc: 'National coordinator & board moderator',
+    roleKey: 'country_admin',
+  },
+  5: {
+    name: 'Tier 5: Super Admin',
+    badgeClass: 'bg-purple-100 text-purple-900 border-purple-300',
+    desc: 'Site super administrator (full system management)',
+    roleKey: 'super_admin',
+  },
+}
+
+// 권한 라벨 정의 (한/영)
+const permissionDefinitionsKo = [
   { key: 'canWritePost', label: '새 글 작성', desc: '자유게시판 및 나눔방에 새 글 등록 가능' },
   { key: 'canWriteComment', label: '댓글 작성', desc: '게시글에 격려 댓글 작성 가능' },
   { key: 'canEditOwn', label: '본인 글/댓글 수정', desc: '자신이 작성한 게시글 및 댓글 수정 가능' },
@@ -82,7 +113,45 @@ const permissionDefinitions = [
   { key: 'canAccessAdmin', label: '관리자 대시보드 접근', desc: '관리자 화면(/admin) 접근 권한' },
 ] as const
 
+const permissionDefinitionsEn = [
+  { key: 'canWritePost', label: 'Create New Post', desc: 'Can publish new posts in Free Board and Sharing Room' },
+  { key: 'canWriteComment', label: 'Write Comments', desc: 'Can post encouraging comments on articles' },
+  { key: 'canEditOwn', label: 'Edit Own Posts/Comments', desc: 'Can edit own posts and comments anytime' },
+  { key: 'canDeleteOwn', label: 'Delete Own Posts/Comments', desc: 'Can delete own posts and comments' },
+  { key: 'canManageBoard', label: 'Board Moderation / Delete All', desc: 'Can moderate/delete others\' posts & board admin rights' },
+  { key: 'canWriteNotice', label: 'Post Announcements', desc: 'Can pin notices to top & publish official announcements' },
+  { key: 'canDownloadFiles', label: 'Download Curriculum / Media', desc: 'Can download 13-language lesson plans and resources' },
+  { key: 'canAccessAdmin', label: 'Access Admin Console', desc: 'Authority to access /admin management dashboard' },
+] as const
+
+// 영문 국가명 매핑
+const countryNameMapEn: Record<string, string> = {
+  KR: 'South Korea',
+  MM: 'Myanmar',
+  VN: 'Vietnam',
+  TH: 'Thailand',
+  ID: 'Indonesia',
+  JP: 'Japan',
+  NP: 'Nepal',
+  IN: 'India',
+  KH: 'Cambodia',
+  LA: 'Laos',
+  MN: 'Mongolia',
+  TW: 'Taiwan',
+  HK: 'Hong Kong',
+  PH: 'Philippines',
+  US: 'United States',
+}
+
 export default function AdminMembersPage() {
+  const params = useParams()
+  const currentLocale = (params?.locale as string) || 'ko'
+  const isEn = currentLocale === 'en'
+  const t = getAdminTexts(currentLocale).members
+
+  const tierLabels = isEn ? tierLabelsEn : tierLabelsKo
+  const permissionDefinitions = isEn ? permissionDefinitionsEn : permissionDefinitionsKo
+
   const [activeTab, setActiveTab] = useState<'members' | 'permissions'>('members')
   const [members, setMembers] = useState<Member[]>(
     initialMembers.filter((m) => m.role !== ('developer' as any) && !m.name.includes('개발자') && m.email !== 'admin@aamen.net')
@@ -108,7 +177,6 @@ export default function AdminMembersPage() {
 
   // 1. 초기 로드: MariaDB API 및 localStorage 동기화
   useEffect(() => {
-    // 권한 매트릭스 로드
     try {
       const savedPerms = localStorage.getItem('aamen_tier_permissions')
       if (savedPerms) {
@@ -195,7 +263,12 @@ export default function AdminMembersPage() {
     const updated = members.map((m) =>
       m.id === id ? { ...m, level: newLevel, role: targetTier.roleKey } : m
     )
-    persistMembers(updated, `회원 등급이 [${targetTier.name}]으로 변경되었습니다.`)
+    persistMembers(
+      updated,
+      isEn
+        ? `Member tier changed to [${targetTier.name}].`
+        : `회원 등급이 [${targetTier.name}]으로 변경되었습니다.`
+    )
 
     try {
       await fetch('/api/members', {
@@ -211,7 +284,10 @@ export default function AdminMembersPage() {
   // 회원 상태 변경 (active / pending / suspended)
   const handleStatusChange = async (id: string, newStatus: 'active' | 'pending' | 'suspended') => {
     const updated = members.map((m) => (m.id === id ? { ...m, status: newStatus } : m))
-    persistMembers(updated, `회원 계정 상태가 업데이트되었습니다.`)
+    persistMembers(
+      updated,
+      isEn ? 'Member account status updated.' : '회원 계정 상태가 업데이트되었습니다.'
+    )
     try {
       await fetch('/api/members', {
         method: 'POST',
@@ -225,9 +301,15 @@ export default function AdminMembersPage() {
 
   // 회원 삭제
   const handleDeleteMember = async (id: string, name: string) => {
-    if (confirm(`정말 '${name}' 회원을 삭제하시겠습니까?`)) {
+    const confirmMsg = isEn
+      ? `Are you sure you want to delete member '${name}'?`
+      : `정말 '${name}' 회원을 삭제하시겠습니까?`
+    if (confirm(confirmMsg)) {
       const updated = members.filter((m) => m.id !== id)
-      persistMembers(updated, `'${name}' 회원이 삭제되었습니다.`)
+      persistMembers(
+        updated,
+        isEn ? `Member '${name}' was deleted.` : `'${name}' 회원이 삭제되었습니다.`
+      )
       try {
         await fetch('/api/members', {
           method: 'POST',
@@ -262,7 +344,11 @@ export default function AdminMembersPage() {
     try {
       localStorage.setItem('aamen_tier_permissions', JSON.stringify(tierSettings))
       window.dispatchEvent(new Event('storage'))
-      setToastMessage('5단계 등급별 권한 설정이 성공적으로 저장되었습니다!')
+      setToastMessage(
+        isEn
+          ? '5-tier permission matrix settings saved successfully!'
+          : '5단계 등급별 권한 설정이 성공적으로 저장되었습니다!'
+      )
       setTimeout(() => setToastMessage(null), 2500)
     } catch (e) {
       console.error(e)
@@ -271,11 +357,16 @@ export default function AdminMembersPage() {
 
   // 권한 기본값 복원
   const handleResetPermissions = () => {
-    if (confirm('모든 등급의 권한 설정을 기본 추천값으로 초기화하시겠습니까?')) {
+    const confirmMsg = isEn
+      ? 'Reset all tier permission rules to recommended default values?'
+      : '모든 등급의 권한 설정을 기본 추천값으로 초기화하시겠습니까?'
+    if (confirm(confirmMsg)) {
       setTierSettings(defaultTierSettings)
       localStorage.setItem('aamen_tier_permissions', JSON.stringify(defaultTierSettings))
       window.dispatchEvent(new Event('storage'))
-      setToastMessage('권한 설정이 기본값으로 복원되었습니다.')
+      setToastMessage(
+        isEn ? 'Permission rules restored to defaults.' : '권한 설정이 기본값으로 복원되었습니다.'
+      )
       setTimeout(() => setToastMessage(null), 2500)
     }
   }
@@ -286,18 +377,18 @@ export default function AdminMembersPage() {
     if (!newMember.name || !newMember.email) return
 
     const countryMap: Record<string, { name: string; flag: string }> = {
-      KR: { name: '대한민국', flag: '🇰🇷' },
-      MM: { name: '미얀마', flag: '🇲🇲' },
-      VN: { name: '베트남', flag: '🇻🇳' },
-      TH: { name: '태국', flag: '🇹🇭' },
-      ID: { name: '인도네시아', flag: '🇮🇩' },
-      JP: { name: '일본', flag: '🇯🇵' },
-      NP: { name: '네팔', flag: '🇳🇵' },
-      IN: { name: '인도', flag: '🇮🇳' },
-      KH: { name: '캄보디아', flag: '🇰🇭' },
+      KR: { name: isEn ? 'South Korea' : '대한민국', flag: '🇰🇷' },
+      MM: { name: isEn ? 'Myanmar' : '미얀마', flag: '🇲🇲' },
+      VN: { name: isEn ? 'Vietnam' : '베트남', flag: '🇻🇳' },
+      TH: { name: isEn ? 'Thailand' : '태국', flag: '🇹🇭' },
+      ID: { name: isEn ? 'Indonesia' : '인도네시아', flag: '🇮🇩' },
+      JP: { name: isEn ? 'Japan' : '일본', flag: '🇯🇵' },
+      NP: { name: isEn ? 'Nepal' : '네팔', flag: '🇳🇵' },
+      IN: { name: isEn ? 'India' : '인도', flag: '🇮🇳' },
+      KH: { name: isEn ? 'Cambodia' : '캄보디아', flag: '🇰🇭' },
     }
 
-    const cInfo = countryMap[newMember.countryCode] || { name: '기타', flag: '🌐' }
+    const cInfo = countryMap[newMember.countryCode] || { name: isEn ? 'Other' : '기타', flag: '🌐' }
     const targetTier = tierLabels[newMember.level]
 
     const created: Member = {
@@ -314,7 +405,12 @@ export default function AdminMembersPage() {
     }
 
     const updated = [created, ...members]
-    persistMembers(updated, `신규 회원 [${created.name}]이 등록되었습니다.`)
+    persistMembers(
+      updated,
+      isEn
+        ? `New member [${created.name}] has been registered.`
+        : `신규 회원 [${created.name}]이 등록되었습니다.`
+    )
     setIsModalOpen(false)
     setNewMember({
       name: '',
@@ -331,10 +427,11 @@ export default function AdminMembersPage() {
     if (m.role === ('developer' as any) || m.name.includes('개발자') || m.email === 'admin@aamen.net') {
       return false
     }
+    const cDisplayName = isEn ? (countryNameMapEn[m.countryCode] || m.countryName) : m.countryName
     const matchesSearch =
       m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.countryName.includes(searchTerm)
+      cDisplayName.toLowerCase().includes(searchTerm.toLowerCase())
     const mLevel = m.level || getMemberLevel(m.role)
     const matchesLevel = filterLevel === 'ALL' || String(mLevel) === filterLevel
     const matchesCountry = filterCountry === 'ALL' || m.countryCode === filterCountry
@@ -356,10 +453,10 @@ export default function AdminMembersPage() {
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
             <span>👥</span>
-            <span>회원 등급 및 권한 관리</span>
+            <span>{t.title}</span>
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            회원을 5단계 등급으로 구분하고, 새 글 작성·게시물 삭제 등의 권한을 단계별로 체계적으로 부여합니다.
+            {t.subtitle}
           </p>
         </div>
 
@@ -370,7 +467,7 @@ export default function AdminMembersPage() {
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer"
             >
               <UserPlus size={15} />
-              <span>신규 회원 등록</span>
+              <span>{isEn ? 'Add Member' : '신규 회원 등록'}</span>
             </button>
           )}
         </div>
@@ -387,7 +484,7 @@ export default function AdminMembersPage() {
           }`}
         >
           <Users size={16} />
-          <span>회원 명단 및 등급 조정 ({members.length}명)</span>
+          <span>{isEn ? `Member Directory (${members.length})` : `회원 명단 및 등급 조정 (${members.length}명)`}</span>
         </button>
         <button
           onClick={() => setActiveTab('permissions')}
@@ -398,7 +495,7 @@ export default function AdminMembersPage() {
           }`}
         >
           <Sliders size={16} />
-          <span>5단계 등급별 권한 매트릭스 설정</span>
+          <span>{isEn ? '5-Tier Permission Matrix' : '5단계 등급별 권한 매트릭스 설정'}</span>
         </button>
       </div>
 
@@ -413,7 +510,7 @@ export default function AdminMembersPage() {
                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${info.badgeClass}`}>
                   {info.name}
                 </span>
-                <span className="text-lg font-black text-gray-900">{count}명</span>
+                <span className="text-lg font-black text-gray-900">{count}{isEn ? '' : '명'}</span>
               </div>
               <p className="text-[11px] text-gray-500 leading-tight">{info.desc}</p>
             </div>
@@ -432,7 +529,7 @@ export default function AdminMembersPage() {
               <Search size={16} className="text-gray-400" />
               <input
                 type="text"
-                placeholder="회원 이름, 이메일, 국가 검색..."
+                placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
@@ -446,12 +543,12 @@ export default function AdminMembersPage() {
                 onChange={(e) => setFilterLevel(e.target.value)}
                 className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
               >
-                <option value="ALL">전체 5단계 등급 보기</option>
-                <option value="5">5단계: 총괄관리자</option>
-                <option value="4">4단계: 리더/게시판관리자</option>
-                <option value="3">3단계: 사역자/선교사</option>
-                <option value="2">2단계: 정회원</option>
-                <option value="1">1단계: 준회원</option>
+                <option value="ALL">{isEn ? 'All 5 Tiers' : '전체 5단계 등급 보기'}</option>
+                <option value="5">{isEn ? 'Tier 5: Super Admin' : '5단계: 총괄관리자'}</option>
+                <option value="4">{isEn ? 'Tier 4: Leader / Board Admin' : '4단계: 리더/게시판관리자'}</option>
+                <option value="3">{isEn ? 'Tier 3: Worker / Missionary' : '3단계: 사역자/선교사'}</option>
+                <option value="2">{isEn ? 'Tier 2: Regular Believer' : '2단계: 정회원'}</option>
+                <option value="1">{isEn ? 'Tier 1: Associate Member' : '1단계: 준회원'}</option>
               </select>
 
               {/* 국가 필터 */}
@@ -460,16 +557,19 @@ export default function AdminMembersPage() {
                 onChange={(e) => setFilterCountry(e.target.value)}
                 className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
               >
-                <option value="ALL">13개국 전체</option>
-                <option value="KR">🇰🇷 대한민국</option>
-                <option value="MM">🇲🇲 미얀마</option>
-                <option value="VN">🇻🇳 베트남</option>
-                <option value="TH">🇹🇭 태국</option>
-                <option value="ID">🇮🇩 인도네시아</option>
-                <option value="JP">🇯🇵 일본</option>
-                <option value="NP">🇳🇵 네팔</option>
-                <option value="IN">🇮🇳 인도</option>
-                <option value="KH">🇰🇭 캄보디아</option>
+                <option value="ALL">{isEn ? 'All 13 Nations' : '13개국 전체'}</option>
+                <option value="KR">🇰🇷 {isEn ? 'South Korea' : '대한민국'}</option>
+                <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
+                <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
+                <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
+                <option value="ID">🇮🇩 {isEn ? 'Indonesia' : '인도네시아'}</option>
+                <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
+                <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                <option value="IN">🇮🇳 {isEn ? 'India' : '인도'}</option>
+                <option value="KH">🇰🇭 {isEn ? 'Cambodia' : '캄보디아'}</option>
+                <option value="LA">🇱🇦 {isEn ? 'Laos' : '라오스'}</option>
+                <option value="MN">🇲🇳 {isEn ? 'Mongolia' : '몽골'}</option>
+                <option value="TW">🇹🇼 {isEn ? 'Taiwan' : '대만'}</option>
               </select>
             </div>
           </div>
@@ -480,18 +580,19 @@ export default function AdminMembersPage() {
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                    <th className="py-3.5 px-6">회원 정보</th>
-                    <th className="py-3.5 px-4">국가</th>
-                    <th className="py-3.5 px-4">회원 등급 조정 (5단계)</th>
-                    <th className="py-3.5 px-4">계정 상태</th>
-                    <th className="py-3.5 px-4">가입일</th>
-                    <th className="py-3.5 px-6 text-right">관리</th>
+                    <th className="py-3.5 px-6">{isEn ? 'Member Info' : '회원 정보'}</th>
+                    <th className="py-3.5 px-4">{isEn ? 'Country' : '국가'}</th>
+                    <th className="py-3.5 px-4">{isEn ? 'Tier Adjustment (5 Levels)' : '회원 등급 조정 (5단계)'}</th>
+                    <th className="py-3.5 px-4">{isEn ? 'Account Status' : '계정 상태'}</th>
+                    <th className="py-3.5 px-4">{isEn ? 'Joined Date' : '가입일'}</th>
+                    <th className="py-3.5 px-6 text-right">{isEn ? 'Actions' : '관리'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map((member) => {
                     const currentLvl = member.level || getMemberLevel(member.role)
                     const tierMeta = tierLabels[currentLvl]
+                    const countryDisplay = isEn ? (countryNameMapEn[member.countryCode] || member.countryName) : member.countryName
                     return (
                       <tr key={member.id} className="hover:bg-gray-50/70 transition-colors">
                         {/* 이름 & 이메일 */}
@@ -504,7 +605,7 @@ export default function AdminMembersPage() {
                         <td className="py-4 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 font-medium text-gray-700 text-xs">
                             <span className="text-base">{member.flag}</span>
-                            <span>{member.countryName}</span>
+                            <span>{countryDisplay}</span>
                           </div>
                         </td>
 
@@ -517,11 +618,11 @@ export default function AdminMembersPage() {
                               tierMeta.badgeClass
                             }`}
                           >
-                            <option value={5}>5단계: 총괄관리자</option>
-                            <option value={4}>4단계: 리더/게시판관리자</option>
-                            <option value={3}>3단계: 사역자/선교사</option>
-                            <option value={2}>2단계: 정회원</option>
-                            <option value={1}>1단계: 준회원</option>
+                            <option value={5}>{tierLabels[5].name}</option>
+                            <option value={4}>{tierLabels[4].name}</option>
+                            <option value={3}>{tierLabels[3].name}</option>
+                            <option value={2}>{tierLabels[2].name}</option>
+                            <option value={1}>{tierLabels[1].name}</option>
                           </select>
                         </td>
 
@@ -540,9 +641,9 @@ export default function AdminMembersPage() {
                                 : 'bg-rose-50 text-rose-700 border-rose-200'
                             }`}
                           >
-                            <option value="active">활동 중</option>
-                            <option value="pending">승인 대기</option>
-                            <option value="suspended">이용 정지</option>
+                            <option value="active">{isEn ? 'Active' : '활동 중'}</option>
+                            <option value="pending">{isEn ? 'Pending' : '승인 대기'}</option>
+                            <option value="suspended">{isEn ? 'Suspended' : '이용 정지'}</option>
                           </select>
                         </td>
 
@@ -556,7 +657,7 @@ export default function AdminMembersPage() {
                           <button
                             onClick={() => handleDeleteMember(member.id, member.name)}
                             className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="회원 삭제"
+                            title={isEn ? 'Delete Member' : '회원 삭제'}
                           >
                             <Trash2 size={15} />
                           </button>
@@ -569,7 +670,7 @@ export default function AdminMembersPage() {
 
               {filtered.length === 0 && (
                 <div className="py-12 text-center text-gray-400 text-sm">
-                  검색 조건과 일치하는 회원이 없습니다.
+                  {isEn ? 'No members found matching the search criteria.' : '검색 조건과 일치하는 회원이 없습니다.'}
                 </div>
               )}
             </div>
@@ -582,14 +683,16 @@ export default function AdminMembersPage() {
       {/* ============================================================== */}
       {activeTab === 'permissions' && (
         <div className="space-y-6">
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 flex items-start justify-between gap-4">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <p className="font-bold flex items-center gap-1.5 text-sm mb-1">
                 <span>🛡️</span>
-                <span>등급별 권한 부여 규칙 (차후 권한 확정 가능)</span>
+                <span>{isEn ? 'Tier-based Permission Rules (Adjustable anytime)' : '등급별 권한 부여 규칙 (차후 권한 확정 가능)'}</span>
               </p>
               <p className="leading-relaxed text-emerald-800">
-                각 등급별로 부여할 권한 체크박스를 필요에 따라 자유롭게 변경하실 수 있습니다. 대표님께서 정하신 권한 규칙은 사이트 전체의 새 글 작성, 게시물 삭제, 댓글 작성 권한에 즉시 연동됩니다.
+                {isEn
+                  ? 'You can freely customize the permission checkboxes for each member tier. Rules set here apply immediately across the entire site for creating posts, comments, and moderation.'
+                  : '각 등급별로 부여할 권한 체크박스를 필요에 따라 자유롭게 변경하실 수 있습니다. 대표님께서 정하신 권한 규칙은 사이트 전체의 새 글 작성, 게시물 삭제, 댓글 작성 권한에 즉시 연동됩니다.'}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -597,14 +700,14 @@ export default function AdminMembersPage() {
                 onClick={handleResetPermissions}
                 className="px-3 py-2 bg-white hover:bg-gray-100 text-gray-700 font-bold rounded-xl border border-gray-300 text-xs transition-colors cursor-pointer"
               >
-                기본값 복원
+                {isEn ? 'Reset to Defaults' : '기본값 복원'}
               </button>
               <button
                 onClick={handleSavePermissions}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
               >
                 <Save size={14} />
-                <span>권한 설정 저장</span>
+                <span>{isEn ? 'Save Permissions' : '권한 설정 저장'}</span>
               </button>
             </div>
           </div>
@@ -614,7 +717,7 @@ export default function AdminMembersPage() {
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600">
-                    <th className="py-4 px-6 w-1/3">권한 항목</th>
+                    <th className="py-4 px-6 w-1/3">{isEn ? 'Permission Item' : '권한 항목'}</th>
                     {([1, 2, 3, 4, 5] as MemberLevel[]).map((lvl) => (
                       <th key={lvl} className="py-4 px-3 text-center">
                         <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-black border ${tierLabels[lvl].badgeClass}`}>
@@ -629,21 +732,21 @@ export default function AdminMembersPage() {
                     <tr key={perm.key} className="hover:bg-gray-50/50 transition-colors">
                       <td className="py-3.5 px-6">
                         <div className="font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-1.5">
-                          {perm.key === 'canManageBoard' && <span className="text-rose-600 font-extrabold">[핵심]</span>}
-                          {perm.key === 'canWritePost' && <span className="text-emerald-600 font-extrabold">[핵심]</span>}
+                          {perm.key === 'canManageBoard' && <span className="text-rose-600 font-extrabold">{isEn ? '[Key]' : '[핵심]'}</span>}
+                          {perm.key === 'canWritePost' && <span className="text-emerald-600 font-extrabold">{isEn ? '[Key]' : '[핵심]'}</span>}
                           <span>{perm.label}</span>
                         </div>
                         <div className="text-[11px] text-gray-400 mt-0.5">{perm.desc}</div>
                       </td>
                       {([1, 2, 3, 4, 5] as MemberLevel[]).map((lvl) => {
-                        const isGranted = Boolean(tierSettings[lvl]?.permissions?.[perm.key])
+                        const isGranted = Boolean(tierSettings[lvl]?.permissions?.[perm.key as keyof MemberTierInfo['permissions']])
                         return (
                           <td key={lvl} className="py-3.5 px-3 text-center">
                             <label className="inline-flex items-center justify-center p-2 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
                               <input
                                 type="checkbox"
                                 checked={isGranted}
-                                onChange={() => handleTogglePermission(lvl, perm.key)}
+                                onChange={() => handleTogglePermission(lvl, perm.key as keyof MemberTierInfo['permissions'])}
                                 className="w-4 h-4 text-emerald-600 rounded-md border-gray-300 focus:ring-emerald-500 cursor-pointer"
                               />
                             </label>
@@ -666,11 +769,11 @@ export default function AdminMembersPage() {
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <UserPlus size={18} className="text-emerald-600" />
-                <span>신규 회원 직접 등록</span>
+                <span>{isEn ? 'Direct Member Registration' : '신규 회원 직접 등록'}</span>
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100"
+                className="p-1 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100 cursor-pointer"
               >
                 ✕
               </button>
@@ -678,11 +781,13 @@ export default function AdminMembersPage() {
 
             <form onSubmit={handleAddMember} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">이름 / 성도명</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  {isEn ? 'Name / Believer Name' : '이름 / 성도명'}
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="예: 김사역 성도"
+                  placeholder={isEn ? 'e.g. John Doe' : '예: 김사역 성도'}
                   value={newMember.name}
                   onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
@@ -690,7 +795,9 @@ export default function AdminMembersPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">이메일 주소</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  {isEn ? 'Email Address' : '이메일 주소'}
+                </label>
                 <input
                   type="email"
                   required
@@ -703,35 +810,39 @@ export default function AdminMembersPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">소속 국가</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    {isEn ? 'Country' : '소속 국가'}
+                  </label>
                   <select
                     value={newMember.countryCode}
                     onChange={(e) => setNewMember({ ...newMember, countryCode: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
-                    <option value="KR">🇰🇷 대한민국</option>
-                    <option value="MM">🇲🇲 미얀마</option>
-                    <option value="VN">🇻🇳 베트남</option>
-                    <option value="TH">🇹🇭 태국</option>
-                    <option value="ID">🇮🇩 인도네시아</option>
-                    <option value="JP">🇯🇵 일본</option>
-                    <option value="NP">🇳🇵 네팔</option>
-                    <option value="IN">🇮🇳 인도</option>
+                    <option value="KR">🇰🇷 {isEn ? 'South Korea' : '대한민국'}</option>
+                    <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
+                    <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
+                    <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
+                    <option value="ID">🇮🇩 {isEn ? 'Indonesia' : '인도네시아'}</option>
+                    <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
+                    <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                    <option value="IN">🇮🇳 {isEn ? 'India' : '인도'}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">회원 등급 (5단계)</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    {isEn ? 'Member Tier (5 Levels)' : '회원 등급 (5단계)'}
+                  </label>
                   <select
                     value={newMember.level}
                     onChange={(e) => setNewMember({ ...newMember, level: Number(e.target.value) as MemberLevel })}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
-                    <option value={1}>1단계: 준회원</option>
-                    <option value={2}>2단계: 정회원</option>
-                    <option value={3}>3단계: 사역자/선교사</option>
-                    <option value={4}>4단계: 리더/게시판관리자</option>
-                    <option value={5}>5단계: 총괄관리자</option>
+                    <option value={1}>{tierLabels[1].name}</option>
+                    <option value={2}>{tierLabels[2].name}</option>
+                    <option value={3}>{tierLabels[3].name}</option>
+                    <option value={4}>{tierLabels[4].name}</option>
+                    <option value={5}>{tierLabels[5].name}</option>
                   </select>
                 </div>
               </div>
@@ -740,15 +851,15 @@ export default function AdminMembersPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer"
                 >
-                  취소
+                  {isEn ? 'Cancel' : '취소'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
                 >
-                  회원 등록 완료
+                  {isEn ? 'Complete Registration' : '회원 등록 완료'}
                 </button>
               </div>
             </form>

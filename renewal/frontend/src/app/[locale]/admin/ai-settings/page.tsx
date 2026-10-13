@@ -16,9 +16,6 @@ import {
   EyeOff,
   Server,
   Zap,
-  BookOpen,
-  MessageSquare,
-  ArrowRight,
 } from 'lucide-react'
 import {
   getGeminiConfig,
@@ -32,10 +29,13 @@ import {
   DEFAULT_LOCAL_AI_MODEL,
   DEFAULT_SYSTEM_PROMPT,
 } from '@/lib/gemini'
+import { getAdminTexts } from '@/lib/adminI18n'
 
 export default function GeminiAiSettingsPage() {
   const params = useParams()
   const currentLocale = (params?.locale as string) || 'ko'
+  const isEn = currentLocale === 'en'
+  const t = getAdminTexts(currentLocale).aiSettings
   const localePath = (p: string) => `/${currentLocale}${p.startsWith('/') ? p : `/${p}`}`
 
   const [apiKey, setApiKey] = useState('')
@@ -47,7 +47,11 @@ export default function GeminiAiSettingsPage() {
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT)
 
   // 테스트 도구 상태
-  const [testText, setTestText] = useState('샬롬! 아시아 13개국 평화의 네트워크 AAMEN 긴급 중보기도입니다.')
+  const [testText, setTestText] = useState(
+    isEn
+      ? 'Shalom! AAMEN 13-Nation Peace Network urgent intercessory prayer.'
+      : '샬롬! 아시아 13개국 평화의 네트워크 AAMEN 긴급 중보기도입니다.'
+  )
   const [testTargetLang, setTestTargetLang] = useState('Bahasa Indonesia')
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<{
@@ -85,7 +89,11 @@ export default function GeminiAiSettingsPage() {
       localAiModel: localModel,
       systemPrompt,
     })
-    showToast('🎉 제미나이(Gemini) AI 설정이 안전하게 저장되었습니다!')
+    showToast(
+      isEn
+        ? '🎉 Gemini AI engine settings have been saved successfully!'
+        : '🎉 제미나이(Gemini) AI 설정이 안전하게 저장되었습니다!'
+    )
   }
 
   // 실시간 연결 및 번역 진단 테스트
@@ -93,13 +101,16 @@ export default function GeminiAiSettingsPage() {
     if (!apiKey.trim()) {
       setTestResult({
         status: 'error',
-        message: '⚠️ 먼저 Gemini API 키를 입력해 주세요.',
+        message: isEn ? '⚠️ Please enter your Gemini API key first.' : '⚠️ 먼저 Gemini API 키를 입력해 주세요.',
       })
       return
     }
 
     setIsTesting(true)
-    setTestResult({ status: 'idle', message: 'Gemini 서버와 실시간 통신 중...' })
+    setTestResult({
+      status: 'idle',
+      message: isEn ? 'Communicating with Gemini server in real time...' : 'Gemini 서버와 실시간 통신 중...',
+    })
 
     // 1단계: 연결 확인
     const connCheck = await testGeminiConnection(apiKey, selectedModel)
@@ -125,15 +136,17 @@ export default function GeminiAiSettingsPage() {
     if (transCheck.success) {
       setTestResult({
         status: 'success',
-        message: `연결 성공! 응답 지연 시간: ${connCheck.latencyMs}ms`,
+        message: isEn
+          ? `Connected successfully! Latency: ${connCheck.latencyMs}ms`
+          : `연결 성공! 응답 지연 시간: ${connCheck.latencyMs}ms`,
         latencyMs: connCheck.latencyMs,
         output: transCheck.translation,
       })
-      showToast('⚡ Gemini 번역 테스트가 성공적으로 완료되었습니다!')
+      showToast(isEn ? '⚡ Gemini translation test completed successfully!' : '⚡ Gemini 번역 테스트가 성공적으로 완료되었습니다!')
     } else {
       setTestResult({
         status: 'error',
-        message: transCheck.error || '번역 처리 중 오류가 발생했습니다.',
+        message: transCheck.error || (isEn ? 'An error occurred during translation.' : '번역 처리 중 오류가 발생했습니다.'),
         latencyMs: connCheck.latencyMs,
       })
     }
@@ -162,10 +175,10 @@ export default function GeminiAiSettingsPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2.5">
             <Sparkles size={28} className="text-amber-300" />
-            <span>제미나이(Gemini) AI 엔진 관리</span>
+            <span>{t.title}</span>
           </h1>
           <p className="text-white/80 text-sm max-w-2xl mt-2 leading-relaxed">
-            13개국 실시간 알림 번역, 긴급 중보기도 다국어 변환, 공과공부 사역 요약을 1~2초 만에 처리하는 지능형 AI 엔진의 API 키와 모델을 관리합니다.
+            {t.subtitle}
           </p>
         </div>
 
@@ -173,7 +186,7 @@ export default function GeminiAiSettingsPage() {
           href={localePath('/admin')}
           className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs backdrop-blur-md border border-white/20 transition-all shrink-0"
         >
-          대시보드 홈으로
+          {isEn ? 'Dashboard Home' : '대시보드 홈으로'}
         </Link>
       </div>
 
@@ -187,10 +200,12 @@ export default function GeminiAiSettingsPage() {
               </span>
               <div>
                 <h3 className="font-extrabold text-base sm:text-lg text-gray-900">
-                  Google Gemini API 인증 정보
+                  {isEn ? 'Google Gemini API Credentials' : 'Google Gemini API 인증 정보'}
                 </h3>
                 <p className="text-xs text-gray-500">
-                  Google AI Studio에서 발급받은 무료 API 키를 등록합니다 (Free Tier 분당 15회 제공)
+                  {isEn
+                    ? 'Register your free API key obtained from Google AI Studio (Free tier provides 15 RPM)'
+                    : 'Google AI Studio에서 발급받은 무료 API 키를 등록합니다 (Free Tier 분당 15회 제공)'}
                 </p>
               </div>
             </div>
@@ -200,7 +215,7 @@ export default function GeminiAiSettingsPage() {
               rel="noopener noreferrer"
               className="text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1 hover:underline"
             >
-              <span>API 키 무료 발급받기</span>
+              <span>{isEn ? 'Get Free API Key' : 'API 키 무료 발급받기'}</span>
               <ExternalLink size={12} />
             </a>
           </div>
@@ -222,20 +237,24 @@ export default function GeminiAiSettingsPage() {
                   type="button"
                   onClick={() => setShowApiKey(!showApiKey)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-                  title={showApiKey ? '숨기기' : '보기'}
+                  title={showApiKey ? (isEn ? 'Hide' : '숨기기') : (isEn ? 'Show' : '보기')}
                 >
                   {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
-                <span>🔒 API 키는 브라우저 로컬 저장소에 안전하게 보관되며 외부로 노출되지 않습니다.</span>
+                <span>
+                  {isEn
+                    ? '🔒 Your API key is stored safely in your browser\'s local storage and is never exposed externally.'
+                    : '🔒 API 키는 브라우저 로컬 저장소에 안전하게 보관되며 외부로 노출되지 않습니다.'}
+                </span>
               </p>
             </div>
 
             {/* AI 모델 선택 */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-2">
-                권장 Gemini AI 모델 선택
+                {isEn ? 'Recommended Gemini AI Model' : '권장 Gemini AI 모델 선택'}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {AVAILABLE_GEMINI_MODELS.map((m) => (
@@ -264,17 +283,19 @@ export default function GeminiAiSettingsPage() {
             {/* 사역 맞춤 시스템 프롬프트 */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                사역 맞춤 지침 (System Instruction / 사역 가이드라인)
+                {isEn ? 'Ministry Instruction (System Instruction / Guidelines)' : '사역 맞춤 지침 (System Instruction / 사역 가이드라인)'}
               </label>
               <textarea
                 rows={3}
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-300 text-xs font-medium text-gray-800 focus:outline-purple-600 focus:bg-white leading-relaxed resize-none"
-                placeholder="AI에게 전달할 사역적 번역 및 어조 지침..."
+                placeholder={isEn ? 'Ministry translation instructions and tone guidelines...' : 'AI에게 전달할 사역적 번역 및 어조 지침...'}
               />
               <p className="text-[11px] text-gray-400 mt-1">
-                샬롬(Shalom), 메노나이트 평화 신학 용어 및 각국 성도들을 배려하는 따뜻한 어조를 유지하도록 유도합니다.
+                {isEn
+                  ? 'Encourages warm ministry tone, Shalom, and Anabaptist Mennonite peace theology vocabulary.'
+                  : '샬롬(Shalom), 메노나이트 평화 신학 용어 및 각국 성도들을 배려하는 따뜻한 어조를 유지하도록 유도합니다.'}
               </p>
             </div>
           </div>
@@ -288,10 +309,12 @@ export default function GeminiAiSettingsPage() {
             </span>
             <div>
               <h3 className="font-extrabold text-base text-gray-900">
-                하이브리드 AI 엔진 우선순위 설정
+                {isEn ? 'Hybrid AI Engine Priority Settings' : '하이브리드 AI 엔진 우선순위 설정'}
               </h3>
               <p className="text-xs text-gray-500">
-                실제 서비스에는 구글 Gemini를 사용하고, 연구실 오프라인 환경에서는 로컬 AI(LM Studio)로 유연하게 전환할 수 있습니다.
+                {isEn
+                  ? 'Use Google Gemini in live production, and flexibly switch to Local AI (LM Studio) in lab/offline development.'
+                  : '실제 서비스에는 구글 Gemini를 사용하고, 연구실 오프라인 환경에서는 로컬 AI(LM Studio)로 유연하게 전환할 수 있습니다.'}
               </p>
             </div>
           </div>
@@ -311,13 +334,15 @@ export default function GeminiAiSettingsPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-black text-sm text-gray-900">Google Gemini (클라우드)</span>
+                  <span className="font-black text-sm text-gray-900">Google Gemini (Cloud)</span>
                   <span className="text-[10px] font-black bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
-                    실제 운영 권장
+                    {isEn ? 'Recommended for Production' : '실제 운영 권장'}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1 leading-snug">
-                  13개국 소수 언어(라오스·크메르·미얀마어) 완벽 번역, 1.5초 초고속, 대표님 PC가 꺼져 있어도 24시간 작동.
+                  {isEn
+                    ? 'Full support for 13 Asian languages (Lao, Khmer, Burmese, etc.), ultra-fast 1.5s latency, 24/7 cloud uptime.'
+                    : '13개국 소수 언어(라오스·크메르·미얀마어) 완벽 번역, 1.5초 초고속, 대표님 PC가 꺼져 있어도 24시간 작동.'}
                 </p>
               </div>
             </button>
@@ -336,13 +361,17 @@ export default function GeminiAiSettingsPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-black text-sm text-gray-900">로컬 AI (LM Studio)</span>
+                  <span className="font-black text-sm text-gray-900">
+                    {isEn ? 'Local AI (LM Studio)' : '로컬 AI (LM Studio)'}
+                  </span>
                   <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                    연구실 개발용
+                    {isEn ? 'Lab / Offline Dev' : '연구실 개발용'}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1 leading-snug">
-                  대표님 PC의 GPU로 직접 구동(Gemma 9B 등), 인터넷 차단 환경 및 로컬 테스트에 유용.
+                  {isEn
+                    ? 'Runs locally on your GPU (Gemma 9B, etc.), ideal for offline or intranet environments.'
+                    : '대표님 PC의 GPU로 직접 구동(Gemma 9B 등), 인터넷 차단 환경 및 로컬 테스트에 유용.'}
                 </p>
               </div>
             </button>
@@ -353,7 +382,7 @@ export default function GeminiAiSettingsPage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
                   <label className="block text-[11px] font-bold text-gray-600 mb-1">
-                    LM Studio 로컬 엔드포인트 URL
+                    LM Studio Endpoint URL
                   </label>
                   <input
                     type="text"
@@ -365,7 +394,7 @@ export default function GeminiAiSettingsPage() {
                 </div>
                 <div className="flex-1">
                   <label className="block text-[11px] font-bold text-gray-600 mb-1">
-                    로컬 모델 식별자 (Model ID)
+                    Model Identifier (Model ID)
                   </label>
                   <input
                     type="text"
@@ -389,10 +418,12 @@ export default function GeminiAiSettingsPage() {
               </span>
               <div>
                 <h3 className="font-extrabold text-base text-gray-900">
-                  실시간 연결 진단 & 13개국 번역 테스트 도구
+                  {isEn ? 'Live Connection Diagnostic & 13-Language Translation Tester' : '실시간 연결 진단 & 13개국 번역 테스트 도구'}
                 </h3>
                 <p className="text-xs text-gray-500">
-                  설정한 API 키로 실제 번역 요청을 날려보고 속도와 품질을 즉시 검증합니다.
+                  {isEn
+                    ? 'Dispatch actual translation requests with your API key to verify latency and translation quality in real time.'
+                    : '설정한 API 키로 실제 번역 요청을 날려보고 속도와 품질을 즉시 검증합니다.'}
                 </p>
               </div>
             </div>
@@ -404,13 +435,15 @@ export default function GeminiAiSettingsPage() {
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black transition-all shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
             >
               {isTesting ? <RefreshCw size={13} className="animate-spin" /> : <Zap size={13} />}
-              <span>{isTesting ? 'AI 응답 수신 중...' : '실시간 연결 및 번역 테스트'}</span>
+              <span>{isTesting ? (isEn ? 'Awaiting AI Response...' : 'AI 응답 수신 중...') : (isEn ? 'Run Live Translation Test' : '실시간 연결 및 번역 테스트')}</span>
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2 space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-600">테스트할 원문 (한국어)</label>
+              <label className="block text-[11px] font-bold text-gray-600">
+                {isEn ? 'Test Input Text (Source)' : '테스트할 원문 (한국어)'}
+              </label>
               <input
                 type="text"
                 value={testText}
@@ -419,7 +452,9 @@ export default function GeminiAiSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-600">목표 언어 선택</label>
+              <label className="block text-[11px] font-bold text-gray-600">
+                {isEn ? 'Select Target Language' : '목표 언어 선택'}
+              </label>
               <select
                 value={testTargetLang}
                 onChange={(e) => setTestTargetLang(e.target.value)}
@@ -462,7 +497,7 @@ export default function GeminiAiSettingsPage() {
               {testResult.output && (
                 <div className="mt-2 p-3 bg-white rounded-xl border border-purple-200 shadow-2xs">
                   <div className="text-[10px] font-bold text-gray-400 mb-1">
-                    AI 번역 결과 ({testTargetLang}):
+                    {isEn ? `AI Translation Output (${testTargetLang}):` : `AI 번역 결과 (${testTargetLang}):`}
                   </div>
                   <div className="text-xs sm:text-sm font-bold text-gray-900 leading-relaxed font-sans">
                     {testResult.output}
@@ -476,13 +511,13 @@ export default function GeminiAiSettingsPage() {
         {/* 저장 버튼 바 */}
         <div className="p-4 bg-white rounded-2xl border border-gray-200/80 shadow-sm flex items-center justify-between">
           <div className="text-xs text-gray-500">
-            설정 변경 후 반드시 저장을 눌러주세요.
+            {isEn ? 'Make sure to click save after changing settings.' : '설정 변경 후 반드시 저장을 눌러주세요.'}
           </div>
           <button
             type="submit"
             className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-purple-600/20 cursor-pointer"
           >
-            AI 엔진 설정 저장하기
+            {isEn ? 'Save AI Engine Settings' : 'AI 엔진 설정 저장하기'}
           </button>
         </div>
       </form>

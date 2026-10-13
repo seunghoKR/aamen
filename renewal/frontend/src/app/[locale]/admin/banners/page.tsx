@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useParams } from 'next/navigation'
+import { getAdminTexts } from '@/lib/adminI18n'
 import { BannerConfig, defaultBanners } from '@/lib/store'
 import {
   Save,
@@ -55,7 +57,29 @@ const photoPresets = [
   },
 ]
 
+const gradientLabelsEn: Record<string, string> = {
+  '에메랄드 포레스트 & 틸': 'Emerald Forest & Teal',
+  '딥 오션 네이비 & 인디고': 'Deep Ocean Navy & Indigo',
+  '선셋 로열 바이올렛': 'Sunset Royal Violet',
+  '화해와 평화 틸 & 사이언': 'Peace & Reconciliation Teal',
+  '골든 엠버 & 올리브': 'Golden Amber & Olive',
+  '미드나잇 다크 슬레이트': 'Midnight Dark Slate',
+}
+
+const photoPresetNamesEn: Record<string, string> = {
+  '아시아 청년 모임': 'Asian Youth Gathering',
+  '성경과 배움': 'Bible & Learning',
+  '기도와 손길': 'Prayer & Hands',
+  '빛과 예배': 'Light & Worship',
+  '평화와 자연': 'Peace & Nature',
+}
+
 export default function AdminBannersPage() {
+  const params = useParams()
+  const currentLocale = (params?.locale as string) || 'ko'
+  const isEn = currentLocale === 'en'
+  const t = getAdminTexts(currentLocale).banners
+
   const [banners, setBanners] = useState<BannerConfig[]>(defaultBanners)
   const [selectedSlot, setSelectedSlot] = useState<number>(0)
   const [isSaving, setIsSaving] = useState(false)
@@ -277,7 +301,7 @@ export default function AdminBannersPage() {
 
   // 기본 프리셋으로 복원
   const handleResetPresets = () => {
-    if (confirm('기본 5개 추천 배너(이미지-텍스트 교차 배너)로 초기화하시겠습니까?')) {
+    if (confirm(isEn ? 'Reset to default 5 curated banners?' : '기본 5개 추천 배너(이미지-텍스트 교차 배너)로 초기화하시겠습니까?')) {
       setBanners(defaultBanners)
       setSelectedSlot(0)
     }
@@ -291,12 +315,11 @@ export default function AdminBannersPage() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">🖼️</span>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              랜딩페이지 상단 배너 슬라이더 관리
+              {t.title}
             </h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            최대 5개의 배너를 등록하여 <span className="text-emerald-600 font-bold">이미지 배너</span>와{' '}
-            <span className="text-blue-600 font-bold">텍스트 배너</span>를 자유롭게 혼용할 수 있습니다.
+            {t.subtitle}
           </p>
         </div>
 
@@ -308,7 +331,7 @@ export default function AdminBannersPage() {
             className="px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <RefreshCw size={13} />
-            <span>기본 프리셋 복원</span>
+            <span>{t.resetBtn}</span>
           </button>
 
           <button
@@ -318,7 +341,7 @@ export default function AdminBannersPage() {
             className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
           >
             {saveSuccess ? <Check size={14} /> : <Save size={14} />}
-            <span>{saveSuccess ? '배너 전체 저장 완료!' : '배너 설정 저장하기'}</span>
+            <span>{saveSuccess ? t.savedSuccess : isSaving ? t.savingBtn : t.saveBtn}</span>
           </button>
         </div>
       </div>
@@ -346,17 +369,17 @@ export default function AdminBannersPage() {
                 ) : (
                   <FileText size={14} className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
                 )}
-                <span>슬롯 #{idx + 1}</span>
+                <span>{isEn ? `Slot #${idx + 1}` : `슬롯 #${idx + 1}`}</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-md ${
                     isImg ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
                   }`}
                 >
-                  {isImg ? '이미지' : '텍스트'}
+                  {isImg ? (isEn ? 'Image' : '이미지') : (isEn ? 'Text' : '텍스트')}
                 </span>
                 {!b.active && (
                   <span className="text-[10px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.2 rounded">
-                    제외
+                    {isEn ? 'Hidden' : '제외'}
                   </span>
                 )}
               </button>
@@ -369,7 +392,7 @@ export default function AdminBannersPage() {
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 border border-dashed border-slate-300 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-all cursor-pointer"
             >
               <Plus size={14} />
-              <span>배너 추가 ({banners.length}/5)</span>
+              <span>{isEn ? `Add Slot (${banners.length}/5)` : `배너 추가 (${banners.length}/5)`}</span>
             </button>
           )}
         </div>
@@ -379,7 +402,7 @@ export default function AdminBannersPage() {
           <button
             onClick={() => moveUp(selectedSlot)}
             disabled={selectedSlot === 0}
-            title="순서 앞으로"
+            title={isEn ? 'Move forward' : '순서 앞으로'}
             className="p-2 border border-slate-200 rounded-xl hover:bg-slate-100 text-slate-600 disabled:opacity-30 cursor-pointer"
           >
             <ArrowUp size={14} />
@@ -387,7 +410,7 @@ export default function AdminBannersPage() {
           <button
             onClick={() => moveDown(selectedSlot)}
             disabled={selectedSlot === banners.length - 1}
-            title="순서 뒤로"
+            title={isEn ? 'Move backward' : '순서 뒤로'}
             className="p-2 border border-slate-200 rounded-xl hover:bg-slate-100 text-slate-600 disabled:opacity-30 cursor-pointer"
           >
             <ArrowDown size={14} />
@@ -395,7 +418,7 @@ export default function AdminBannersPage() {
           <button
             onClick={() => removeBanner(selectedSlot)}
             disabled={banners.length <= 1}
-            title="이 슬롯 삭제"
+            title={isEn ? 'Delete this slot' : '이 슬롯 삭제'}
             className="p-2 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl disabled:opacity-30 cursor-pointer"
           >
             <Trash2 size={14} />
@@ -407,11 +430,11 @@ export default function AdminBannersPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* === [왼쪽 편집 폼] === */}
         <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-          {/* 슬롯 헤더 & 개별 포함 여부 체크박스 (깔끔하고 직관적으로 개편) */}
+          {/* 슬롯 헤더 & 개별 포함 여부 체크박스 */}
           <div className="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
               <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
-                <span>슬롯 #{selectedSlot + 1} 상세 편집</span>
+                <span>{isEn ? `Slot #${selectedSlot + 1} Details` : `슬롯 #${selectedSlot + 1} 상세 편집`}</span>
                 <span
                   className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                     currentBanner.active
@@ -419,12 +442,18 @@ export default function AdminBannersPage() {
                       : 'bg-slate-200 text-slate-700'
                   }`}
                 >
-                  {currentBanner.active ? '슬라이더에 포함됨' : '슬라이더에서 제외됨'}
+                  {currentBanner.active
+                    ? isEn ? 'Included in Slider' : '슬라이더에 포함됨'
+                    : isEn ? 'Excluded from Slider' : '슬라이더에서 제외됨'}
                 </span>
               </h2>
               <span className="text-xs text-slate-400 mt-0.5 block">
                 {currentBanner.active
-                  ? '이 배너가 상단 슬라이더 회전에 정상 포함되어 노출됩니다.'
+                  ? isEn
+                    ? 'This banner is actively displayed in the top slider rotation.'
+                    : '이 배너가 상단 슬라이더 회전에 정상 포함되어 노출됩니다.'
+                  : isEn
+                  ? 'This banner is skipped from the slider rotation.'
                   : '이 배너는 슬라이더 회전에서 제외(건너뛰기)됩니다.'}
               </span>
             </div>
@@ -436,14 +465,14 @@ export default function AdminBannersPage() {
                 onChange={(e) => updateCurrentBanner('active', e.target.checked)}
                 className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
               />
-              <span>이 슬롯 활성화</span>
+              <span>{isEn ? 'Enable this slot' : '이 슬롯 활성화'}</span>
             </label>
           </div>
 
           {/* 배너 유형 선택 (이미지 vs 텍스트) */}
           <div>
             <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
-              배너 표시 모드 (혼용 지원)
+              {isEn ? 'Banner Display Mode (Mixed Supported)' : '배너 표시 모드 (혼용 지원)'}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -456,7 +485,7 @@ export default function AdminBannersPage() {
                 }`}
               >
                 <ImageIcon size={16} className="text-emerald-600" />
-                <span>📸 이미지 배너</span>
+                <span>{isEn ? '📸 Image Banner' : '📸 이미지 배너'}</span>
               </button>
 
               <button
@@ -469,7 +498,7 @@ export default function AdminBannersPage() {
                 }`}
               >
                 <FileText size={16} className="text-blue-600" />
-                <span>✍️ 텍스트 그라디언트 배너</span>
+                <span>{isEn ? '✍️ Text Gradient Banner' : '✍️ 텍스트 그라디언트 배너'}</span>
               </button>
             </div>
           </div>
@@ -479,7 +508,7 @@ export default function AdminBannersPage() {
             <div className="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-4">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-black text-emerald-950">
-                  배경 이미지 등록 (파일 업로드 또는 링크)
+                  {isEn ? 'Background Image (File Upload or URL Link)' : '배경 이미지 등록 (파일 업로드 또는 링크)'}
                 </label>
                 <button
                   type="button"
@@ -487,7 +516,7 @@ export default function AdminBannersPage() {
                   className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                 >
                   <Upload size={13} />
-                  <span>내 PC에서 사진 업로드</span>
+                  <span>{isEn ? 'Upload from PC' : '내 PC에서 사진 업로드'}</span>
                 </button>
                 <input
                   ref={fileInputRef}
@@ -503,7 +532,7 @@ export default function AdminBannersPage() {
                   type="url"
                   value={currentBanner.imageUrl || ''}
                   onChange={(e) => updateCurrentBanner('imageUrl', e.target.value)}
-                  placeholder="https://images.unsplash.com/... 또는 /uploads/banners/..."
+                  placeholder={isEn ? "https://images.unsplash.com/... or /uploads/banners/..." : "https://images.unsplash.com/... 또는 /uploads/banners/..."}
                   className="w-full px-3.5 py-2.5 text-xs bg-white border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
                 />
               </div>
@@ -511,19 +540,22 @@ export default function AdminBannersPage() {
               {/* 디자이너 추천 고화질 프리셋 1클릭 선택 */}
               <div>
                 <span className="text-[11px] font-bold text-emerald-800 block mb-2">
-                  ✨ 디자이너 추천 고화질 사진 프리셋:
+                  {isEn ? '✨ Designer Curated HD Photo Presets:' : '✨ 디자이너 추천 고화질 사진 프리셋:'}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {photoPresets.map((p, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => updateCurrentBanner('imageUrl', p.url)}
-                      className="px-2.5 py-1 text-[11px] font-medium bg-white hover:bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
-                    >
-                      {p.name}
-                    </button>
-                  ))}
+                  {photoPresets.map((p, i) => {
+                    const presetLabel = isEn ? (photoPresetNamesEn[p.name] || p.name) : p.name
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => updateCurrentBanner('imageUrl', p.url)}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-white hover:bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                      >
+                        {presetLabel}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -533,26 +565,29 @@ export default function AdminBannersPage() {
           {currentBanner.type === 'gradient_text' && (
             <div className="p-5 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-3">
               <label className="block text-xs font-black text-blue-950">
-                그라디언트 테마 색상 선택
+                {isEn ? 'Select Gradient Theme Color' : '그라디언트 테마 색상 선택'}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {gradientPresets.map((g, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => updateCurrentBanner('bgGradient', g.value)}
-                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
-                      currentBanner.bgGradient === g.value
-                        ? 'border-blue-600 bg-white text-blue-900 ring-2 ring-blue-500/30'
-                        : 'border-blue-200/60 bg-white/70 text-slate-700 hover:bg-white'
-                    }`}
-                  >
-                    <div
-                      className={`h-4 w-full rounded-md bg-gradient-to-r ${g.value} mb-1.5 shadow-2xs`}
-                    />
-                    <span className="text-[11px] block truncate">{g.label}</span>
-                  </button>
-                ))}
+                {gradientPresets.map((g, idx) => {
+                  const gradientLabel = isEn ? (gradientLabelsEn[g.label] || g.label) : g.label
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => updateCurrentBanner('bgGradient', g.value)}
+                      className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer ${
+                        currentBanner.bgGradient === g.value
+                          ? 'border-blue-600 bg-white text-blue-900 ring-2 ring-blue-500/30'
+                          : 'border-blue-200/60 bg-white/70 text-slate-700 hover:bg-white'
+                      }`}
+                    >
+                      <div
+                        className={`h-4 w-full rounded-md bg-gradient-to-r ${g.value} mb-1.5 shadow-2xs`}
+                      />
+                      <span className="text-[11px] block truncate">{gradientLabel}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -561,39 +596,39 @@ export default function AdminBannersPage() {
           <div className="space-y-4 pt-2 border-t border-slate-100">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                상단 배지 / 태그 텍스트
+                {isEn ? 'Top Badge / Tag Text' : '상단 배지 / 태그 텍스트'}
               </label>
               <input
                 type="text"
                 value={currentBanner.badgeText || ''}
                 onChange={(e) => updateCurrentBanner('badgeText', e.target.value)}
-                placeholder="예: AAMEN GLOBAL NETWORK, UPCOMING EVENT 2026, SCRIPTURE OF PEACE"
+                placeholder={isEn ? "e.g. AAMEN GLOBAL NETWORK, UPCOMING EVENT 2026, SCRIPTURE OF PEACE" : "예: AAMEN GLOBAL NETWORK, UPCOMING EVENT 2026, SCRIPTURE OF PEACE"}
                 className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                메인 타이틀 <span className="text-rose-500">*</span>
+                {isEn ? 'Main Headline' : '메인 타이틀'} <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 value={currentBanner.title}
                 onChange={(e) => updateCurrentBanner('title', e.target.value)}
-                placeholder="배너의 핵심 제목을 입력해 주세요"
+                placeholder={isEn ? "Enter primary banner headline" : "배너의 핵심 제목을 입력해 주세요"}
                 className="w-full px-3.5 py-2.5 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                서브타이틀 및 설명문
+                {isEn ? 'Subtitle & Description' : '서브타이틀 및 설명문'}
               </label>
               <textarea
                 rows={3}
                 value={currentBanner.subtitle || ''}
                 onChange={(e) => updateCurrentBanner('subtitle', e.target.value)}
-                placeholder="배너의 상세 설명이나 성경 구절, 참가 안내를 입력해 주세요"
+                placeholder={isEn ? "Enter detailed description, scripture passage, or event guide" : "배너의 상세 설명이나 성경 구절, 참가 안내를 입력해 주세요"}
                 className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
               />
             </div>
@@ -601,24 +636,26 @@ export default function AdminBannersPage() {
 
           {/* 버튼 링크 설정 */}
           <div className="space-y-4 pt-2 border-t border-slate-100">
-            <span className="text-xs font-black text-slate-700 block">버튼 및 이동 링크 설정</span>
+            <span className="text-xs font-black text-slate-700 block">
+              {isEn ? 'Buttons & Action Links' : '버튼 및 이동 링크 설정'}
+            </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  메인 버튼 문구
+                  {isEn ? 'Primary Button Label' : '메인 버튼 문구'}
                 </label>
                 <input
                   type="text"
                   value={currentBanner.buttonText || ''}
                   onChange={(e) => updateCurrentBanner('buttonText', e.target.value)}
-                  placeholder="예: 함께 기도하기"
+                  placeholder={isEn ? "e.g. Pray Together" : "예: 함께 기도하기"}
                   className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  메인 버튼 링크 URL
+                  {isEn ? 'Primary Button Link URL' : '메인 버튼 링크 URL'}
                 </label>
                 <input
                   type="text"
@@ -633,20 +670,20 @@ export default function AdminBannersPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  보조 버튼 문구 (선택)
+                  {isEn ? 'Secondary Button Label (Optional)' : '보조 버튼 문구 (선택)'}
                 </label>
                 <input
                   type="text"
                   value={currentBanner.secondaryButtonText || ''}
                   onChange={(e) => updateCurrentBanner('secondaryButtonText', e.target.value)}
-                  placeholder="예: 7대 확신 교안"
+                  placeholder={isEn ? "e.g. 7 Shared Convictions" : "예: 7대 확신 교안"}
                   className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  보조 버튼 링크 URL
+                  {isEn ? 'Secondary Button Link URL' : '보조 버튼 링크 URL'}
                 </label>
                 <input
                   type="text"
@@ -665,10 +702,10 @@ export default function AdminBannersPage() {
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-black text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
               <Eye size={14} className="text-emerald-600" />
-              <span>실시간 슬라이더 미리보기</span>
+              <span>{isEn ? 'Live Slider Preview' : '실시간 슬라이더 미리보기'}</span>
             </span>
             <span className="text-[11px] text-slate-400 font-mono">
-              슬롯 {selectedSlot + 1} / {banners.length}
+              {isEn ? `Slot ${selectedSlot + 1} / ${banners.length}` : `슬롯 ${selectedSlot + 1} / ${banners.length}`}
             </span>
           </div>
 
@@ -678,10 +715,12 @@ export default function AdminBannersPage() {
             {!currentBanner.active && (
               <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center">
                 <span className="px-3.5 py-1 rounded-full bg-slate-700 text-white font-extrabold text-xs mb-2 shadow-lg">
-                  슬롯 #{selectedSlot + 1} 회전 제외 상태
+                  {isEn ? `Slot #${selectedSlot + 1} Excluded from Rotation` : `슬롯 #${selectedSlot + 1} 회전 제외 상태`}
                 </span>
                 <p className="text-xs text-white/80 max-w-xs">
-                  이 슬롯은 랜딩페이지 슬라이더 회전에서 제외되어 방문자에게 노출되지 않습니다.
+                  {isEn
+                    ? 'This slot is skipped from rotation and will not be displayed to visitors.'
+                    : '이 슬롯은 랜딩페이지 슬라이더 회전에서 제외되어 방문자에게 노출되지 않습니다.'}
                 </p>
               </div>
             )}
@@ -708,17 +747,17 @@ export default function AdminBannersPage() {
             <div className="relative z-10 pt-4">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-bold text-emerald-300">
                 {currentBanner.type === 'image' ? <ImageIcon size={11} /> : <FileText size={11} />}
-                <span>{currentBanner.badgeText || 'AAMEN BANNER'}</span>
+                <span>{currentBanner.badgeText || (isEn ? 'AAMEN BANNER' : 'AAMEN BANNER')}</span>
               </div>
             </div>
 
             {/* 중앙 본문 */}
             <div className="relative z-10 py-6">
               <h3 className="text-xl sm:text-2xl font-black text-white leading-snug drop-shadow-md mb-3">
-                {currentBanner.title || '제목을 입력하세요'}
+                {currentBanner.title || (isEn ? 'Enter headline' : '제목을 입력하세요')}
               </h3>
               <p className="text-xs text-white/80 line-clamp-3 leading-relaxed max-w-sm mx-auto">
-                {currentBanner.subtitle || '설명문을 입력하세요'}
+                {currentBanner.subtitle || (isEn ? 'Enter description' : '설명문을 입력하세요')}
               </p>
 
               {/* 버튼 미리보기 */}
@@ -771,7 +810,11 @@ export default function AdminBannersPage() {
           </div>
 
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs leading-relaxed">
-            💡 <strong>디자인 가이드:</strong> 상단 우측의 <strong>[배너 전체]</strong> 토글 버튼으로 슬라이더 전체를 켜거나 끌 수 있고, 아래 5개 슬롯에서는 각각의 배너를 독립적으로 편집할 수 있습니다! ✨
+            {isEn ? (
+              <>💡 <strong>Design Guide:</strong> You can independently edit each of the 5 banner slots below with live real-time preview! ✨</>
+            ) : (
+              <>💡 <strong>디자인 가이드:</strong> 상단 우측의 <strong>[배너 전체]</strong> 토글 버튼으로 슬라이더 전체를 켜거나 끌 수 있고, 아래 5개 슬롯에서는 각각의 배너를 독립적으로 편집할 수 있습니다! ✨</>
+            )}
           </div>
         </div>
       </div>

@@ -2,27 +2,16 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { convictionPages } from '@/data/convictionsData'
-import { ChevronRight, ArrowLeft, ArrowRight, BookOpen, Layers, Sparkles, Home } from 'lucide-react'
-
-// 7개 주제 목록 순서 및 정돈된 라벨
-const convictionOrder = [
-  { slug: 'god', num: '01', title: '하나님', fullTitle: '하나님 (God)' },
-  { slug: 'jesus', num: '02', title: '예수 그리스도', fullTitle: '예수 그리스도 (Jesus)' },
-  { slug: 'spirit', num: '03', title: '성령', fullTitle: '성령 (Holy Spirit)' },
-  { slug: 'church', num: '04', title: '성경', fullTitle: '성경 (The Bible)' },
-  { slug: 'peace', num: '05', title: '평화와 정의', fullTitle: '평화, 정의, 화해 (Peace)' },
-  { slug: 'community', num: '06', title: '예배와 사명', fullTitle: '예배와 삶 (Worship)' },
-  { slug: 'unity', num: '07', title: '지구촌 가족', fullTitle: '지구촌 가족 (Global Family)' },
-]
+import { getConvictionPage, convictionOrder } from '@/data/convictionsData'
+import ConvictionDetailContent from '@/components/convictions/ConvictionDetailContent'
+import { ChevronRight, ArrowLeft, ArrowRight, BookOpen, Layers, Home } from 'lucide-react'
+import { setRequestLocale } from 'next-intl/server'
 
 export function generateStaticParams() {
   return convictionOrder.map((item) => ({
     slug: item.slug,
   }))
 }
-
-import { setRequestLocale } from 'next-intl/server'
 
 export default async function ConvictionDetailPage({
   params,
@@ -31,7 +20,7 @@ export default async function ConvictionDetailPage({
 }) {
   const { locale, slug } = await params
   setRequestLocale(locale)
-  const pageData = convictionPages[slug]
+  const pageData = getConvictionPage(slug, locale)
 
   if (!pageData) {
     notFound()
@@ -42,6 +31,14 @@ export default async function ConvictionDetailPage({
   const currentTopic = convictionOrder[currentIndex] || convictionOrder[0]
   const prevTopic = currentIndex > 0 ? convictionOrder[currentIndex - 1] : null
   const nextTopic = currentIndex < convictionOrder.length - 1 ? convictionOrder[currentIndex + 1] : null
+
+  const getTopicTitle = (item: typeof currentTopic) => {
+    return locale === 'en' ? item.titleEn : item.titleKo
+  }
+
+  const getTopicFullTitle = (item: typeof currentTopic) => {
+    return locale === 'en' ? item.fullTitleEn : item.fullTitleKo
+  }
 
   const getLocalizedPath = (path: string) => {
     const cleanPath = path.startsWith('/') ? path : `/${path}`
@@ -54,7 +51,7 @@ export default async function ConvictionDetailPage({
 
       <main className="flex-1 py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          {/* 상단 브레드크럼 (가독성 100% 확보를 위한 깔끔한 글래스모피즘 배지) */}
+          {/* 상단 브레드크럼 */}
           <div className="mb-6 flex items-center">
             <nav className="inline-flex items-center gap-2 px-4 py-2 bg-white/95 rounded-full shadow-sm border border-emerald-100/80 text-xs sm:text-sm font-semibold text-gray-700">
               <Link
@@ -62,31 +59,33 @@ export default async function ConvictionDetailPage({
                 className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-700 transition-colors"
               >
                 <Home className="w-3.5 h-3.5" />
-                <span>홈</span>
+                <span>{locale === 'en' ? 'Home' : '홈'}</span>
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
               <Link
                 href={getLocalizedPath('/convictions')}
                 className="text-gray-500 hover:text-emerald-700 transition-colors"
               >
-                공유된 신념
+                {locale === 'en' ? 'Shared Convictions' : '공유된 신념'}
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
               <span className="text-emerald-800 font-extrabold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                {currentTopic.fullTitle}
+                {getTopicFullTitle(currentTopic)}
               </span>
             </nav>
           </div>
 
-          {/* 7대 공유된 신념 빠른 이동 탭 바 (글씨 잘림 방지 및 모바일 스크롤 지원) */}
+          {/* 7대 공유된 신념 빠른 이동 탭 바 */}
           <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-emerald-100/60 mb-8">
             <div className="flex items-center justify-between gap-2 mb-3 px-1">
               <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-800 uppercase tracking-wider">
                 <Layers className="w-4 h-4 text-emerald-600" />
-                <span>7대 공유된 신념 목차</span>
+                <span>{locale === 'en' ? '7 Shared Convictions Index' : '7대 공유된 신념 목차'}</span>
               </div>
-              <span className="text-[11px] text-gray-400 font-medium">원클릭 바로가기</span>
+              <span className="text-[11px] text-gray-400 font-medium">
+                {locale === 'en' ? 'Quick Navigation' : '원클릭 바로가기'}
+              </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -107,10 +106,10 @@ export default async function ConvictionDetailPage({
                         isActive ? 'text-emerald-100' : 'text-gray-400'
                       }`}
                     >
-                      주제 {item.num}
+                      {locale === 'en' ? `Theme ${item.num}` : `주제 ${item.num}`}
                     </span>
                     <span className="text-xs font-bold leading-tight whitespace-nowrap">
-                      {item.title}
+                      {getTopicTitle(item)}
                     </span>
                   </Link>
                 )
@@ -118,13 +117,12 @@ export default async function ConvictionDetailPage({
             </div>
           </div>
 
-          {/* 원본 교안 본문 영역 (화사하고 깨끗한 화이트 카드 디자인) */}
-          <article className="bg-white rounded-3xl p-6 sm:p-12 shadow-xl shadow-teal-950/5 border border-emerald-100/60 overflow-hidden">
-            <div
-              className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: pageData.rawHtml }}
-            />
-          </article>
+          {/* 원본 교안 본문 영역 (클라이언트 다국어 및 영문 원문 토글 연동) */}
+          <ConvictionDetailContent
+            initialData={pageData}
+            slug={slug}
+            locale={locale}
+          />
 
           {/* 하단 이전/다음 페이지 이동 네비게이션 */}
           <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
@@ -135,8 +133,10 @@ export default async function ConvictionDetailPage({
               >
                 <ArrowLeft className="w-4 h-4 text-emerald-600 group-hover:-translate-x-1 transition-transform" />
                 <div className="text-left">
-                  <span className="block text-[11px] text-gray-400 font-normal">이전 주제</span>
-                  <span>{prevTopic.fullTitle}</span>
+                  <span className="block text-[11px] text-gray-400 font-normal">
+                    {locale === 'en' ? 'Previous Topic' : '이전 주제'}
+                  </span>
+                  <span>{getTopicFullTitle(prevTopic)}</span>
                 </div>
               </Link>
             ) : (
@@ -148,7 +148,7 @@ export default async function ConvictionDetailPage({
               className="px-6 py-3 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs"
             >
               <BookOpen className="w-4 h-4 text-emerald-600" />
-              <span>전체 7대 확신 목록으로</span>
+              <span>{locale === 'en' ? 'All Convictions' : '전체 7대 확신 목록으로'}</span>
             </Link>
 
             {nextTopic ? (
@@ -157,8 +157,10 @@ export default async function ConvictionDetailPage({
                 className="flex items-center justify-between sm:justify-end gap-3 px-5 py-3.5 bg-white border border-gray-200/80 rounded-2xl shadow-xs hover:border-emerald-300 hover:bg-emerald-50/40 text-gray-700 hover:text-emerald-900 transition-all text-sm font-bold text-right group"
               >
                 <div>
-                  <span className="block text-[11px] text-gray-400 font-normal">다음 주제</span>
-                  <span>{nextTopic.fullTitle}</span>
+                  <span className="block text-[11px] text-gray-400 font-normal">
+                    {locale === 'en' ? 'Next Topic' : '다음 주제'}
+                  </span>
+                  <span>{getTopicFullTitle(nextTopic)}</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
               </Link>

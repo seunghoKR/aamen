@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useParams } from 'next/navigation'
+import { getAdminTexts } from '@/lib/adminI18n'
 import {
   Layers,
   Save,
@@ -8,12 +10,6 @@ import {
   RefreshCw,
   Eye,
   Upload,
-  Power,
-  Image as ImageIcon,
-  ExternalLink,
-  X,
-  AlertCircle,
-  Calendar,
 } from 'lucide-react'
 
 interface PopupConfig {
@@ -26,7 +22,7 @@ interface PopupConfig {
   showDoNotShowToday: boolean
 }
 
-const defaultPopupConfig: PopupConfig = {
+const defaultPopupConfigKo: PopupConfig = {
   enabled: true,
   title: '2026 MWC 아시아 아나밥티스트 연합 컨퍼런스 안내',
   content:
@@ -38,7 +34,25 @@ const defaultPopupConfig: PopupConfig = {
   showDoNotShowToday: true,
 }
 
+const defaultPopupConfigEn: PopupConfig = {
+  enabled: true,
+  title: '2026 MWC Asia Anabaptist Joint Conference Notice',
+  content:
+    'A pan-Asian gathering where mentors and youth from 13 nations come together to share the gospel of peace. Registration is now open through each country coordinator.',
+  imageUrl:
+    'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
+  buttonText: 'View Conference Details',
+  buttonLink: '/community/announcements',
+  showDoNotShowToday: true,
+}
+
 export default function AdminPopupsPage() {
+  const params = useParams()
+  const currentLocale = (params?.locale as string) || 'ko'
+  const isEn = currentLocale === 'en'
+  const t = getAdminTexts(currentLocale).popups
+  const defaultPopupConfig = isEn ? defaultPopupConfigEn : defaultPopupConfigKo
+
   const [config, setConfig] = useState<PopupConfig>(defaultPopupConfig)
   const [isSaving, setIsSaving] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
@@ -117,7 +131,8 @@ export default function AdminPopupsPage() {
   }
 
   const handleReset = () => {
-    if (confirm('팝업 설정을 기본 공지 모달 내용으로 복원하시겠습니까?')) {
+    const confirmMsg = isEn ? 'Reset popup settings to default?' : '팝업 설정을 기본 공지 모달 내용으로 복원하시겠습니까?'
+    if (confirm(confirmMsg)) {
       setConfig(defaultPopupConfig)
       localStorage.setItem('aamen_popup_config', JSON.stringify(defaultPopupConfig))
       window.dispatchEvent(new Event('storage'))
@@ -132,11 +147,11 @@ export default function AdminPopupsPage() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">💬</span>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              랜딩페이지 팝업 및 공지 모달 관리
+              {t.title}
             </h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            방문자가 메인 랜딩페이지에 접속했을 때 화면 중앙에 띄울 중요한 공지사항이나 수련회 안내 팝업을 설정합니다.
+            {t.subtitle}
           </p>
         </div>
 
@@ -147,7 +162,7 @@ export default function AdminPopupsPage() {
             className="px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <RefreshCw size={13} />
-            <span>기본 팝업 복원</span>
+            <span>{isEn ? 'Reset to Default' : '기본 팝업 복원'}</span>
           </button>
           <button
             type="button"
@@ -156,7 +171,7 @@ export default function AdminPopupsPage() {
             className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
           >
             {savedSuccess ? <Check size={14} /> : <Save size={14} />}
-            <span>{savedSuccess ? '팝업 설정 저장 완료!' : '팝업 설정 저장하기'}</span>
+            <span>{savedSuccess ? t.savedToast : isSaving ? t.savingBtn : t.saveBtn}</span>
           </button>
         </div>
       </div>
@@ -170,20 +185,24 @@ export default function AdminPopupsPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black text-sm sm:text-base text-slate-900">
-                메인 랜딩페이지 팝업 모달 노출 여부
+                {isEn ? 'Display Main Landing Page Popup Modal' : '메인 랜딩페이지 팝업 모달 노출 여부'}
               </span>
               <span
                 className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full ${
                   config.enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
                 }`}
               >
-                {config.enabled ? '팝업 켜짐 (ON)' : '팝업 숨김 (OFF)'}
+                {config.enabled ? (isEn ? 'Popup ON' : '팝업 켜짐 (ON)') : (isEn ? 'Popup OFF' : '팝업 숨김 (OFF)')}
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1">
               {config.enabled
-                ? '사용자가 메인 홈에 접속하면 설정된 공지 팝업 모달이 노출됩니다.'
-                : '팝업이 완전히 비활성화되어 사용자에게 나타나지 않습니다.'}
+                ? (isEn
+                    ? 'When visitors access the main landing page, the configured notice popup modal will be displayed.'
+                    : '사용자가 메인 홈에 접속하면 설정된 공지 팝업 모달이 노출됩니다.')
+                : (isEn
+                    ? 'Popup is completely deactivated and will not be displayed to visitors.'
+                    : '팝업이 완전히 비활성화되어 사용자에게 나타나지 않습니다.')}
             </p>
           </div>
         </div>
@@ -205,14 +224,14 @@ export default function AdminPopupsPage() {
         <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
           <h2 className="text-sm font-black text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
             <span>📝</span>
-            <span>팝업 내용 및 이미지 설정</span>
+            <span>{isEn ? 'Popup Content & Visual Settings' : '팝업 내용 및 이미지 설정'}</span>
           </h2>
 
           {/* 팝업 이미지 */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-black text-slate-800">
-                팝업 상단 이미지 (선택)
+                {isEn ? 'Popup Top Image (Optional)' : '팝업 상단 이미지 (선택)'}
               </label>
               <button
                 type="button"
@@ -220,7 +239,7 @@ export default function AdminPopupsPage() {
                 className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Upload size={13} />
-                <span>PC 사진 업로드</span>
+                <span>{isEn ? 'Upload Photo from PC' : 'PC 사진 업로드'}</span>
               </button>
               <input
                 ref={fileInputRef}
@@ -234,7 +253,7 @@ export default function AdminPopupsPage() {
               type="url"
               value={config.imageUrl}
               onChange={(e) => updateConfig('imageUrl', e.target.value)}
-              placeholder="https://... 또는 /uploads/... (비워두면 텍스트 전용 팝업)"
+              placeholder={isEn ? 'https://... or /uploads/... (Leave blank for text-only popup)' : 'https://... 또는 /uploads/... (비워두면 텍스트 전용 팝업)'}
               className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
             />
           </div>
@@ -242,13 +261,13 @@ export default function AdminPopupsPage() {
           {/* 팝업 제목 */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              팝업 제목 <span className="text-rose-500">*</span>
+              {isEn ? 'Popup Title' : '팝업 제목'} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={config.title}
               onChange={(e) => updateConfig('title', e.target.value)}
-              placeholder="팝업의 핵심 안내 제목"
+              placeholder={isEn ? 'Key notice title for the popup' : '팝업의 핵심 안내 제목'}
               className="w-full px-3.5 py-2.5 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
@@ -256,13 +275,13 @@ export default function AdminPopupsPage() {
           {/* 팝업 상세 내용 */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              팝업 상세 안내문 <span className="text-rose-500">*</span>
+              {isEn ? 'Detailed Announcement Text' : '팝업 상세 안내문'} <span className="text-rose-500">*</span>
             </label>
             <textarea
               rows={4}
               value={config.content}
               onChange={(e) => updateConfig('content', e.target.value)}
-              placeholder="팝업에 표시할 상세 안내 내용이나 일정을 입력해 주세요"
+              placeholder={isEn ? 'Enter detailed announcement description, schedule, or guidelines' : '팝업에 표시할 상세 안내 내용이나 일정을 입력해 주세요'}
               className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
             />
           </div>
@@ -271,19 +290,19 @@ export default function AdminPopupsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                이동 버튼 문구
+                {isEn ? 'Action Button Label' : '이동 버튼 문구'}
               </label>
               <input
                 type="text"
                 value={config.buttonText}
                 onChange={(e) => updateConfig('buttonText', e.target.value)}
-                placeholder="예: 공지사항 자세히 보기"
+                placeholder={isEn ? 'e.g. View Notice Details' : '예: 공지사항 자세히 보기'}
                 className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                버튼 이동 링크 URL
+                {isEn ? 'Button Link URL' : '버튼 이동 링크 URL'}
               </label>
               <input
                 type="text"
@@ -298,13 +317,13 @@ export default function AdminPopupsPage() {
           {/* 옵션: 오늘 하루 보지 않기 */}
           <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100">
             <span className="text-xs font-bold text-slate-800">
-              '오늘 하루 동안 다시 열지 않기' 체크박스 노출
+              {isEn ? 'Show "Do not show again today" checkbox' : '\'오늘 하루 동안 다시 열지 않기\' 체크박스 노출'}
             </span>
             <input
               type="checkbox"
               checked={config.showDoNotShowToday}
               onChange={(e) => updateConfig('showDoNotShowToday', e.target.checked)}
-              className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
             />
           </div>
         </div>
@@ -314,7 +333,7 @@ export default function AdminPopupsPage() {
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-black text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
               <Eye size={14} className="text-emerald-600" />
-              <span>실시간 팝업 모달 미리보기</span>
+              <span>{isEn ? 'Live Popup Modal Preview' : '실시간 팝업 모달 미리보기'}</span>
             </span>
             <span className="text-[11px] text-slate-400 font-mono">
               Live Preview
@@ -336,10 +355,10 @@ export default function AdminPopupsPage() {
                   <span>NOTICE</span>
                 </div>
                 <h3 className="text-base font-black text-slate-900 leading-snug mb-2">
-                  {config.title || '제목을 입력하세요'}
+                  {config.title || (isEn ? 'Enter notice title' : '제목을 입력하세요')}
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed mb-4 max-h-32 overflow-y-auto">
-                  {config.content || '공지 내용을 입력하세요'}
+                  {config.content || (isEn ? 'Enter announcement details' : '공지 내용을 입력하세요')}
                 </p>
 
                 {config.buttonText && (
@@ -354,11 +373,11 @@ export default function AdminPopupsPage() {
                 {config.showDoNotShowToday ? (
                   <label className="flex items-center gap-1.5 cursor-pointer">
                     <input type="checkbox" className="w-3.5 h-3.5 text-emerald-600 rounded" readOnly />
-                    <span>오늘 하루 보지 않기</span>
+                    <span>{isEn ? 'Do not show again today' : '오늘 하루 보지 않기'}</span>
                   </label>
                 ) : <span />}
-                <button className="text-slate-700 font-bold hover:text-slate-950">
-                  닫기 ✕
+                <button className="text-slate-700 font-bold hover:text-slate-950 cursor-pointer">
+                  {isEn ? 'Close ✕' : '닫기 ✕'}
                 </button>
               </div>
             </div>

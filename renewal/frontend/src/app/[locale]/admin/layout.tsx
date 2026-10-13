@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useParams } from 'next/navigation'
 import {
@@ -8,20 +8,18 @@ import {
   Image as ImageIcon,
   Users,
   LayoutDashboard,
-  MessageSquare,
-  Camera,
   ExternalLink,
   Menu,
   X,
   Layers,
-  ChevronRight,
-  Database,
   Sparkles,
   LogOut,
   Building2,
+  BookOpen,
+  Globe,
 } from 'lucide-react'
-import { useEffect } from 'react'
 import { getStoredUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
+import { getAdminTexts } from '@/lib/adminI18n'
 
 export default function AdminLayout({
   children,
@@ -31,6 +29,9 @@ export default function AdminLayout({
   const pathname = usePathname()
   const params = useParams()
   const currentLocale = (params?.locale as string) || 'ko'
+  const isEn = currentLocale === 'en'
+  const t = getAdminTexts(currentLocale).layout
+
   const localePath = (p: string) => `/${currentLocale}${p.startsWith('/') ? p : `/${p}`}`
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -49,69 +50,75 @@ export default function AdminLayout({
 
   // 상대 경로 추출
   const basePath = pathname.replace(/^\/(ko|en|ja|zh-TW|mn|vi|id|ne|th|lo|my|hi|km)/, '') || '/'
+  const targetPathKo = `/ko${basePath.startsWith('/') ? basePath : `/${basePath}`}`
+  const targetPathEn = `/en${basePath.startsWith('/') ? basePath : `/${basePath}`}`
 
-  const navMenuItems = [
+  // 오직 개발자 계정('developer')일 때만 개발자 전용 메뉴 표시
+  const isDeveloper = currentUser?.role === 'developer'
+
+  // 최상단 공통 메뉴 (대시보드 홈)
+  const topMenuItem = {
+    title: t.homeTitle,
+    href: '/admin',
+    icon: LayoutDashboard,
+    badge: t.overviewBadge,
+    badgeColor: 'bg-emerald-500/20 text-emerald-300',
+  }
+
+  // 1) 운영 관리자 메뉴 (v 표시 항목)
+  const adminMenuItems = [
     {
-      title: '대시보드 홈',
-      href: '/admin',
-      icon: LayoutDashboard,
-      badge: 'Overview',
-      badgeColor: 'bg-emerald-500/20 text-emerald-300',
-    },
-    {
-      title: '배너 관리',
+      title: t.menuBanners,
       href: '/admin/banners',
       icon: ImageIcon,
-      badge: '5슬롯 슬라이더',
+      badge: t.menuBannersBadge,
       badgeColor: 'bg-teal-500/20 text-teal-300',
     },
     {
-      title: '회원 관리',
+      title: t.menuMembers,
       href: '/admin/members',
       icon: Users,
-      badge: '등급/승인',
+      badge: t.menuMembersBadge,
       badgeColor: 'bg-purple-500/20 text-purple-300',
     },
     {
-      title: '13개국 코디네이터',
+      title: t.menuCoordinators,
       href: '/admin/coordinators',
       icon: Users,
-      badge: '대표/초청',
+      badge: t.menuCoordinatorsBadge,
       badgeColor: 'bg-sky-500/20 text-sky-300',
     },
     {
-      title: '글로벌 협력단체',
+      title: t.menuPartners,
       href: '/admin/partners',
       icon: Building2,
-      badge: '기관/한·영',
+      badge: t.menuPartnersBadge,
       badgeColor: 'bg-blue-500/20 text-blue-300',
     },
     {
-      title: '팝업 관리',
+      title: t.menuPopups,
       href: '/admin/popups',
       icon: Layers,
-      badge: '공지 모달',
+      badge: t.menuPopupsBadge,
       badgeColor: 'bg-amber-500/20 text-amber-300',
-    },
-    {
-      title: 'AI 엔진 설정',
-      href: '/admin/ai-settings',
-      icon: Sparkles,
-      badge: 'Gemini AI',
-      badgeColor: 'bg-purple-500/20 text-purple-300',
     },
   ]
 
-  const quickLinks = [
+  // 2) 개발자 전용 메뉴 (o 표시 항목: 오직 개발자에게만 노출)
+  const developerMenuItems = [
     {
-      title: '열린 나눔터 게시판',
-      href: '/community/board',
-      icon: MessageSquare,
+      title: t.menuConvictions,
+      href: '/admin/convictions',
+      icon: BookOpen,
+      badge: t.menuConvictionsBadge,
+      badgeColor: 'bg-emerald-500/20 text-emerald-300',
     },
     {
-      title: '사진첩 바로가기',
-      href: '/history/photos',
-      icon: Camera,
+      title: t.menuAiSettings,
+      href: '/admin/ai-settings',
+      icon: Sparkles,
+      badge: t.menuAiSettingsBadge,
+      badgeColor: 'bg-purple-500/20 text-purple-300',
     },
   ]
 
@@ -127,25 +134,48 @@ export default function AdminLayout({
       {/* ========================================================================= */}
       {/* 1. 모바일 상단 바 (작은 화면용) */}
       {/* ========================================================================= */}
-      <div className="lg:hidden bg-slate-900 text-white px-4 py-3.5 flex items-center justify-between border-b border-slate-800 sticky top-0 z-50 shadow-md">
+      <div className="lg:hidden bg-slate-900 text-white px-4 py-3 flex items-center justify-between border-b border-slate-800 sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-bold">
             <ShieldCheck size={18} />
           </div>
           <div>
-            <span className="font-black text-sm text-white">AAMEN 관리자 콘솔</span>
+            <span className="font-black text-sm text-white">{t.adminConsole}</span>
             <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400">
               Admin
             </span>
           </div>
         </div>
-        <button
-          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-          className="p-2 text-slate-300 hover:text-white"
-          aria-label="Toggle Admin Menu"
-        >
-          {mobileSidebarOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* 모바일 언어 전환 스위처 */}
+          <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[11px] font-bold">
+            <Link
+              href={targetPathKo}
+              className={`px-2 py-1 rounded-md transition-colors ${
+                !isEn ? 'bg-emerald-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              KO
+            </Link>
+            <Link
+              href={targetPathEn}
+              className={`px-2 py-1 rounded-md transition-colors ${
+                isEn ? 'bg-emerald-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              EN
+            </Link>
+          </div>
+
+          <button
+            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            className="p-2 text-slate-300 hover:text-white"
+            aria-label="Toggle Admin Menu"
+          >
+            {mobileSidebarOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {/* ========================================================================= */}
@@ -156,27 +186,56 @@ export default function AdminLayout({
           mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div>
-          {/* 사이드바 헤더 & 관리자 프로필 */}
-          <div className="p-5 border-b border-slate-800/80">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center font-bold text-slate-950 shadow-lg shadow-emerald-500/20">
+        <div className="overflow-y-auto">
+          {/* 사이드바 헤더 & 언어 전환기 & 관리자 프로필 */}
+          <div className="p-5 border-b border-slate-800/80 space-y-4">
+            {/* 브랜드 헤더 */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center font-bold text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
                 <ShieldCheck size={22} />
               </div>
               <div>
                 <h2 className="font-black text-base tracking-tight text-white leading-snug">
-                  AAMEN 통합 관리자
+                  {t.brandTitle}
                 </h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="text-[11px] font-semibold text-slate-400">
-                    MariaDB & PHP 8.4
+                    {t.serverBadge}
                   </span>
                   <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/30">
-                    v1.2.0
+                    {t.versionBadge}
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* 언어 전환 세그먼트 버튼 (KO | EN Switcher) */}
+            <div className="bg-slate-900/90 p-1 rounded-xl border border-slate-800/90 flex items-center shadow-inner">
+              <Link
+                href={targetPathKo}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-black transition-all ${
+                  !isEn
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+                title="한국어 모드로 전환"
+              >
+                <span>🇰🇷</span>
+                <span>한국어</span>
+              </Link>
+              <Link
+                href={targetPathEn}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-black transition-all ${
+                  isEn
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+                title="Switch to English mode"
+              >
+                <span>🌐</span>
+                <span>English</span>
+              </Link>
             </div>
 
             {/* 로그인된 관리자 안내 카드 */}
@@ -185,8 +244,8 @@ export default function AdminLayout({
                 <div className="text-xs font-bold text-white flex items-center gap-1">
                   <span>
                     {currentUser?.role === 'developer'
-                      ? '개발자 관리자'
-                      : currentUser?.name || '배용하 관리자'}
+                      ? t.adminRoleDev
+                      : currentUser?.name || t.adminRoleSuper}
                   </span>
                   <span
                     className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-md ${
@@ -198,7 +257,7 @@ export default function AdminLayout({
                     {currentUser?.role === 'developer' ? 'DEV' : 'Super'}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                <div className="text-[11px] text-slate-400 font-mono mt-0.5 truncate max-w-[140px]">
                   {currentUser?.email || 'gimac1424@gmail.com'}
                 </div>
               </div>
@@ -206,7 +265,7 @@ export default function AdminLayout({
                 <Link
                   href={localePath('/')}
                   target="_blank"
-                  title="새 탭에서 사이트 홈 열기"
+                  title={t.openSiteTooltip}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 >
                   <ExternalLink size={14} />
@@ -215,10 +274,10 @@ export default function AdminLayout({
                   type="button"
                   onClick={() => {
                     logoutUser()
-                    alert('로그아웃되었습니다.')
+                    alert(t.logoutConfirm)
                     window.location.href = localePath('/')
                   }}
-                  title="관리자 로그아웃"
+                  title={t.logoutTooltip}
                   className="p-1.5 rounded-lg text-rose-400 hover:text-rose-200 hover:bg-rose-950/40 transition-colors"
                 >
                   <LogOut size={14} />
@@ -228,14 +287,51 @@ export default function AdminLayout({
           </div>
 
           {/* 사이드바 네비게이션 목록 */}
-          <nav className="p-4 space-y-6 overflow-y-auto">
-            {/* 1) 핵심 관리 메뉴 */}
+          <nav className="p-4 space-y-6">
+            {/* 1) 최상단: 대시보드 홈 (모든 관리자 공통) */}
             <div>
-              <div className="px-3 mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                운영 및 시스템 설정
+              <Link
+                href={localePath(topMenuItem.href)}
+                onClick={() => setMobileSidebarOpen(false)}
+                className={`flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-bold transition-all group ${
+                  isExactActive(topMenuItem.href)
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 font-black'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-slate-800/80 bg-slate-900/40'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <LayoutDashboard
+                    size={17}
+                    className={
+                      isExactActive(topMenuItem.href)
+                        ? 'text-white'
+                        : 'text-slate-400 group-hover:text-emerald-400'
+                    }
+                  />
+                  <span>{topMenuItem.title}</span>
+                </div>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    isExactActive(topMenuItem.href)
+                      ? 'bg-white/20 text-white'
+                      : topMenuItem.badgeColor
+                  }`}
+                >
+                  {topMenuItem.badge}
+                </span>
+              </Link>
+            </div>
+
+            {/* 2) 운영 관리자 메뉴 (v 표시 항목) */}
+            <div>
+              <div className="px-3 mb-2 flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                <span>{t.sectionAdmin}</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+                  {t.sectionAdminBadge}
+                </span>
               </div>
               <div className="space-y-1">
-                {navMenuItems.map((item) => {
+                {adminMenuItems.map((item) => {
                   const active = isExactActive(item.href)
                   const Icon = item.icon
                   return (
@@ -269,46 +365,65 @@ export default function AdminLayout({
               </div>
             </div>
 
-            {/* 2) 콘텐츠 바로가기 */}
-            <div>
-              <div className="px-3 mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                콘텐츠 및 바로가기
+            {/* 3) 개발자 전용 메뉴 (o 표시 항목: 오직 role === 'developer' 일 때만 표시!) */}
+            {isDeveloper && (
+              <div>
+                <div className="px-3 mb-2 flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-indigo-400">
+                  <span>{t.sectionDev}</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300">
+                    {t.sectionDevBadge}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {developerMenuItems.map((item) => {
+                    const active = isExactActive(item.href)
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.href}
+                        href={localePath(item.href)}
+                        onClick={() => setMobileSidebarOpen(false)}
+                        className={`flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-bold transition-all group ${
+                          active
+                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-black'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-900'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon
+                            size={17}
+                            className={active ? 'text-white' : 'text-slate-400 group-hover:text-indigo-400'}
+                          />
+                          <span>{item.title}</span>
+                        </div>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            active ? 'bg-white/20 text-white' : item.badgeColor
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
-              <div className="space-y-1">
-                {quickLinks.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={localePath(item.href)}
-                      onClick={() => setMobileSidebarOpen(false)}
-                      className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Icon size={15} className="text-slate-500" />
-                        <span>{item.title}</span>
-                      </div>
-                      <ChevronRight size={13} className="text-slate-600" />
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
+            )}
           </nav>
         </div>
 
         {/* 사이드바 하단: 웹사이트 바로가기 및 버전 정보 */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/90 space-y-2">
+        <div className="p-4 border-t border-slate-800/80 bg-slate-950/90 space-y-2 shrink-0">
           <Link
             href={localePath('/')}
             className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold transition-all border border-slate-800"
           >
             <span>🏠</span>
-            <span>사용자 웹사이트 바로가기</span>
+            <span>{t.backToSite}</span>
           </Link>
           <div className="flex items-center justify-between px-1 text-[11px] text-slate-500">
-            <span>AAMEN Global 2.0</span>
-            <span className="font-mono text-emerald-400 font-bold">Release v1.2.0</span>
+            <span>{t.footerSub}</span>
+            <span className="font-mono text-emerald-400 font-bold">{t.versionBadge}</span>
           </div>
         </div>
       </aside>

@@ -1,0 +1,457 @@
+{
+  "god": {
+    "slug": "god",
+    "themeNum": "Theme 1",
+    "themeTitle": "God",
+    "quote": "God is known to us as Father, Son and Holy Spirit, the Creator who seeks to restore fallen humanity by calling a people to be faithful in fellowship, worship, service and witness.",
+    "overallObjective": "To understand God as Father, Son, and Holy Spirit, the Creator who seeks to restore fallen humanity by calling a people to be faithful in fellowship, worship, service, and witness.",
+    "sessionObjective": "Participants will be able to articulate the Trinitarian nature of God as understood in Anabaptist thought and identify one way God calls people to faithfulness in their local Asian context.",
+    "materials": [
+      "Bible (Key passages: Genesis 1:1-3, John 1:1-18, Matthew 28:19; John 14:16-17, 26).",
+      "Whiteboard or flipchart, markers",
+      "Handout with a concise summary of Anabaptist understanding of God (e.g., from MWC Shared Convictions )",
+      "A short Asian story, proverb, or artistic representation related to creation or the divine."
+    ],
+    "readings": [
+      "Kraus, Norman C. “God as Trinity,” in Norman Kraus, God Our Savior: Theology in a Christological Mode (Scottdale, PA: Herald Press, 1991), 88-93.",
+      "John Rempel, “An Impossible Task: Trinitarian Theology for a Radical Church?”, The Conrad Grebel Review 37, no. 2 (Spring 2019): 110-45."
+    ],
+    "timeline": [
+      {
+        "title": "Welcome and Opening Reflection",
+        "duration": "5 minutes",
+        "items": [
+          "Begin with a short, culturally relevant opening prayer or a moment of quiet reflection on the majesty of God.",
+          "Introduce the session's topic: Understanding God."
+        ]
+      },
+      {
+        "title": "Exploring God: the Creator and Sustainer",
+        "duration": "15 minutes",
+        "items": [
+          "Interactive reading of Genesis 1:1-3.",
+          "Discussion:",
+          "What does it mean for God to be the Creator?",
+          "Share the selected Asian story/proverb about creation.",
+          "How does this resonate with or offer a different perspective to the Biblical account?",
+          "How might people in your Asian context understand God as Creator?"
+        ]
+      },
+      {
+        "title": "Understanding the Trinity in Anabaptist Thought",
+        "duration": "25 minutes",
+        "items": [
+          "Brief explanation of God as Father, Son, and Holy Spirit, referencing the MWC’s Shared Convictions).",
+          "Group discussions:",
+          "Group 1: Read Mark 4:35-41 (God the Son, Jesus). Discuss: Who is this that even the wind and sea obey him?",
+          "Group 2: Read selected verses about the Holy Spirit (e.g., John 14:16-17, 26). Discuss: What is the role of the Holy Spirit?",
+          "Group 3: Discuss Matthew 28:19. How does this verse affirm the Trinity?",
+          "Brief sharing of key points from small groups."
+        ]
+      },
+      {
+        "title": "God’s Call to Faithfulness in Our Context",
+        "duration": "10 minutes",
+        "items": [
+          "Brainstorm: The description states God “seeks to restore fallen humanity by calling a people to be faithful in fellowship, worship, service and witness.”",
+          "In what specific ways does God call us to these actions in our local Asian community? (e.g., specific needs for service, ways to witness appropriately)."
+        ]
+      },
+      {
+        "title": "Conclusion",
+        "duration": "5 minutes",
+        "items": [
+          "Summarize: God is Creator, known as Father, Son, and Holy Spirit, actively calling us.",
+          "Closing prayer, perhaps using a line from a local hymn about God."
+        ]
+      }
+    ]
+  },
+  "jesus": {
+    "slug": "jesus",
+    "themeNum": "Theme 2",
+    "themeTitle": "Jesus",
+    "quote": "Jesus is the Son of God. Through his life and teachings, his cross and resurrection, he showed us how to be faithful disciples, redeemed the world, and offers eternal life.",
+    "overallObjective": "To understand Jesus as the Son of God, and how through his life and teachings, his cross and resurrection, he showed us how to be faithful disciples, redeemed the world, and offers eternal life.",
+    "sessionObjective": "Participants will be able to explain one key aspect of Jesus' life and teachings emphasized in Anabaptist discipleship (e.g., peacemaking, obedience) and connect it to a challenge or opportunity in their Asian context.",
+    "materials": [
+      "Bible (Key passages: Luke 4:16-21; Matthew 5-7 excerpts; Philippians 2:5-11)",
+      "Whiteboard or flip chart, markers",
+      "Anabaptist reading on discipleship or Christ-centered living (if available, use Asian Anabaptist literature)",
+      "Picture or story from an Asian context depicting selfless service or reconciliation."
+    ],
+    "readings": [
+      "Palmer Becker, “Core Value #1: Jesus is the Center of Our Faith,” in What is an Anabaptist Christian (Elkhart: Mennonite Misson Network, 2015)",
+      "Norman Kraus, “Jesus Christ and Theological Reflection,” in Norman Kraus, God Our Savior: Theology in a Christological Mode (Scottdale, PA: Herald Press, 1991), 20-40."
+    ],
+    "timeline": [
+      {
+        "title": "Welcome and Opening Song",
+        "duration": "5 minutes",
+        "items": [
+          "Begin with a song about Jesus, perhaps one known in local Asian churches.",
+          "Introduce the session: Focusing on Jesus Christ."
+        ]
+      },
+      {
+        "title": "Jesus’ Life and Mission",
+        "duration": "20 minutes",
+        "items": [
+          "Interactive Reading: Luke 4:16-21 (Jesus’ sermon in Nazareth).",
+          "Discussion: What was Jesus’ mission according to this passage? How do these themes (good news to the poor, freedom for oppressed) speak to situations in your Asian context?",
+          "Briefly explain Jesus as the Son of God who redeems and offers eternal life: Jesus as Savior and Lord."
+        ]
+      },
+      {
+        "title": "Jesus as Model for Discipleship: An Anabaptist Lens",
+        "duration": "25 minutes",
+        "items": [
+          "Short presentation: Key Anabaptist emphases in following Jesus, e.g., Sermon on the Mount ethics, obedience, peacemaking, community. Connect to Philippians 2:5-11 (Christ's humility and obedience).",
+          "Focus: What does grace mean? What ethics does entail? How does grace relate to peace as part of discipleship?",
+          "Present the Asian picture/story of service/reconciliation.",
+          "Discussion: How do these Anabaptist principles of discipleship challenge or affirm cultural values in your Asian context? (e.g., community obligation, concepts of peace/harmony, respect for authority vs. prophetic witness)."
+        ]
+      },
+      {
+        "title": "Personal Connection and Application",
+        "duration": "5 minutes",
+        "items": [
+          "Individual reflection: “Which aspect of Jesus’ life or teaching most challenges or inspires you to faithful discipleship in your daily life here?”"
+        ]
+      },
+      {
+        "title": "Conclusion",
+        "duration": "5 minutes",
+        "items": [
+          "Summarize: Jesus is our model for discipleship, calling us to live out his teachings.",
+          "Closing prayer for strength to follow Jesus."
+        ]
+      }
+    ]
+  },
+  "spirit": {
+    "slug": "spirit",
+    "themeNum": "Theme 3",
+    "themeTitle": "Holy Spirit",
+    "quote": "As a church, we are a community of those whom God’s Spirit calls to turn from sin, acknowledge Jesus Christ as Lord, receive baptism upon confession of faith, and follow Christ in life.",
+    "overallObjective": "As a church, we are a community of those whom God’s Spirit calls to turn from sin, acknowledge Jesus Christ as Lord, receive baptism upon confession of faith, and follow Christ in life.",
+    "sessionObjective": "Participants will be able to describe the Holy Spirit's role in conversion and empowering the church community and share one example of the Spirit's work from an Asian Anabaptist perspective or their own experience.",
+    "materials": [
+      "Bible (Key passages: Acts 2:1-4, 37-47; Galatians 5:22-26; 1 Corinthians 12:4-13)",
+      "Whiteboard or flip chart, markers",
+      "Written or shared testimonies of the Holy Spirit’s work (ideally from Asian Anabaptists)",
+      "MWC materials on the Holy Spirit or the church as a Spirit-led community."
+    ],
+    "readings": [
+      "Palmer Becker, “Core Value #2 Community is the Center of Our Life” and “Core Value #3: Reconciliation is the Center of Our Work,” in What is an Anabaptist Christian (Elkhart: Mennonite Misson Network, 2015).",
+      "Norman Kraus, “The Holy Spirit as the Spirit of Christ,” in Norman Kraus, God Our Savior: Theology in a Christological Mode (Scottdale, PA: Herald Press, 1991), 131-160.",
+      "Erland Waltner and Walter Unger, “Holy Spirit,” GAMEO."
+    ],
+    "timeline": [
+      {
+        "title": "Welcome and Prayer",
+        "duration": "5 minutes",
+        "items": [
+          "Begin with a prayer inviting the Holy Spirit’s presence and guidance.",
+          "Introduce the topic: The Holy Spirit and the Church Community."
+        ]
+      },
+      {
+        "title": "The Spirit's Call and Transformation",
+        "duration": "20 minutes",
+        "items": [
+          "Read Acts 2:37-39. Discuss the Spirit's role in conviction, repentance, and baptism upon confession of faith.",
+          "Discussion: How is the experience of “turning from sin” and “acknowledging Jesus as Lord” understood or expressed in your Asian cultural context?"
+        ]
+      },
+      {
+        "title": "The Spirit Empowers the Community",
+        "duration": "25 minutes",
+        "items": [
+          "Read 1 Corinthians 12:4-13 (gifts of the Spirit for the common good) and Galatians 5:22-26 (fruit of the Spirit).",
+          "Discussion: How does the Holy Spirit build up the church as a community?",
+          "Share testimonies:",
+          "A pre-prepared testimony from an Asian Anabaptist about the Spirit’s work.",
+          "Invite participants to share brief personal experiences of the Spirit’s guidance or enabling in the church community."
+        ]
+      },
+      {
+        "title": "Living by the Spirit",
+        "duration": "5 minutes",
+        "items": [
+          "Reflection: How can we as a community be more attentive and responsive to the Holy Spirit's leading to “follow Christ in life”?"
+        ]
+      },
+      {
+        "title": "Conclusion",
+        "duration": "5 minutes",
+        "items": [
+          "Summarize: The Holy Spirit calls us, transforms us, and empowers us as a church community.",
+          "Closing song or prayer focusing on the Holy Spirit."
+        ]
+      }
+    ]
+  },
+  "church": {
+    "slug": "church",
+    "themeNum": "Theme 4",
+    "themeTitle": "The Bible",
+    "quote": "As a faith community, we accept the Bible as our authority for faith and life, interpreting it together under Holy Spirit guidance, in the light of Jesus Christ to discern God’s will for our obedience.",
+    "overallObjective": "As a faith community, we accept the Bible as our authority for faith and life, interpreting it together under Holy Spirit guidance, in the light of Jesus Christ to discern God’s will for our obedience.",
+    "sessionObjective": "Participants will be able to explain the Anabaptist approach to communal biblical interpretation (Christ-centered, Spirit-guided) and participate in a short exercise of interpreting a passage together.",
+    "materials": [
+      "Bible (A short, practical Old Testament passage, e.g., Proverbs 3:5; 1 Chronicle 16:11; Nahum 1:7)",
+      "Whiteboard or flip chart, markers",
+      "Handout summarizing key Anabaptist hermeneutical principles (e.g., Christ as the key, community interpretation, obedience). This could be drawn from MWC resources.",
+      "Example of an Asian communal storytelling or proverb interpretation method (if applicable)."
+    ],
+    "readings": [
+      "Harold S. Bender, “Bible,” GAMEO (1953).",
+      "Stuart Murray, “Jesus Centered Bible,” The Naked Anabaptist.",
+      "Erv Wiens, ed. “An Overview of Anabaptist Hermeneutics: A Summary of Stuart Murray’s Book Biblical Interpretation in the Anabaptist Tradition.”"
+    ],
+    "timeline": [
+      {
+        "title": "Welcome and Scripture Reading",
+        "duration": "5 minutes",
+        "items": [
+          "Open with a reading like Psalm 119:105 (“Your word is a lamp to my feet”).",
+          "Introduce the topic: The Bible as our Authority."
+        ]
+      },
+      {
+        "title": "The Bible in Anabaptist Perspective",
+        "duration": "20 minutes",
+        "items": [
+          "Brief presentation using the handout:",
+          "Bible as authority for faith and life.",
+          "Interpreting in community.",
+          "Guidance of the Holy Spirit.",
+          "Interpreting in light of Jesus Christ.",
+          "Goal: Discerning God’s will for obedience.",
+          "Discussion: Are there traditional Asian ways of interpreting sacred or wise texts communally that might offer insights?"
+        ]
+      },
+      {
+        "title": "Communal Bible Interpretation Exercise",
+        "duration": "20 minutes",
+        "items": [
+          "Choose the selected passage (e.g., James 2:14-17).",
+          "Step 1 (5 min): Read the passage individually. Note down initial thoughts/questions.",
+          "Step 2 (10 min): Small group discussion:",
+          "What does this passage say? What questions do it raise?",
+          "How does Jesus’ life and teaching help us understand this passage?",
+          "What might the Holy Spirit be saying to us as a community through this text?",
+          "What is God calling us to do in response, in our Asian context?",
+          "Step 3 (5 min): Each group shares one key insight or call to obedience."
+        ]
+      },
+      {
+        "title": "Living the Word",
+        "duration": "10 minutes",
+        "items": [
+          "Reflection: How can we make communal interpretation a more regular part of our church life?",
+          "Invite participants to say what they think."
+        ]
+      },
+      {
+        "title": "Conclusion",
+        "duration": "5 minutes",
+        "items": [
+          "Summarize the importance of engaging Scripture together for obedience.",
+          "Closing prayer for wisdom and courage to live out God's Word."
+        ]
+      }
+    ]
+  },
+  "peace": {
+    "slug": "peace",
+    "themeNum": "Theme 5",
+    "themeTitle": "Peace, Justice, and Reconciliation",
+    "quote": "The Spirit of Jesus empowers us to trust God in all areas of life so we become peacemakers who renounce violence, love our enemies, seek justice, and share our possessions with those in need.",
+    "overallObjective": "The Spirit of Jesus empowers us to trust God in all areas of life so we become peacemakers who renounce violence, love our enemies, seek justice, and share our possessions with those in need.",
+    "sessionObjective": "Participants will be able to identify one core principle of Anabaptist peace theology and suggest one concrete way to practice peacemaking in their local Asian community.",
+    "materials": [
+      "Bible (Key passages: Luke 19:1-10; Acts 6:1-7)",
+      "Whiteboard or flip chart, markers",
+      "A story of an Anabaptist peacemaker (if possible, from an Asian context or one facing similar challenges) or an MWC statement on peace.",
+      "Asian proverbs or short stories about peace, reconciliation, or justice."
+    ],
+    "readings": [
+      "Stuart Murray, “Making Peace,” The Naked Anabaptist.",
+      "C. Arnold Snyder, “Spiritual Empowerment toward Discipleship,” in Anabaptist Visions for the New Millenium: A Search for Identity, eds. Dale Schrag and James Juhnke, (Kitchener: Pandora, 2000), 27-31.",
+      "John R. Bulkhoder, “Peace,” GAMEO (1989)."
+    ],
+    "timeline": [
+      {
+        "title": "Welcome and Moment of Reflection for Peace",
+        "duration": "5 minutes",
+        "items": [
+          "Begin with a moment of silence or a short prayer for peace in the world and local communities.",
+          "Introduce topic: Becoming Peacemakers."
+        ]
+      },
+      {
+        "title": "Biblical Foundations for Peace",
+        "duration": "20 minutes",
+        "items": [
+          "Read Matthew 5:9 (“Blessed are the peacemakers”) and Matthew 5:38-48 (loving enemies).",
+          "Discussion: What does Jesus teach about violence and loving enemies? How is this different from common responses to conflict?",
+          "Share an Asian proverb/story about peace. How does it connect or contrast with Jesus’ teaching?"
+        ]
+      },
+      {
+        "title": "Anabaptist Peace Witness",
+        "duration": "20 minutes",
+        "items": [
+          "Share the story of the Anabaptist peacemaker or summarize an MWC statement on peace.",
+          "Discuss key Anabaptist convictions: renouncing violence, seeking justice, sharing with those in need.",
+          "Discussion: What are the specific challenges to peacemaking in your Asian context (e.g., ethnic tensions, social injustice, family conflicts)? How can these Anabaptist principles be applied?"
+        ]
+      },
+      {
+        "title": "Practical Peacemaking in Our Context",
+        "duration": "10 minutes",
+        "items": [
+          "Small group brainstorm:",
+          "What is one specific, practical way we can “love our enemies,” “seek justice,” or “share our possessions” in our community this week?",
+          "Share ideas with the larger group."
+        ]
+      },
+      {
+        "title": "Conclusion",
+        "duration": "5 minutes",
+        "items": [
+          "Summarize: Peacemaking is central to following Jesus.",
+          "Closing prayer for courage and wisdom to be peacemakers."
+        ]
+      }
+    ]
+  },
+  "community": {
+    "slug": "community",
+    "themeNum": "Theme 6",
+    "themeTitle": "Worship",
+    "quote": "We gather regularly to worship, to celebrate the Lord’s Supper, and to hear the Word of God in a spirit of mutual accountability.",
+    "overallObjective": "We gather regularly to worship, to celebrate the Lord’s Supper, and to hear the Word of God in a spirit of mutual accountability.",
+    "sessionObjective": "Participants will be able to describe key components of Anabaptist worship and suggest one way to enhance the cultural relevance and communal participation in their local Asian worship services.",
+    "materials": [
+      "Bible (Key passages: Hebrews 10:24-25; 1 Corinthians 11:23-26; Colossians 3:16)",
+      "Examples of Anabaptist worship elements (e.g., four-part harmony, testimony, simple Lord's Supper liturgy)",
+      "Examples of Asian Christian worship expressions (e.g., local hymns, instruments, art )",
+      "MWC resources on worship or ordinances."
+    ],
+    "readings": [
+      "Marlene Kropf, “The Trinity as a Template for Worship,” in Anabaptist Visions for the New Millenium: A Search for Identity, eds. Dale Schrag and James Juhnke, (Kitchener: Pandora, 2000), 145-151.",
+      "Alan Kreider and Eleanor Kreider, “Worship Forms Mission II: Actions of Worship,” in Worship and Mission after Christendom (Harrisonburg, 2011), 147-178."
+    ],
+    "timeline": [
+      {
+        "title": "Welcome & Opening Worship Song",
+        "duration": "10 minutes",
+        "items": [
+          "Begin with a worship song, perhaps one that incorporates local Asian musical styles or languages.",
+          "Briefly discuss: What makes worship meaningful to you?"
+        ]
+      },
+      {
+        "title": "Why and How We Worship",
+        "duration": "20 minutes",
+        "items": [
+          "Read Hebrews 10:24-25 (gathering together) and Colossians 3:16 (teaching and admonishing with psalms, hymns, spiritual songs).",
+          "Discuss key elements of Anabaptist worship: hearing the Word, celebrating the Lord’s Supper, singing, prayer, testimony, fellowship, mutual accountability.",
+          "Reference MWC understandings of worship if applicable."
+        ]
+      },
+      {
+        "title": "The Lord's Supper and Mutual Accountability",
+        "duration": "15 minutes",
+        "items": [
+          "Read 1 Corinthians 11:23-26. Briefly discuss the significance of the Lord’s Supper in Anabaptist tradition (memorial, communion, commitment).",
+          "Discuss “spirit of mutual accountability” in worship: What does this look like practically? How can it be fostered in an Asian church context respectfully?"
+        ]
+      },
+      {
+        "title": "Contextualizing Worship in Asia",
+        "duration": "10 minutes",
+        "items": [
+          "Brainstorm: How can our worship be more authentically expressive of our Asian context while remaining true to Anabaptist principles? (e.g., music, language, symbols, participation, prayer forms).",
+          "Share examples of Asian Christian worship expressions."
+        ]
+      },
+      {
+        "title": "Conclusion",
+        "duration": "5 minutes",
+        "items": [
+          "Summarize: Worship is a vital, communal, and accountable practice.",
+          "Closing prayer or doxology."
+        ]
+      }
+    ]
+  },
+  "unity": {
+    "slug": "unity",
+    "themeNum": "Theme 7",
+    "themeTitle": "Global Family",
+    "quote": "As a world-wide community of faith and life we transcend boundaries of nationality, race, class, gender and language. We seek to live in the world without conforming to the powers of evil, witnessing to God’s grace by serving others, caring for creation, and inviting all people to know Jesus Christ as Saviour and Lord.",
+    "overallObjective": "As a worldwide community of faith and life we transcend boundaries of nationality, race, class, gender and language. We seek to live in the world without conforming to the powers of evil, witnessing to God’s grace by serving others, caring for creation, and inviting all people to know Jesus Christ as Savior and Lord.",
+    "sessionObjective": "Participants will be able to describe one way their local church is part of a “world-wide community” and identify one specific action their church can take to witness through service or creation care in their Asian context.",
+    "materials": [
+      "Bible (Key passages: 1 Corinthians 12:12-27; Ephesians 2:11-22; Matthew 25:31-46)",
+      "Map of the world (to highlight MWC global connections)",
+      "Stories/photos of Anabaptist churches in different Asian countries and globally (from MWC or other sources )",
+      "Information on local environmental issues in their Asian context."
+    ],
+    "readings": [
+      "Alle Hoekema, “Christianity in Asia,” in Churches Engage Asian Traditions, eds. John A. Lapp and C. Arnold Snyder, (Kitchener: Pandora, 2011), 9-19",
+      "Mennonite Churches in Specific Regions (as needed) in Churches Engage Asian Traditions, eds. John A. Lapp and C. Arnold Snyder, (Kitchener: Pandora, 2011)",
+      "John D. Roth, “Church as Rhizome?,” Anabaptist World (April 1, 2012), https://anabaptistworld.org/church-rhizome/"
+    ],
+    "timeline": [
+      {
+        "title": "Welcome and Opening",
+        "duration": "5 minutes",
+        "items": [
+          "Icebreaker: “If our church family was an animal, what would it be and why?” (to get people thinking about community characteristics).",
+          "Introduce topic: The Anabaptist Family – Local and Global."
+        ]
+      },
+      {
+        "title": "The Church as a Global Family",
+        "duration": "20 minutes",
+        "items": [
+          "Read 1 Corinthians 12:12-27 (one body, many parts).",
+          "Show the world map, highlighting the global Anabaptist church (Mennonite World Conference ). Share stories/photos of Anabaptist churches in different Asian countries.",
+          "Discussion: How does it feel to be part of a “world-wide community of faith and life” that “transcend[s] boundaries”? How can we strengthen our connection with the wider church?"
+        ]
+      },
+      {
+        "title": "Living Distinctly and Witnessing",
+        "duration": "25 minutes",
+        "items": [
+          "Discuss: What does it mean to “live in the world without conforming to the powers of evil” in our specific Asian context?",
+          "Brainstorm in small groups how the church can witness to God’s grace by:",
+          "Serving others: (Read Matthew 25:31-40). What are the pressing needs in our local community where we can serve?",
+          "Caring for creation: What are key environmental concerns in our Asian context? What one step can our church take?",
+          "Inviting all people to know Jesus: Culturally appropriate ways to share faith.",
+          "Groups share one key idea for action."
+        ]
+      },
+      {
+        "title": "Our Commitment",
+        "duration": "5 minutes",
+        "items": [
+          "Individual or small group prayer: Commit these ideas for service and witness to God."
+        ]
+      },
+      {
+        "title": "Conclusion",
+        "duration": "5 minutes",
+        "items": [
+          "Summarize: We are a global family called to live distinctively and witness through love and action.",
+          "Closing song of unity or sending."
+        ]
+      }
+    ]
+  }
+}

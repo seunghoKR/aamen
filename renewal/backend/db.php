@@ -5,12 +5,18 @@
 // ============================================================================
 
 $db_host = 'localhost';
-$db_name = 'aamen1';
-$db_user = 'aamen1';
-$db_pass = '#seungho0409';
 $db_charset = 'utf8mb4';
 
-$dsn = "mysql:host={$db_host};dbname={$db_name};charset={$db_charset}";
+$configs = [
+    ['user' => 'aamen2', 'name' => 'aamen2', 'pass' => 'seungho0409#'],
+    ['user' => 'aamen2', 'name' => 'aamen2', 'pass' => '#seungho0409'],
+    ['user' => 'aamen1', 'name' => 'aamen1', 'pass' => '#seungho0409'],
+    ['user' => 'aamen1', 'name' => 'aamen1', 'pass' => 'seungho0409#'],
+];
+
+$pdo = null;
+$last_error = null;
+
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -18,15 +24,23 @@ $options = [
     PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
 ];
 
-try {
-    $pdo = new PDO($dsn, $db_user, $db_pass, $options);
-    $pdo->exec("SET NAMES utf8mb4");
-} catch (PDOException $e) {
+foreach ($configs as $cfg) {
+    try {
+        $dsn = "mysql:host={$db_host};dbname={$cfg['name']};charset={$db_charset}";
+        $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], $options);
+        $pdo->exec("SET NAMES utf8mb4");
+        break;
+    } catch (PDOException $e) {
+        $last_error = $e->getMessage();
+    }
+}
+
+if (!$pdo) {
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode([
         'error' => 'Database connection failed',
-        'message' => $e->getMessage()
+        'message' => $last_error
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
