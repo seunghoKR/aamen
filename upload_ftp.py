@@ -1,9 +1,21 @@
 import ftplib
 import os
+import sys
 
-FTP_HOST = "115.68.168.242"
-FTP_USER = "aamen2"
-FTP_PASS = "seungho0409#"
+SERVERS = {
+    "prod": {
+        "host": "115.68.168.246",
+        "user": "aamen1",
+        "pass": "seungho0409#",
+        "domain": "https://aamen.net"
+    },
+    "test": {
+        "host": "115.68.168.242",
+        "user": "aamen2",
+        "pass": "seungho0409#",
+        "domain": "https://aamen2.iwinv.net"
+    }
+}
 
 def upload_file(ftp, local_path, remote_path):
     print(f"Uploading {local_path} -> {remote_path}...")
@@ -12,22 +24,26 @@ def upload_file(ftp, local_path, remote_path):
     print(f"Done uploading {remote_path}!")
 
 def main():
-    print(f"Connecting to FTP {FTP_HOST}...")
-    ftp = ftplib.FTP(FTP_HOST)
-    ftp.login(FTP_USER, FTP_PASS)
-    print("Logged in!")
+    target = sys.argv[1] if len(sys.argv) > 1 else "prod"
+    if target not in SERVERS:
+        print(f"Unknown target: {target}. Available: prod, test")
+        sys.exit(1)
 
-    print("Changing to public_html...")
+    cfg = SERVERS[target]
+    print(f"=== Deploying to {target.upper()} ({cfg['domain']}) on {cfg['host']} ===")
+
+    ftp = ftplib.FTP(cfg['host'], timeout=30)
+    ftp.login(cfg['user'], cfg['pass'])
+    print(f"Logged in as {cfg['user']}!")
+
     ftp.cwd("public_html")
     print("Current dir:", ftp.pwd())
 
-    # 업로드 deploy.zip
     upload_file(ftp, r"C:\Dev\AAMEN\deploy.zip", "deploy.zip")
-    # 업로드 clean_unzip.php
     upload_file(ftp, r"C:\Dev\AAMEN\clean_unzip.php", "clean_unzip.php")
 
     ftp.quit()
-    print("All files uploaded successfully!")
+    print(f"All files uploaded successfully to {target.upper()} ({cfg['domain']})!")
 
 if __name__ == "__main__":
     main()
