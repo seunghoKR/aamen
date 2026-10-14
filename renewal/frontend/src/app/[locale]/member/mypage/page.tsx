@@ -275,13 +275,15 @@ export default function MyPage() {
 
     const handleAuthChange = (e: Event) => {
       const u = getStoredUser()
+      if (!u) {
+        window.location.href = `/${currentLocale}`
+        return
+      }
       setCurrentUser(u)
       setCurrentLevel(getStoredTierLevel())
-      if (u) {
-        setProfileId(u.id || 'admin')
-        setProfileName(cleanName(u.name))
-        setProfileEmail(u.email)
-      }
+      setProfileId(u.id || 'admin')
+      setProfileName(cleanName(u.name))
+      setProfileEmail(u.email)
     }
 
     window.addEventListener(TIER_EVENT_NAME, handleTierChange)
@@ -654,7 +656,8 @@ export default function MyPage() {
                   type="button"
                   onClick={() => {
                     logoutUser()
-                    alert('로그아웃되었습니다.')
+                    alert(currentLocale === 'en' ? 'Logged out successfully.' : '로그아웃되었습니다.')
+                    window.location.href = `/${currentLocale}`
                   }}
                   className="px-4 py-2 bg-rose-500/80 hover:bg-rose-600 text-white font-bold text-xs rounded-2xl backdrop-blur-md border border-rose-400/30 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
                 >

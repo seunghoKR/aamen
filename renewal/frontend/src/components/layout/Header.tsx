@@ -417,7 +417,10 @@ export default function Header() {
                 type="button"
                 onClick={() => {
                   logoutUser()
-                  alert('로그아웃되었습니다.')
+                  alert(locale === 'en' ? 'Logged out successfully.' : '로그아웃되었습니다.')
+                  if (typeof window !== 'undefined' && (window.location.pathname.includes('/member/mypage') || window.location.pathname.includes('/admin'))) {
+                    window.location.href = localePath(locale, '/')
+                  }
                 }}
                 title={t('logout')}
                 className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors border border-transparent hover:border-rose-100"
@@ -517,7 +520,10 @@ export default function Header() {
                   onClick={() => {
                     logoutUser()
                     setMobileOpen(false)
-                    alert('로그아웃되었습니다.')
+                    alert(locale === 'en' ? 'Logged out successfully.' : '로그아웃되었습니다.')
+                    if (typeof window !== 'undefined' && (window.location.pathname.includes('/member/mypage') || window.location.pathname.includes('/admin'))) {
+                      window.location.href = localePath(locale, '/')
+                    }
                   }}
                   className="px-3 py-2 text-sm font-bold text-rose-700 bg-rose-50 rounded-xl flex items-center justify-center gap-1.5 border border-rose-200"
                 >
