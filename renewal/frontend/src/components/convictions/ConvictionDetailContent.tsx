@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ConvictionPageData, convictionPagesEn } from '@/data/convictionsData'
 import { Globe, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react'
+import { getConvictionDetailI18nTexts } from '@/lib/convictionDetailI18n'
 
 interface ConvictionDetailContentProps {
   initialData: ConvictionPageData
@@ -18,6 +19,7 @@ export default function ConvictionDetailContent({
   const [data, setData] = useState<ConvictionPageData>(initialData)
   const [showEnOriginal, setShowEnOriginal] = useState(false)
   const [hasCustomSaved, setHasCustomSaved] = useState(false)
+  const texts = getConvictionDetailI18nTexts(locale)
 
   // 클라이언트 마운트 시 관리자가 수정한 커스텀 i18n 데이터가 있으면 즉시 오버라이드
   useEffect(() => {
@@ -52,11 +54,11 @@ export default function ConvictionDetailContent({
           {hasCustomSaved && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>국가 코디네이터 최신 검수판</span>
+              <span>{texts.verifiedBadge}</span>
             </span>
           )}
-          <span className="text-xs font-medium text-gray-500">
-            {locale.toUpperCase()} 언어판 교안
+          <span className="text-xs font-semibold text-emerald-900 bg-emerald-50/70 px-3 py-1 rounded-full border border-emerald-200/60">
+            {texts.curriculumLabel}
           </span>
         </div>
 
@@ -64,14 +66,14 @@ export default function ConvictionDetailContent({
           <button
             type="button"
             onClick={() => setShowEnOriginal(!showEnOriginal)}
-            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
+            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
               showEnOriginal
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                 : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>{showEnOriginal ? '자국어 번역본 보기' : '🌐 원문 영어(English) 비교'}</span>
+            <span>{showEnOriginal ? texts.viewTranslation : texts.compareWithEnglish}</span>
           </button>
         )}
       </div>

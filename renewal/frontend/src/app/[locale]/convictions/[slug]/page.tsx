@@ -6,6 +6,8 @@ import { getConvictionPage, convictionOrder } from '@/data/convictionsData'
 import ConvictionDetailContent from '@/components/convictions/ConvictionDetailContent'
 import { ChevronRight, ArrowLeft, ArrowRight, BookOpen, Layers, Home } from 'lucide-react'
 import { setRequestLocale } from 'next-intl/server'
+import { getConvictionDetailI18nTexts, getLocalizedShortTitle } from '@/lib/convictionDetailI18n'
+import { getConvictionList } from '@/data/convictionsOverviewData'
 
 export function generateStaticParams() {
   return convictionOrder.map((item) => ({
@@ -26,18 +28,26 @@ export default async function ConvictionDetailPage({
     notFound()
   }
 
+  const texts = getConvictionDetailI18nTexts(locale)
+  const list = getConvictionList(locale)
+
   // 현재 인덱스 및 이전/다음 탐색
   const currentIndex = convictionOrder.findIndex((item) => item.slug === slug)
   const currentTopic = convictionOrder[currentIndex] || convictionOrder[0]
   const prevTopic = currentIndex > 0 ? convictionOrder[currentIndex - 1] : null
   const nextTopic = currentIndex < convictionOrder.length - 1 ? convictionOrder[currentIndex + 1] : null
 
-  const getTopicTitle = (item: typeof currentTopic) => {
-    return locale === 'en' ? item.titleEn : item.titleKo
+  const getTopicTitle = (itemSlug: string) => {
+    return getLocalizedShortTitle(itemSlug, locale)
   }
 
-  const getTopicFullTitle = (item: typeof currentTopic) => {
-    return locale === 'en' ? item.fullTitleEn : item.fullTitleKo
+  const getTopicFullTitle = (itemSlug: string) => {
+    const found = list.find((x) => x.slug === itemSlug)
+    if (found) {
+      return found.title.replace(/^[^:：៖]+[:：៖]\s*/, '').trim()
+    }
+    const topic = convictionOrder.find((x) => x.slug === itemSlug)
+    return locale === 'en' ? topic?.fullTitleEn || itemSlug : topic?.fullTitleKo || itemSlug
   }
 
   const getLocalizedPath = (path: string) => {
@@ -59,19 +69,19 @@ export default async function ConvictionDetailPage({
                 className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-700 transition-colors"
               >
                 <Home className="w-3.5 h-3.5" />
-                <span>{locale === 'en' ? 'Home' : '홈'}</span>
+                <span>{texts.home}</span>
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
               <Link
                 href={getLocalizedPath('/convictions')}
                 className="text-gray-500 hover:text-emerald-700 transition-colors"
               >
-                {locale === 'en' ? 'Shared Convictions' : '공유된 신념'}
+                {texts.sharedConvictions}
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
               <span className="text-emerald-800 font-extrabold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                {getTopicFullTitle(currentTopic)}
+                {getTopicFullTitle(slug)}
               </span>
             </nav>
           </div>
@@ -81,10 +91,10 @@ export default async function ConvictionDetailPage({
             <div className="flex items-center justify-between gap-2 mb-3 px-1">
               <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-800 uppercase tracking-wider">
                 <Layers className="w-4 h-4 text-emerald-600" />
-                <span>{locale === 'en' ? '7 Shared Convictions Index' : '7대 공유된 신념 목차'}</span>
+                <span>{texts.indexTitle}</span>
               </div>
               <span className="text-[11px] text-gray-400 font-medium">
-                {locale === 'en' ? 'Quick Navigation' : '원클릭 바로가기'}
+                {texts.quickNav}
               </span>
             </div>
 
@@ -106,10 +116,10 @@ export default async function ConvictionDetailPage({
                         isActive ? 'text-emerald-100' : 'text-gray-400'
                       }`}
                     >
-                      {locale === 'en' ? `Theme ${item.num}` : `주제 ${item.num}`}
+                      {texts.themePrefix} {item.num}
                     </span>
-                    <span className="text-xs font-bold leading-tight whitespace-nowrap">
-                      {getTopicTitle(item)}
+                    <span className="text-xs font-bold leading-tight break-keep-all text-center">
+                      {getTopicTitle(item.slug)}
                     </span>
                   </Link>
                 )
@@ -134,9 +144,9 @@ export default async function ConvictionDetailPage({
                 <ArrowLeft className="w-4 h-4 text-emerald-600 group-hover:-translate-x-1 transition-transform" />
                 <div className="text-left">
                   <span className="block text-[11px] text-gray-400 font-normal">
-                    {locale === 'en' ? 'Previous Topic' : '이전 주제'}
+                    {texts.prevTopic}
                   </span>
-                  <span>{getTopicFullTitle(prevTopic)}</span>
+                  <span>{getTopicFullTitle(prevTopic.slug)}</span>
                 </div>
               </Link>
             ) : (
@@ -148,7 +158,7 @@ export default async function ConvictionDetailPage({
               className="px-6 py-3 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs"
             >
               <BookOpen className="w-4 h-4 text-emerald-600" />
-              <span>{locale === 'en' ? 'All Convictions' : '전체 7대 확신 목록으로'}</span>
+              <span>{texts.allConvictions}</span>
             </Link>
 
             {nextTopic ? (
@@ -158,9 +168,9 @@ export default async function ConvictionDetailPage({
               >
                 <div>
                   <span className="block text-[11px] text-gray-400 font-normal">
-                    {locale === 'en' ? 'Next Topic' : '다음 주제'}
+                    {texts.nextTopic}
                   </span>
-                  <span>{getTopicFullTitle(nextTopic)}</span>
+                  <span>{getTopicFullTitle(nextTopic.slug)}</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
               </Link>
