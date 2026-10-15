@@ -4,68 +4,34 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLocale, useTranslations } from 'next-intl'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X, ChevronDown, Settings, ShieldCheck, Shield, User, LogOut, Code, UserCheck } from 'lucide-react'
-import { locales, type Locale } from '@/config/locales'
+import { locales, localeFlags, type Locale } from '@/config/locales'
 import { MemberLevel, defaultTierSettings } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import { getStoredUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
 
-// 13개 참여국 및 공용어 정의 (대표님 지침: 해당 국가 언어로 국가명 표기, '대한민국 .. KR', '日本 .. JP', '공용 (EN)')
+// 13개 참여국 정의 (각 국가의 언어로 국가명 | 영어 표기 | 이니셜)
 interface CountryItemInfo {
   code: string
-  countryName: string
-  buttonLabel: string
-}
-
-// 현재 선택된 국가 언어에 맞춘 '공용 (EN)' 다국어 명칭
-const commonLanguageNames: Record<Locale, string> = {
-  ko: '공용 (EN)',
-  en: 'Common (EN)',
-  ja: '公用 (EN)',
-  'zh-TW': '公用 (EN)',
-  vi: 'Chung (EN)',
-  id: 'Umum (EN)',
-  th: 'ภาษากลาง (EN)',
-  lo: 'ສາກົນ (EN)',
-  my: 'အများသုံး (EN)',
-  ne: 'साझा (EN)',
-  hi: 'साझा (EN)',
-  km: 'ទូទៅ (EN)',
-  mn: 'Нийтийн (EN)',
-}
-
-// 현재 선택된 국가 언어에 맞춘 '13개 참여국' 안내 문구
-const nationsSectionTitles: Record<Locale, string> = {
-  ko: '13개 참여국',
-  en: '13 Nations',
-  ja: '13ヶ国の参加国',
-  'zh-TW': '13個參與國',
-  vi: '13 quốc gia tham gia',
-  id: '13 Negara Anggota',
-  th: '13 ประเทศสมาชิก',
-  lo: '13 ປະເທດສະມາຊິກ',
-  my: '၁၃ နိုင်ငံ',
-  ne: '१३ सहभागी देशहरू',
-  hi: '१३ प्रतिभागी देश',
-  km: '១៣ ប្រទេសចូលរួម',
-  mn: 'Оролцогч 13 орон',
+  nativeName: string
+  englishName: string
 }
 
 const countryInfos: Record<Locale, CountryItemInfo> = {
-  ko: { code: 'KR', countryName: '대한민국', buttonLabel: '대한민국 (KR)' },
-  en: { code: 'EN', countryName: '공용 (EN)', buttonLabel: '공용 (EN)' },
-  ja: { code: 'JP', countryName: '日本', buttonLabel: '日本 (JP)' },
-  'zh-TW': { code: 'TW', countryName: '台灣', buttonLabel: '台灣 (TW)' },
-  vi: { code: 'VN', countryName: 'Việt Nam', buttonLabel: 'Việt Nam (VN)' },
-  id: { code: 'ID', countryName: 'Indonesia', buttonLabel: 'Indonesia (ID)' },
-  th: { code: 'TH', countryName: 'ไทย', buttonLabel: 'ไทย (TH)' },
-  lo: { code: 'LA', countryName: 'ລາວ', buttonLabel: 'ລາວ (LA)' },
-  my: { code: 'MM', countryName: 'မြန်မာ', buttonLabel: 'မြန်မာ (MM)' },
-  ne: { code: 'NP', countryName: 'नेपाल', buttonLabel: 'नेपाल (NP)' },
-  hi: { code: 'IN', countryName: 'भारत', buttonLabel: 'भारत (IN)' },
-  km: { code: 'KH', countryName: 'កម្ពុជា', buttonLabel: 'កម្ពុជា (KH)' },
-  mn: { code: 'MN', countryName: 'Монгол', buttonLabel: 'Монгол (MN)' },
+  ko: { code: 'KR', nativeName: '대한민국', englishName: 'South Korea' },
+  en: { code: 'US', nativeName: 'United States', englishName: 'United States' },
+  ja: { code: 'JP', nativeName: '日本', englishName: 'Japan' },
+  'zh-TW': { code: 'TW', nativeName: '台灣', englishName: 'Taiwan' },
+  vi: { code: 'VN', nativeName: 'Việt Nam', englishName: 'Vietnam' },
+  id: { code: 'ID', nativeName: 'Indonesia', englishName: 'Indonesia' },
+  th: { code: 'TH', nativeName: 'ไทย', englishName: 'Thailand' },
+  lo: { code: 'LA', nativeName: 'ລາວ', englishName: 'Laos' },
+  my: { code: 'MM', nativeName: 'မြန်မာ', englishName: 'Myanmar' },
+  ne: { code: 'NP', nativeName: 'नेपाल', englishName: 'Nepal' },
+  hi: { code: 'IN', nativeName: 'भारत', englishName: 'India' },
+  km: { code: 'KH', nativeName: 'កម្ពុជា', englishName: 'Cambodia' },
+  mn: { code: 'MN', nativeName: 'Монгол', englishName: 'Mongolia' },
 }
 
 // 1차 및 2차 서브메뉴 구조
@@ -110,10 +76,10 @@ const navMenuStructure: NavItem[] = [
     key: 'network',
     href: '/network',
     subItems: [
-      { key: 'conference', href: '/network/conference' },
-      { key: 'associations', href: '/network#partners' },
-      { key: 'leaders', href: '/network#coordinators' },
       { key: 'calendar', href: '/network/schedule' },
+      { key: 'leaders', href: '/network#coordinators' },
+      { key: 'associations', href: '/network#partners' },
+      { key: 'conference', href: '/network/conference' },
     ],
   },
   {
@@ -132,6 +98,7 @@ export default function Header() {
   const t = useTranslations('nav')
   const locale = useLocale() as Locale
   const pathname = usePathname()
+  const router = useRouter()
   
   const [mobileOpen, setMobileOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
@@ -144,6 +111,63 @@ export default function Header() {
   const [mounted, setMounted] = useState(false)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // 🌐 로그인 전 위치 정보(브라우저 언어 및 타임존)를 이용한 국가/언어 자동 기본값 설정
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const user = getStoredUser()
+    const userSelected = localStorage.getItem('aamen_locale_user_selected')
+    if (user || userSelected) return
+
+    try {
+      // 1. 브라우저 지원 언어 탐지
+      const browserLangs = navigator.languages || [navigator.language]
+      let detected: Locale | null = null
+
+      for (const lang of browserLangs) {
+        const l = lang.toLowerCase()
+        if (l.startsWith('ko')) { detected = 'ko'; break }
+        if (l.startsWith('ja')) { detected = 'ja'; break }
+        if (l.startsWith('zh-tw') || l.startsWith('zh-hk')) { detected = 'zh-TW'; break }
+        if (l.startsWith('vi')) { detected = 'vi'; break }
+        if (l.startsWith('id')) { detected = 'id'; break }
+        if (l.startsWith('th')) { detected = 'th'; break }
+        if (l.startsWith('my')) { detected = 'my'; break }
+        if (l.startsWith('ne')) { detected = 'ne'; break }
+        if (l.startsWith('hi')) { detected = 'hi'; break }
+        if (l.startsWith('km')) { detected = 'km'; break }
+        if (l.startsWith('lo')) { detected = 'lo'; break }
+        if (l.startsWith('mn')) { detected = 'mn'; break }
+        if (l.startsWith('en')) { detected = 'en'; break }
+      }
+
+      // 2. 타임존 기반 위치 추론
+      if (!detected) {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (tz === 'Asia/Seoul') detected = 'ko'
+        else if (tz === 'Asia/Tokyo') detected = 'ja'
+        else if (tz === 'Asia/Taipei') detected = 'zh-TW'
+        else if (tz === 'Asia/Bangkok') detected = 'th'
+        else if (tz.includes('Ho_Chi_Minh') || tz.includes('Saigon')) detected = 'vi'
+        else if (tz.includes('Jakarta') || tz.includes('Makassar') || tz.includes('Jayapura')) detected = 'id'
+        else if (tz.includes('Yangon') || tz.includes('Rangoon')) detected = 'my'
+        else if (tz === 'Asia/Kathmandu') detected = 'ne'
+        else if (tz.includes('Kolkata') || tz.includes('Calcutta')) detected = 'hi'
+        else if (tz === 'Asia/Phnom_Penh') detected = 'km'
+        else if (tz === 'Asia/Vientiane') detected = 'lo'
+        else if (tz.includes('Ulaanbaatar') || tz.includes('Hovd')) detected = 'mn'
+        else if (tz.startsWith('America/')) detected = 'en'
+      }
+
+      if (detected && detected !== locale) {
+        document.cookie = `NEXT_LOCALE=${detected}; path=/; max-age=31536000; SameSite=Lax`
+        const cleanTarget = pathname.replace(/^\/(ko|en|ja|zh-TW|mn|vi|id|ne|th|lo|my|hi|km)/, '') || '/'
+        router.push(`/${detected}${cleanTarget.startsWith('/') ? cleanTarget : `/${cleanTarget}`}`)
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [locale, pathname, router])
 
   useEffect(() => {
     setMounted(true)
@@ -283,84 +307,76 @@ export default function Header() {
 
         {/* 오른쪽: 언어 선택 + 로그인 */}
         <div className="flex items-center gap-2">
-          {/* 국가 선택 (참여국 + 공용어) 드롭다운 */}
+          {/* 국가/언어 선택 (13개 참여국: 각 국가의 언어로 국가명 | 영어 표기 | 이니셜) */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setLangOpen(!langOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-800 hover:text-emerald-700 border border-gray-200 rounded-full hover:border-emerald-300 transition-all bg-gray-50/70 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-800 hover:text-emerald-700 border border-gray-200 rounded-full hover:border-emerald-300 transition-all bg-gray-50/70 cursor-pointer shadow-2xs"
               aria-label="Select Country"
             >
-              {locale === 'en' && <span className="text-xs">🌐</span>}
-              <span>
-                {locale === 'en'
-                  ? (commonLanguageNames[locale] || 'Common (EN)')
-                  : (countryInfos[locale]?.buttonLabel || '대한민국 (KR)')}
+              <span>{countryInfos[locale]?.nativeName || '대한민국'}</span>
+              <span className="text-[11px] font-mono font-bold text-emerald-700">
+                ({countryInfos[locale]?.code || 'KR'})
               </span>
               <ChevronDown size={13} className={`transition-transform duration-200 text-gray-500 ${langOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {langOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-gray-100 shadow-2xl py-2 z-50 max-h-96 overflow-y-auto animate-in fade-in zoom-in-95">
-                {/* 🌐 공용 (EN) 전용 라인 - 선택된 국가 언어로 '공용' 단어 동적 표시 */}
-                <div className="px-2 pb-1.5 border-b border-gray-100">
-                  <Link
-                    href={localePath('en')}
-                    onClick={() => setLangOpen(false)}
-                    className={`flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all ${
-                      locale === 'en'
-                        ? 'bg-blue-600 text-white font-black shadow-xs'
-                        : 'text-gray-800 hover:bg-blue-50 font-bold'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="text-xs">🌐</span>
-                      <span>{commonLanguageNames[locale] || '공용 (EN)'}</span>
-                    </span>
-                    <span className="text-[11px] font-mono opacity-80 font-bold">EN</span>
-                  </Link>
-                </div>
+            {langOpen && (() => {
+              const sortedLocales = [...locales].sort((a, b) =>
+                countryInfos[a].code.localeCompare(countryInfos[b].code)
+              )
 
-                {/* 13개 참여국 목록 - 선택된 국가 언어로 안내 */}
-                <div className="px-3.5 py-2 text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>{nationsSectionTitles[locale] || '13개 참여국'}</span>
-                  <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full font-bold">13 Nations</span>
-                </div>
+              return (
+                <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white rounded-2xl border border-gray-100 shadow-2xl p-1.5 z-50 max-h-96 overflow-y-auto animate-in fade-in zoom-in-95 space-y-0.5">
+                  {sortedLocales.map((loc) => {
+                    const item = countryInfos[loc]
+                    const isCurrent = loc === locale
 
-                <div className="space-y-0.5 px-1">
-                  {locales
-                    .filter((loc) => loc !== 'en')
-                    .map((loc) => {
-                      const item = countryInfos[loc]
-                      const isCurrent = loc === locale
-
-                      return (
-                        <Link
-                          key={loc}
-                          href={localePath(loc)}
-                          onClick={() => setLangOpen(false)}
-                          className={`flex items-center justify-between px-3 py-1.5 text-xs rounded-xl transition-colors ${
-                            isCurrent
-                              ? 'text-emerald-700 font-black bg-emerald-50/90'
-                              : 'text-gray-700 hover:bg-gray-50 font-medium'
-                          }`}
-                        >
-                          {/* 왼쪽: 순수 국가명 (예: 대한민국, 일본, 대만...) */}
-                          <span>{item.countryName}</span>
-
-                          {/* 오른쪽: 국가 코드 (예: KR, JP, TW...) */}
+                    return (
+                      <Link
+                        key={loc}
+                        href={localePath(loc)}
+                        onClick={() => {
+                          localStorage.setItem('aamen_locale_user_selected', 'true')
+                          document.cookie = `NEXT_LOCALE=${loc}; path=/; max-age=31536000; SameSite=Lax`
+                          setLangOpen(false)
+                        }}
+                        className={`flex items-center justify-between px-3.5 py-2 text-xs rounded-xl transition-all ${
+                          isCurrent
+                            ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                            : 'text-gray-800 hover:bg-emerald-50/80'
+                        }`}
+                      >
+                        {/* 왼쪽: 각 국가의 언어로 국가명 | 영어 표기 */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-extrabold text-xs shrink-0">
+                            {item.nativeName}
+                          </span>
                           <span
-                            className={`text-[11px] font-mono font-bold ${
-                              isCurrent ? 'text-emerald-600' : 'text-gray-400'
+                            className={`text-[11px] truncate ${
+                              isCurrent ? 'text-emerald-100' : 'text-gray-400'
                             }`}
                           >
-                            {item.code}
+                            {item.englishName}
                           </span>
-                        </Link>
-                      )
-                    })}
+                        </div>
+
+                        {/* 오른쪽: 국가 이니셜 */}
+                        <span
+                          className={`text-[11px] font-mono font-bold shrink-0 ml-3 px-1.5 py-0.5 rounded ${
+                            isCurrent
+                              ? 'bg-emerald-700/80 text-white'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {item.code}
+                        </span>
+                      </Link>
+                    )
+                  })}
                 </div>
-              </div>
-            )}
+              )
+            })()}
           </div>
 
           {/* 관리자/개발자 콘솔 바로가기 (4~5단계 또는 developer/super_admin에게 강조) */}

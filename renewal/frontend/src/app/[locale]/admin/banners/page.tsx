@@ -104,9 +104,12 @@ export default function AdminBannersPage() {
 
     // 서버 API 동기화
     fetch('/api/banners?admin=1')
-      .then((res) => res.json())
       .then((res) => {
-        if (res.success) {
+        if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return null
+        return res.json()
+      })
+      .then((res) => {
+        if (res && res.success) {
           if (Array.isArray(res.data) && res.data.length > 0) {
             const mapped: BannerConfig[] = res.data.map((b: any) => ({
               id: b.id,

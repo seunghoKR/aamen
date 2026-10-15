@@ -277,5 +277,38 @@
       "recent_prayers_title": "Recent Intercessory Prayers",
       "amen_completed": "Amen Completed"
     }
+  },
+  "auth": {
+    "login_title": "AAMEN Member Login",
+    "login_subtitle": "Welcome to the 13-Nation Asian Anabaptist Mennonite Faith Community.",
+    "recommended_badge": "Recommended: Fastest & Safest Login",
+    "google_login_btn": "Continue with Google",
+    "google_checking": "Verifying Google Account...",
+    "google_desc": "Connect securely as a full member in 1 second without a separate password.",
+    "sns_title": "Quick Login via Asian 13-Nation Messenger & Social Media",
+    "divider_or": "OR",
+    "email_toggle_btn": "Log in with Email / Password",
+    "id_label": "Username or Email Address",
+    "id_placeholder": "admin or name@example.com",
+    "password_label": "Password",
+    "password_placeholder": "••••••••",
+    "email_login_btn": "Email / Admin Login",
+    "logging_in": "Authenticating...",
+    "not_member_yet": "Not a member yet?",
+    "signup_link": "Start now with Google →",
+    "language_switcher": "Select Language Mode",
+    "signup_title": "AAMEN Member Sign Up",
+    "signup_subtitle": "After Google verification, set your ID, password, and church on My Page to join as a full member.",
+    "signup_official_badge": "Official: Google Account Integration Default",
+    "google_signup_btn": "Sign up with Google",
+    "google_signup_checking": "Connecting Google Account...",
+    "already_member": "Already have an account?",
+    "login_link": "Log In →",
+    "login_success_dev": "💻 [Developer] Logged in with management permissions!",
+    "login_success_admin": "👑 Welcome, [Administrator: {name}]!",
+    "login_success_member": "✨ Logged in as [{name}]!",
+    "login_error_credentials": "Username (email) or password is incorrect.",
+    "login_error_network": "An error occurred during login. Please try again.",
+    "google_login_success": "🎉 Google verification complete! Please set your profile info on My Page."
   }
 }

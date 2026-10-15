@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import {
   Users,
@@ -79,7 +80,10 @@ export default function AdminCoordinatorsPage() {
       if (savedCoords) {
         const parsed = JSON.parse(savedCoords)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setCoordinators(parsed)
+          const existingIds = new Set(parsed.map((c: any) => c.id))
+          const missing = initialCoordinators.filter((c) => !existingIds.has(c.id))
+          const merged = [...parsed, ...missing]
+          setCoordinators(merged)
         }
       }
 
@@ -283,76 +287,98 @@ export default function AdminCoordinatorsPage() {
         </span>
       </div>
 
-      {/* 🌟 13개국 대표 코디네이터 카드 리스트 (PC 1열 4명 그리드) */}
+      {/* 🌟 13개국 대표 코디네이터 카드 리스트 (PC 1열 4명 그리드 / 국가 이니셜 알파벳 순) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {coordinators.map((lead) => {
-          const countryDisplay = isEn ? (countryNameMapEn[lead.countryCode] || lead.countryName) : lead.countryName
-          return (
-            <div
-              key={lead.id}
-              className="bg-white p-5 rounded-2xl border border-gray-200 hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between text-center relative group"
-            >
-              <div>
-                {/* 국기 및 국가 라벨 */}
-                <div className="text-3xl mb-1.5">{lead.flag}</div>
-                <div className="text-xs font-bold text-gray-500 font-mono mb-2">
-                  {countryDisplay}
+        {[...coordinators]
+          .sort((a, b) => a.countryCode.localeCompare(b.countryCode))
+          .map((lead) => {
+            const countryDisplay = isEn ? (countryNameMapEn[lead.countryCode] || lead.countryName) : lead.countryName
+            const flagSvg = `/images/flags/${lead.countryCode.toLowerCase()}.svg`
+            return (
+              <div
+                key={lead.id}
+                className="bg-white p-5 rounded-2xl border border-gray-200 hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between text-center relative group"
+              >
+                <div>
+                  {/* 국기 이미지 & 국가 라벨 */}
+                  <div className="flex justify-center mb-2">
+                    <div className="w-12 h-8 rounded-sm overflow-hidden shadow-2xs border border-gray-200/80 bg-gray-50 flex items-center justify-center">
+                      <Image
+                        src={flagSvg}
+                        alt={countryDisplay}
+                        width={48}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-xs font-bold text-gray-500 font-mono mb-2">
+                    {countryDisplay}
+                  </div>
+
+                  {/* 대표 이름 (해당국가 언어 + 영문) & 회원 매핑 뱃지 */}
+                  <div className="mb-2">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <h3 className="font-black text-base text-gray-900">{lead.nameNative || lead.name}</h3>
+                      {lead.isRegisteredMember && (
+                        <span
+                          className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800"
+                          title={isEn ? 'Linked with registered member' : '가입 회원과 연동됨'}
+                        >
+                          {isEn ? 'Linked Member' : '회원연동'}
+                        </span>
+                      )}
+                    </div>
+                    {lead.nameEn && (
+                      <p className="text-xs font-bold text-gray-400 font-mono uppercase tracking-wider mt-0.5">
+                        {lead.nameEn}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 사역 직책 */}
+                  <p className="text-xs font-bold text-emerald-700 leading-tight mb-3">
+                    {formatRole(lead.role)}
+                  </p>
+
+                  {/* 연락처 및 이메일 */}
+                  <div className="space-y-1 mb-4 text-[11px] text-gray-600 font-mono bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-left">
+                    <div className="truncate flex items-center gap-1">
+                      <Mail size={12} className="text-gray-400 shrink-0" />
+                      <span className="truncate">{lead.email}</span>
+                    </div>
+                    {lead.phone && (
+                      <div className="flex items-center gap-1 font-bold text-gray-800">
+                        <Phone size={12} className="text-emerald-600 shrink-0" />
+                        <span>{lead.phone}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* 대표 이름 & 회원 매핑 뱃지 */}
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <h3 className="font-black text-base text-gray-900">{lead.name}</h3>
-                  {lead.isRegisteredMember && (
-                    <span
-                      className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800"
-                      title={isEn ? 'Linked with registered member' : '가입 회원과 연동됨'}
-                    >
-                      {isEn ? 'Linked Member' : '회원연동'}
-                    </span>
-                  )}
-                </div>
+                {/* 카드 액션 버튼 그룹 */}
+                <div className="space-y-2 pt-2 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEdit(lead)}
+                    className="w-full py-2 px-3 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Edit3 size={13} />
+                    <span>{isEn ? 'Edit Info / Select Member' : '대표 정보 / 회원 선택'}</span>
+                  </button>
 
-                {/* 사역 직책 */}
-                <p className="text-xs font-bold text-emerald-700 leading-tight mb-3">
-                  {formatRole(lead.role)}
-                </p>
-
-                {/* 연락처 및 이메일 */}
-                <div className="space-y-1 mb-4 text-[11px] text-gray-600 font-mono bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-left">
-                  <div className="truncate flex items-center gap-1">
-                    <Mail size={12} className="text-gray-400 shrink-0" />
-                    <span className="truncate">{lead.email}</span>
-                  </div>
-                  <div className="flex items-center gap-1 font-bold text-gray-800">
-                    <Phone size={12} className="text-emerald-600 shrink-0" />
-                    <span>{lead.phone || (isEn ? 'No Phone' : '번호 미등록')}</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => sendWhatsAppInvitation(lead.phone || '', lead.name, countryDisplay)}
+                    className="w-full py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <MessageCircle size={13} className="text-emerald-600" />
+                    <span>{isEn ? 'Send WhatsApp Invite' : 'WhatsApp 초청장 발송'}</span>
+                  </button>
                 </div>
               </div>
-
-              {/* 카드 액션 버튼 그룹 */}
-              <div className="space-y-2 pt-2 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => handleOpenEdit(lead)}
-                  className="w-full py-2 px-3 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                >
-                  <Edit3 size={13} />
-                  <span>{isEn ? 'Edit Info / Select Member' : '대표 정보 / 회원 선택'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => sendWhatsAppInvitation(lead.phone, lead.name, countryDisplay)}
-                  className="w-full py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <MessageCircle size={13} className="text-emerald-600" />
-                  <span>{isEn ? 'Send WhatsApp Invite' : 'WhatsApp 초청장 발송'}</span>
-                </button>
-              </div>
-            </div>
-          )
-        })}
+            )
+          })}
       </div>
 
       {/* ✏️ 대표 코디네이터 수정 및 회원 선택 모달 */}

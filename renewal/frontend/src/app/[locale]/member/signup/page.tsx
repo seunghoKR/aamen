@@ -4,16 +4,31 @@ import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import { ShieldCheck, UserPlus, Check, ArrowRight } from 'lucide-react'
+import { ShieldCheck, Check } from 'lucide-react'
 import { saveAuthUser, AuthUser } from '@/lib/auth'
+import AuthLanguageSwitcher from '@/components/common/AuthLanguageSwitcher'
+import { getAuthText } from '@/data/authTranslations'
 
 export default function SignUpPage() {
   const router = useRouter()
   const params = useParams()
   const currentLocale = (params?.locale as string) || 'ko'
   const getLocalizedPath = (path: string) => `/${currentLocale}${path.startsWith('/') ? path : `/${path}`}`
+
+  const tRaw = useTranslations('auth')
+  const t = (key: any, values?: Record<string, string>): string => {
+    try {
+      if (values) {
+        return tRaw(key, values)
+      }
+      return tRaw(key)
+    } catch {
+      return getAuthText(currentLocale, key, key)
+    }
+  }
 
   const [isLoading, setIsLoading] = useState(false)
 
@@ -28,13 +43,13 @@ export default function SignUpPage() {
         provider: 'google',
         role: 'regular',
         tierLevel: 2,
-        country_code: 'KR',
+        country_code: currentLocale === 'ja' ? 'JP' : currentLocale === 'zh-TW' ? 'TW' : currentLocale === 'th' ? 'TH' : 'KR',
         status: 'active',
       }
 
       saveAuthUser(newUser)
       setIsLoading(false)
-      alert('🎉 Google 계정 인증이 완료되었습니다!\n마이페이지로 이동하여 필수 정보(아이디, 비밀번호, 소속교회)를 입력해 주세요.')
+      alert(t('google_login_success'))
       router.push(getLocalizedPath('/member/mypage?welcome=true'))
     }, 800)
   }
@@ -45,6 +60,15 @@ export default function SignUpPage() {
 
       <main className="flex-1 flex items-center justify-center py-16 px-4">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-10 border border-gray-100 shadow-xl text-center space-y-6">
+          {/* 상단 다국어 모드 선택기 */}
+          <div className="flex items-center justify-between pb-1 border-b border-gray-100/60">
+            <span className="text-[11px] font-extrabold text-emerald-800 tracking-wider uppercase flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              AAMEN 13 Nations
+            </span>
+            <AuthLanguageSwitcher currentLocale={currentLocale} label={t('language_switcher')} />
+          </div>
+
           <div>
             <div className="flex justify-center mb-4">
               <Image
@@ -57,11 +81,10 @@ export default function SignUpPage() {
               />
             </div>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-              AAMEN 회원가입
+              {t('signup_title')}
             </h1>
             <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
-              Google 계정 인증 후 마이페이지에서<br />
-              <strong>아이디, 비밀번호, 소속교회</strong>를 등록하여 정회원으로 참여하세요.
+              {t('signup_subtitle')}
             </p>
           </div>
 
@@ -69,7 +92,7 @@ export default function SignUpPage() {
           <div className="p-6 rounded-2xl bg-gradient-to-b from-gray-50/80 to-emerald-50/30 border border-gray-200 space-y-4">
             <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800">
               <ShieldCheck size={15} />
-              <span>공식 인증: Google 계정 연동 기본 적용</span>
+              <span>{t('signup_official_badge')}</span>
             </div>
 
             <button
@@ -95,7 +118,7 @@ export default function SignUpPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              <span>{isLoading ? 'Google 계정 연결 중...' : 'Google 계정으로 회원가입'}</span>
+              <span>{isLoading ? t('google_signup_checking') : t('google_signup_btn')}</span>
             </button>
 
             <div className="space-y-1.5 text-left text-xs text-gray-500 pt-2 border-t border-gray-100">
@@ -109,15 +132,15 @@ export default function SignUpPage() {
               </div>
               <div className="flex items-center gap-1.5 text-gray-600 font-medium">
                 <Check size={14} className="text-gray-400 shrink-0" />
-                <span>알림 설정 및 SNS(왓츠앱 등) 연동은 선택 사항</span>
+                <span>알림 설정 및 SNS(WhatsApp 등) 연동은 선택 사항</span>
               </div>
             </div>
           </div>
 
           <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-            <span>이미 계정이 있으신가요?</span>
+            <span>{t('already_member')}</span>
             <Link href={getLocalizedPath('/member/login')} className="font-bold text-emerald-700 hover:underline">
-              로그인하기 →
+              {t('login_link')}
             </Link>
           </div>
         </div>

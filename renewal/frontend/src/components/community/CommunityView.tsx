@@ -202,8 +202,8 @@ const sampleResources: ResourceItem[] = [
     category: 'education',
     categoryName: '교육자료',
     title: 'AAMEN Standard Peace Lesson Plans (International Edition)',
-    lang: 'EN',
-    langName: '국제 공용 (EN)',
+    lang: 'US',
+    langName: '미국 (US)',
     fileSize: '3.9 MB',
     fileType: 'PDF',
     downloads: 512,
@@ -228,8 +228,8 @@ const sampleResources: ResourceItem[] = [
     category: 'praise',
     categoryName: '찬양자료',
     title: '아시아 아나밥티스트 찬양집 악보 및 가사집 (50곡)',
-    lang: 'EN',
-    langName: '국제 공용 (EN)',
+    lang: 'US',
+    langName: '미국 (US)',
     fileSize: '8.4 MB',
     fileType: 'PDF',
     downloads: 560,
@@ -392,12 +392,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
       setLoading(true)
       const roleParam = currentLevel === 0 ? 'guest' : currentLevel === 1 ? 'associate' : currentLevel >= 4 ? 'country_admin' : 'regular'
       const res = await fetch(`/api/posts?type=${activeTab}&search=${encodeURIComponent(searchTerm)}&role=${roleParam}`)
-      const data = await res.json()
-      if (data.success) {
-        setPosts(data.data)
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+        const data = await res.json()
+        if (data.success) {
+          setPosts(data.data)
+        }
       }
     } catch (error) {
-      console.error('Failed to fetch posts:', error)
+      // API 오류 시 기본 상태 유지
     } finally {
       setLoading(false)
     }
@@ -412,12 +414,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     try {
       const roleParam = currentLevel === 0 ? 'guest' : currentLevel === 1 ? 'associate' : currentLevel >= 4 ? 'country_admin' : 'regular'
       const res = await fetch(`/api/posts?id=${postId}&role=${roleParam}`)
-      const data = await res.json()
-      if (data.success) {
-        setSelectedPost(data.data)
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+        const data = await res.json()
+        if (data.success) {
+          setSelectedPost(data.data)
+        }
       }
     } catch (error) {
-      console.error('Detail fetch error:', error)
+      // API 오류 시 안전하게 무시
     } finally {
       setIsDetailLoading(false)
     }
@@ -690,24 +694,24 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </div>
               </div>
 
-              {/* 13개 참여국 및 아시아 국제 공용어 필터 칩 바 */}
+              {/* 13개 참여국 필터 칩 바 (국가 이니셜 알파벳 순 정렬) */}
               <div className="bg-white p-3.5 rounded-2xl border border-gray-200 mb-6 flex items-center gap-2 overflow-x-auto text-xs">
                 <span className="font-black text-gray-700 shrink-0 ml-1">국가 선택:</span>
                 {[
                   { id: 'ALL', label: '전체 (ALL)' },
-                  { id: 'EN', label: '🌐 국제 공용 (EN)' },
-                  { id: 'KR', label: '🇰🇷 대한민국 (KR)' },
                   { id: 'ID', label: '🇮🇩 인도네시아 (ID)' },
-                  { id: 'TH', label: '🇹🇭 태국 (TH)' },
-                  { id: 'VN', label: '🇻🇳 베트남 (VN)' },
-                  { id: 'MY', label: '🇲🇲 미얀마 (MM)' },
-                  { id: 'JP', label: '🇯🇵 일본 (JP)' },
-                  { id: 'ZH', label: '🇹🇼 대만 (TW)' },
                   { id: 'IN', label: '🇮🇳 인도 (IN)' },
-                  { id: 'NE', label: '🇳🇵 네팔 (NP)' },
+                  { id: 'JP', label: '🇯🇵 일본 (JP)' },
                   { id: 'KH', label: '🇰🇭 캄보디아 (KH)' },
+                  { id: 'KR', label: '🇰🇷 대한민국 (KR)' },
                   { id: 'LA', label: '🇱🇦 라오스 (LA)' },
+                  { id: 'MM', label: '🇲🇲 미얀마 (MM)' },
                   { id: 'MN', label: '🇲🇳 몽골 (MN)' },
+                  { id: 'NE', label: '🇳🇵 네팔 (NP)' },
+                  { id: 'TH', label: '🇹🇭 태국 (TH)' },
+                  { id: 'TW', label: '🇹🇼 대만 (TW)' },
+                  { id: 'US', label: '🇺🇸 미국 (US)' },
+                  { id: 'VN', label: '🇻🇳 베트남 (VN)' },
                 ].map((l) => (
                   <button
                     key={l.id}

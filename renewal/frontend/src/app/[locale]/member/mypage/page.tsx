@@ -36,7 +36,7 @@ import {
 import { MemberLevel, defaultTierSettings, MemberTierInfo } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import { getStoredUser, saveAuthUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
-import { CHARACTER_LIST, getCharacterItem, CharacterSvg, type CharacterItem } from '@/lib/avatarCharacters'
+import { AVATAR_LIST, getAvatarSrc, CharacterSvg } from '@/lib/avatarCharacters'
 import {
   getLocalizedTierInfo,
   getLocalizedCountryList,
@@ -66,12 +66,9 @@ export default function MyPage() {
   const [profilePhone, setProfilePhone] = useState('+82 10-2345-6789')
   const [isWelcomeBanner, setIsWelcomeBanner] = useState(false)
 
-  // 🎭 인물 캐릭터 이미지 상태 (남·여, 청년·장년, 분위기별 인물 캐릭터)
-  const [profileAvatarId, setProfileAvatarId] = useState<string>('m-youth-smart')
+  // 🎭 50종 아바타 캐릭터 상태 (무작위 믹스 컬렉션)
+  const [profileAvatarId, setProfileAvatarId] = useState<string>('avatar_01')
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
-  const [avatarFilterGender, setAvatarFilterGender] = useState<'all' | 'male' | 'female'>('all')
-  const [avatarFilterAge, setAvatarFilterAge] = useState<'all' | 'youth' | 'senior'>('all')
-  const currentCharacter = getCharacterItem(profileAvatarId)
 
   // 🔐 계정 & 보안 상태 (User ID, 비밀번호, Google 연동)
   const [profileId, setProfileId] = useState('admin')
@@ -88,7 +85,7 @@ export default function MyPage() {
     affiliation: '누리오 (개발자)',
     country: 'KR',
     phone: '+82 10-2345-6789',
-    avatarId: 'm-youth-smart',
+    avatarId: 'avatar_01',
   })
 
   // 🧭 다른 페이지 이동 시도 시 확인 팝업 상태
@@ -177,7 +174,10 @@ export default function MyPage() {
     let curCountry = 'KR'
     let curAffiliation = savedAffiliation || '누리오 (개발자)'
     let curPhone = savedPhone || '+82 10-2345-6789'
-    let curAvatar = savedAvatar || 'm-youth-smart'
+    let curAvatar = savedAvatar || 'avatar_01'
+    if (!curAvatar.startsWith('avatar_')) {
+      curAvatar = 'avatar_01'
+    }
 
     if (savedPw) {
       setProfilePassword(savedPw)
@@ -300,7 +300,7 @@ export default function MyPage() {
   // 🔔 웹앱 푸시 권한 요청 핸들러
   const requestWebPushPermission = async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
-      showToast('이 브라우저는 웹앱 푸시 알림을 지원하지 않습니다.')
+      showToast(myTexts.toastWebPushNotSupported)
       return
     }
 
@@ -309,16 +309,16 @@ export default function MyPage() {
       setPushPermissionStatus(perm)
       if (perm === 'granted') {
         setWebPushEnabled(true)
-        showToast('🎉 웹앱 팝업 알림이 성공적으로 활성화되었습니다!')
+        showToast(myTexts.toastWebPushGranted)
         if ('Notification' in window) {
-          new Notification('AAMEN 알림 센터', {
-            body: '아시아 13개국 성도들의 기도와 소식이 실시간으로 전달됩니다.',
+          new Notification(myTexts.testPushPayloadTitle, {
+            body: myTexts.testPushPayloadBody,
             icon: '/icon.png',
           })
         }
       } else {
         setWebPushEnabled(false)
-        showToast('⚠️ 브라우저 알림 권한이 거부되었습니다.')
+        showToast(myTexts.toastWebPushDenied)
       }
     } catch (e) {
       console.error(e)
@@ -329,7 +329,7 @@ export default function MyPage() {
   const handleTelegramSave = () => {
     const cleanChatId = telegramChatId.trim()
     if (!cleanChatId) {
-      showToast('⚠️ 텔레그램 Chat ID를 입력해 주세요.')
+      showToast(myTexts.toastTelegramInputId)
       return
     }
 
@@ -338,14 +338,14 @@ export default function MyPage() {
       localStorage.setItem('aamen_telegram_enabled', String(telegramEnabled))
       localStorage.setItem('aamen_telegram_emergency_only', String(telegramEmergencyOnly))
     }
-    showToast(`🎉 텔레그램 설정이 안전하게 저장되었습니다! (Chat ID: ${cleanChatId})`)
+    showToast(`${myTexts.toastTelegramSaved} (Chat ID: ${cleanChatId})`)
   }
 
   // ✈️ 텔레그램 실제 봇 API 테스트 알림 전송 핸들러
   const handleTelegramTestSend = async () => {
     const cleanChatId = telegramChatId.trim()
     if (!cleanChatId) {
-      showToast('⚠️ 텔레그램 Chat ID를 입력해 주세요.')
+      showToast(myTexts.toastTelegramInputId)
       return
     }
 
@@ -373,15 +373,15 @@ export default function MyPage() {
 
       const data = await res.json()
       if (res.ok && data.ok) {
-        showToast(`🎉 텔레그램(ID: ${cleanChatId})으로 테스트 알림이 발송되었습니다!`)
+        showToast(`${myTexts.toastTelegramTestSent} (ID: ${cleanChatId})`)
       } else {
-        const errorMsg = data.description || '발송 실패'
+        const errorMsg = data.description || 'Failed'
         console.error('Telegram API error:', data)
-        showToast(`⚠️ 텔레그램 발송 실패: ${errorMsg} (봇 대화창에서 /start를 먼저 눌렀는지 확인해 주세요)`)
+        showToast(`${myTexts.toastTelegramTestFailed}: ${errorMsg}`)
       }
     } catch (e) {
       console.error(e)
-      showToast('⚠️ 텔레그램 통신 중 오류가 발생했습니다. 네트워크 상태를 확인해 주세요.')
+      showToast(myTexts.toastTelegramNetworkError)
     } finally {
       setIsSendingTelegramTest(false)
     }
@@ -395,13 +395,13 @@ export default function MyPage() {
       localStorage.setItem('aamen_whatsapp_urgent', String(whatsappUrgentPrayer))
       localStorage.setItem('aamen_whatsapp_weekly', String(whatsappWeeklyDigest))
     }
-    showToast('🎉 WhatsApp 알림 및 연동 정보가 안전하게 저장되었습니다.')
+    showToast(myTexts.toastWhatsappSaved)
   }
 
   // 💬 WhatsApp 테스트 알림 및 링크 전송 핸들러 (1번 무료 방식)
   const handleWhatsAppTestSend = () => {
     if (!whatsappPhone.trim()) {
-      showToast('⚠️ WhatsApp 휴대폰 번호를 입력해 주세요.')
+      showToast(myTexts.toastWhatsappInputPhone)
       return
     }
     setIsSendingWhatsAppTest(true)
@@ -410,7 +410,7 @@ export default function MyPage() {
       const fullPhone = `${whatsappCountryCode}${whatsappPhone.replace(/[^0-9]/g, '')}`
       const testMsg = `🕊️ *[AAMEN 알림 연동 테스트]*\n샬롬! ${profileName}님, 왓츠앱 번호(${fullPhone})로 AAMEN 네트워크 알림 설정이 완료되었습니다.`
       window.open(`https://wa.me/?text=${encodeURIComponent(testMsg)}`, '_blank')
-      showToast('💬 WhatsApp 테스트 창이 열렸습니다!')
+      showToast(currentLocale === 'ja' ? '💬 WhatsAppテスト画面が開きました！' : currentLocale === 'en' ? '💬 WhatsApp test window opened!' : '💬 WhatsApp 테스트 창이 열렸습니다!')
     }, 600)
   }
 
@@ -424,11 +424,11 @@ export default function MyPage() {
     const cleanPhone = profilePhone.trim()
 
     if (!cleanLocalName) {
-      showToast('⚠️ [필수] 이름을 입력해 주세요.')
+      showToast(myTexts.toastInputName)
       return
     }
     if (!cleanAffiliation) {
-      showToast('⚠️ [필수] 소속 교회 / 선교 단체(기관)명을 입력해 주세요.')
+      showToast(myTexts.toastInputAffiliation)
       return
     }
 
@@ -462,7 +462,7 @@ export default function MyPage() {
     })
 
     setIsWelcomeBanner(false)
-    showToast('🎉 기본 프로필(이름, 소속교회, 캐릭터)이 성공적으로 저장되었습니다!')
+    showToast(myTexts.toastProfileSaved)
     if (onSuccess) onSuccess()
   }
 
@@ -471,7 +471,7 @@ export default function MyPage() {
     if (e) e.preventDefault()
     const cleanId = profileId.trim()
     if (!cleanId) {
-      showToast('⚠️ [필수] 로그인 아이디(User ID)를 입력해 주세요.')
+      showToast(myTexts.toastInputUserId)
       return
     }
     if (typeof window !== 'undefined') {
@@ -485,7 +485,7 @@ export default function MyPage() {
         setCurrentUser(updated)
       }
     }
-    showToast('🎉 로그인 아이디가 성공적으로 저장되었습니다!')
+    showToast(myTexts.toastUserIdSaved)
   }
 
   // 🔒 계정 & 보안: 비밀번호 저장/변경 핸들러
@@ -495,15 +495,15 @@ export default function MyPage() {
     const cleanConfirm = confirmPassword.trim()
 
     if (!cleanNewPw) {
-      showToast('⚠️ 새 비밀번호를 입력해 주세요.')
+      showToast(myTexts.toastInputNewPw)
       return
     }
     if (cleanNewPw.length < 6) {
-      showToast('⚠️ 비밀번호는 6자 이상으로 설정해 주세요.')
+      showToast(myTexts.toastPwMinLength)
       return
     }
     if (cleanNewPw !== cleanConfirm) {
-      showToast('⚠️ 새 비밀번호와 비밀번호 확인이 일치하지 않습니다.')
+      showToast(myTexts.toastPwMismatch)
       return
     }
 
@@ -514,7 +514,7 @@ export default function MyPage() {
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
-    showToast('🎉 비밀번호가 안전하게 변경되었습니다!')
+    showToast(myTexts.toastPwChanged)
   }
 
   // 🧭 수정사항이 있을 때 다른 페이지 이동 시도 감지 및 팝업 안내창 띄우기
@@ -596,7 +596,7 @@ export default function MyPage() {
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-baseline gap-2 flex-wrap">
-                  <span>{isGuest ? t('guest_title') : (currentLocale === 'ko' ? `${cleanName(profileName)} 님` : currentLocale === 'ja' ? `${cleanName(profileName)} 様` : cleanName(profileName))}</span>
+                  <span>{isGuest ? t('guest_title') : `${cleanName(profileName)}${myTexts.nameSuffix}`}</span>
                   {!isGuest && profileNameEn && (
                     <span className="text-xs sm:text-sm font-semibold text-emerald-200/90 font-sans">
                       ({profileNameEn})
@@ -649,14 +649,14 @@ export default function MyPage() {
                     className="px-4 py-2 bg-indigo-500/80 hover:bg-indigo-600 text-white font-bold text-xs rounded-2xl backdrop-blur-md border border-indigo-400/30 transition-all flex items-center gap-1.5 shadow-sm"
                   >
                     <Settings size={14} />
-                    <span>{currentUser?.role === 'developer' ? (currentLocale === 'ko' ? '개발자 콘솔' : 'Developer Console') : (currentLocale === 'ko' ? '관리자 대시보드' : 'Admin Dashboard')}</span>
+                    <span>{currentUser?.role === 'developer' ? myTexts.developerConsole : myTexts.adminDashboard}</span>
                   </Link>
                 )}
                 <button
                   type="button"
                   onClick={() => {
                     logoutUser()
-                    alert(currentLocale === 'en' ? 'Logged out successfully.' : '로그아웃되었습니다.')
+                    alert(myTexts.toastLoggedOut)
                     window.location.href = `/${currentLocale}`
                   }}
                   className="px-4 py-2 bg-rose-500/80 hover:bg-rose-600 text-white font-bold text-xs rounded-2xl backdrop-blur-md border border-rose-400/30 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -689,15 +689,15 @@ export default function MyPage() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h4 className="text-base sm:text-lg font-black tracking-tight">
-                    Google 계정 인증이 완료되었습니다!
+                    {myTexts.googleWelcomeTitle}
                   </h4>
                   <span className="px-2 py-0.5 rounded-full bg-white text-emerald-900 text-[10px] font-black">
-                    기본 연동 완료
+                    {myTexts.googleWelcomeBadge}
                   </span>
                 </div>
                 <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
-                  AAMEN 13개국 정회원 활동을 위해 기본 프로필의 <strong>[이름(현지어/영문), 소속교회]</strong> 필수 정보를 입력해 주세요.<br className="hidden sm:inline" />
-                  (로그인 아이디·비밀번호 설정 및 추가 메신저 연동은 <strong>[계정 &amp; 보안]</strong> 탭에서 언제든 진행하실 수 있습니다)
+                  {myTexts.googleWelcomeDesc}<br className="hidden sm:inline" />
+                  {myTexts.googleWelcomeSubDesc}
                 </p>
               </div>
             </div>
@@ -705,7 +705,7 @@ export default function MyPage() {
               onClick={() => setIsWelcomeBanner(false)}
               className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 self-end sm:self-auto"
             >
-              확인
+              {myTexts.confirmBtn}
             </button>
           </div>
         )}
@@ -816,32 +816,24 @@ export default function MyPage() {
 
               {/* 프로필 폼 */}
               <form onSubmit={handleProfileSave} className="space-y-4">
-                {/* 🌟 1. 내 캐릭터 이미지 (남·여, 청년·장년, 분위기별 선택) */}
+                {/* 🌟 1. 내 캐릭터 아바타 선택 카드 (50종 무작위 믹스 컬렉션) */}
                 <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/40 to-indigo-50/40 border border-emerald-200/90 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5 w-full sm:w-auto">
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => setIsAvatarModalOpen(true)}
-                      className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0 relative group cursor-pointer transition-transform hover:scale-105 bg-white p-0.5"
-                      title="Click to change avatar"
+                      className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0 relative group cursor-pointer transition-transform hover:scale-105 bg-white p-0.5"
+                      title={myTexts.changeCharacterBtn}
                     >
                       <CharacterSvg id={profileAvatarId} className="w-full h-full rounded-[14px]" />
                     </button>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[11px] font-bold text-gray-500">{myTexts.selectedCharacter}</span>
-                        <h4 className="text-sm sm:text-base font-black text-gray-900 tracking-tight">
-                          {currentCharacter.title}
-                        </h4>
-                        <span className="text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                          {currentCharacter.gender === 'male' ? myTexts.filterMale : myTexts.filterFemale} · {currentCharacter.ageGroup === 'youth' ? myTexts.filterYouth : myTexts.filterSenior}
-                        </span>
-                      </div>
-                      <p className="text-xs text-emerald-950 font-bold mt-0.5">
-                        ✨ {currentCharacter.mood}
-                      </p>
-                      <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                        {currentCharacter.hairDesc} · {currentCharacter.skinDesc} · {currentCharacter.outfitDesc}
+                      <span className="text-[11px] font-bold text-gray-500 block">{myTexts.selectedCharacter}</span>
+                      <h4 className="text-sm sm:text-base font-black text-gray-900 tracking-tight mt-0.5">
+                        {myTexts.charModalTitle}
+                      </h4>
+                      <p className="text-xs text-emerald-800 font-bold mt-0.5">
+                        ✨ {myTexts.charModalDesc}
                       </p>
                     </div>
                   </div>
@@ -902,7 +894,7 @@ export default function MyPage() {
                         required
                         value={profileName}
                         onChange={(e) => setProfileName(e.target.value)}
-                        placeholder="예: 이승호, Somchai, Nguyễn 등"
+                        placeholder={myTexts.nativeNamePlaceholder}
                         className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-gray-300 text-xs sm:text-sm font-extrabold text-gray-900 focus:outline-emerald-600 shadow-2xs"
                       />
                     </div>
@@ -916,7 +908,7 @@ export default function MyPage() {
                         type="text"
                         value={profileNameEn}
                         onChange={(e) => setProfileNameEn(e.target.value)}
-                        placeholder="예: Seungho Lee, Somchai Prasert"
+                        placeholder={myTexts.englishNamePlaceholder}
                         className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-gray-300 text-xs sm:text-sm font-bold text-gray-900 focus:outline-emerald-600 shadow-2xs"
                       />
                     </div>
@@ -1111,10 +1103,10 @@ export default function MyPage() {
                   <label className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-gray-100/70 transition-all">
                     <div>
                       <span className="text-xs sm:text-sm font-bold text-gray-900 block">
-                        중보기도 신규 등록 실시간 팝업
+                        {myTexts.notifyPrayerTitle}
                       </span>
                       <span className="text-[11px] text-gray-500">
-                        내가 소속된 국가 및 관심 사역지의 새 기도제목 알림
+                        {myTexts.notifyPrayerDesc}
                       </span>
                     </div>
                     <input
@@ -1128,10 +1120,10 @@ export default function MyPage() {
                   <label className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-gray-100/70 transition-all">
                     <div>
                       <span className="text-xs sm:text-sm font-bold text-gray-900 block">
-                        AAMEN 총괄 본부 공지 및 행사 알림
+                        {myTexts.notifyNoticeTitle}
                       </span>
                       <span className="text-[11px] text-gray-500">
-                        컨퍼런스, 교육 세미나, 긴급 구호 소식
+                        {myTexts.notifyNoticeDesc}
                       </span>
                     </div>
                     <input
@@ -1145,10 +1137,10 @@ export default function MyPage() {
                   <label className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-gray-100/70 transition-all">
                     <div>
                       <span className="text-xs sm:text-sm font-bold text-gray-900 block">
-                        내 기도제목에 달린 댓글 및 '아멘' 반응
+                        {myTexts.notifyCommentsTitle}
                       </span>
                       <span className="text-[11px] text-gray-500">
-                        다른 지체가 내 글에 중보기도로 동참했을 때
+                        {myTexts.notifyCommentsDesc}
                       </span>
                     </div>
                     <input
@@ -1166,13 +1158,13 @@ export default function MyPage() {
                   type="button"
                   onClick={() => {
                     if (typeof window !== 'undefined' && 'Notification' in window) {
-                      new Notification('AAMEN 테스트 알림 🕊️', {
-                        body: '13개국 웹앱 실시간 브라우저 푸시 알림이 정상적으로 작동하고 있습니다!',
+                      new Notification(myTexts.testPushPayloadTitle, {
+                        body: myTexts.testPushPayloadBody,
                         icon: '/logo.png',
                       })
-                      showToast('🚀 화면에 테스트 알림 팝업이 전송되었습니다!')
+                      showToast(myTexts.toastWebPushTestSent)
                     } else {
-                      showToast('이 브라우저는 알림을 지원하지 않습니다.')
+                      showToast(myTexts.toastWebPushNotSupported)
                     }
                   }}
                   className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
@@ -1181,10 +1173,10 @@ export default function MyPage() {
                   <span>{t('notifications.web_push_btn_test')}</span>
                 </button>
                 <button
-                  onClick={() => showToast('웹앱 푸시 알림 설정이 안전하게 저장되었습니다.')}
+                  onClick={() => showToast(myTexts.toastWebPushSaved)}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
                 >
-                  푸시 설정 저장
+                  {myTexts.savePushBtn}
                 </button>
               </div>
             </div>
@@ -1219,7 +1211,7 @@ export default function MyPage() {
                       rel="noopener noreferrer"
                       className="text-[11px] font-bold text-sky-700 hover:underline flex items-center gap-1"
                     >
-                      <span>봇 시작하기 (@aamen13_bot)</span>
+                      <span>{myTexts.telegramStartBot}</span>
                       <ExternalLink size={11} />
                     </a>
                   </div>
@@ -1227,7 +1219,7 @@ export default function MyPage() {
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      placeholder="예: 781920394 또는 @username"
+                      placeholder={myTexts.telegramChatIdPlaceholder}
                       value={telegramChatId}
                       onChange={(e) => setTelegramChatId(e.target.value)}
                       className="flex-1 px-3.5 py-2.5 bg-white rounded-xl border border-sky-200 text-xs sm:text-sm font-mono font-bold focus:outline-sky-500"
@@ -1248,10 +1240,10 @@ export default function MyPage() {
                   <label className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-gray-100/70 transition-all">
                     <div>
                       <span className="text-xs sm:text-sm font-bold text-gray-900 block">
-                        텔레그램 알림 수신 활성화
+                        {myTexts.telegramEnableTitle}
                       </span>
                       <span className="text-[11px] text-gray-500">
-                        AAMEN 네트워크의 공지 및 기도를 텔레그램으로 수신
+                        {myTexts.telegramEnableDesc}
                       </span>
                     </div>
                     <input
@@ -1265,10 +1257,10 @@ export default function MyPage() {
                   <label className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-gray-100/70 transition-all">
                     <div>
                       <span className="text-xs sm:text-sm font-bold text-gray-900 block">
-                        긴급 기도제목만 선별 수신
+                        {myTexts.telegramEmergencyOnlyTitle}
                       </span>
                       <span className="text-[11px] text-gray-500">
-                        자연재해, 분쟁 등 각국 코디네이터가 발송한 긴급 중보기도만 수신
+                        {myTexts.telegramEmergencyOnlyDesc}
                       </span>
                     </div>
                     <input
@@ -1319,10 +1311,10 @@ export default function MyPage() {
                   <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 flex flex-col justify-between">
                     <div>
                       <span className="text-xs font-bold text-emerald-950 block mb-1">
-                        {t('notifications.whatsapp_phone_label')} (국가번호 + 번호)
+                        {t('notifications.whatsapp_phone_label')} {myTexts.whatsappPhoneSubLabel}
                       </span>
                       <p className="text-[11px] text-emerald-700 mb-3">
-                        등록하신 번호로 긴급 기도제목과 13개국 사역자 단체방 초대 링크가 발송됩니다.
+                        {myTexts.whatsappPhoneHelp}
                       </p>
 
                       <div className="flex items-center gap-2 mb-2">
@@ -1331,17 +1323,17 @@ export default function MyPage() {
                           onChange={(e) => setWhatsappCountryCode(e.target.value)}
                           className="px-2.5 py-2 bg-white rounded-xl border border-emerald-200 text-xs font-bold focus:outline-emerald-500 shrink-0"
                         >
-                          <option value="+82">🇰🇷 +82 (한국)</option>
-                          <option value="+62">🇮🇩 +62 (인도네시아)</option>
-                          <option value="+66">🇹🇭 +66 (태국)</option>
-                          <option value="+84">🇻🇳 +84 (베트남)</option>
-                          <option value="+95">🇲🇲 +95 (미얀마)</option>
-                          <option value="+91">🇮🇳 +91 (인도)</option>
-                          <option value="+977">🇳🇵 +977 (네팔)</option>
-                          <option value="+81">🇯🇵 +81 (일본)</option>
-                          <option value="+855">🇰🇭 +855 (캄보디아)</option>
-                          <option value="+856">🇱🇦 +856 (라오스)</option>
-                          <option value="+1">🇺🇸 +1 (미국)</option>
+                          <option value="+82">🇰🇷 +82 ({getLocalizedCountryName('KR', currentLocale)})</option>
+                          <option value="+62">🇮🇩 +62 ({getLocalizedCountryName('ID', currentLocale)})</option>
+                          <option value="+66">🇹🇭 +66 ({getLocalizedCountryName('TH', currentLocale)})</option>
+                          <option value="+84">🇻🇳 +84 ({getLocalizedCountryName('VN', currentLocale)})</option>
+                          <option value="+95">🇲🇲 +95 ({getLocalizedCountryName('MM', currentLocale)})</option>
+                          <option value="+91">🇮🇳 +91 ({getLocalizedCountryName('IN', currentLocale)})</option>
+                          <option value="+977">🇳🇵 +977 ({getLocalizedCountryName('NP', currentLocale)})</option>
+                          <option value="+81">🇯🇵 +81 ({getLocalizedCountryName('JP', currentLocale)})</option>
+                          <option value="+855">🇰🇭 +855 ({getLocalizedCountryName('KH', currentLocale)})</option>
+                          <option value="+856">🇱🇦 +856 ({getLocalizedCountryName('LA', currentLocale)})</option>
+                          <option value="+1">🇺🇸 +1 ({getLocalizedCountryName('US', currentLocale)})</option>
                         </select>
 
                         <input
@@ -1368,10 +1360,10 @@ export default function MyPage() {
                   <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex flex-col justify-between">
                     <div>
                       <span className="text-xs font-bold text-gray-900 block mb-1">
-                        사역 연대 바로가기 (무료 Deep Link)
+                        {myTexts.whatsappDirectMinistryTitle}
                       </span>
                       <p className="text-[11px] text-gray-500 mb-3">
-                        AAMEN 총괄 본부와 1:1 상담 및 사역자 단체방에 바로 입장하실 수 있습니다.
+                        {myTexts.whatsappDirectMinistryDesc}
                       </p>
 
                       <div className="space-y-2">
@@ -1391,7 +1383,7 @@ export default function MyPage() {
                         <button
                           onClick={() => {
                             if (currentLevel < 2) {
-                              alert('🔒 13개국 사역자 단체방 초대는 2단계 정회원 이상 승인 회원에게만 제공됩니다.')
+                              alert(myTexts.whatsappLeaderRestricted)
                               return
                             }
                             window.open('https://chat.whatsapp.com/sampleInviteCode', '_blank')
@@ -1415,7 +1407,7 @@ export default function MyPage() {
                           onChange={(e) => setWhatsappUrgentPrayer(e.target.checked)}
                           className="w-3.5 h-3.5 text-emerald-600 rounded-md focus:ring-emerald-500"
                         />
-                        <span className="text-[11px] text-gray-600 font-semibold">긴급 기도 실시간 수신</span>
+                        <span className="text-[11px] text-gray-600 font-semibold">{myTexts.whatsappUrgentPrayer}</span>
                       </label>
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
@@ -1424,7 +1416,7 @@ export default function MyPage() {
                           onChange={(e) => setWhatsappWeeklyDigest(e.target.checked)}
                           className="w-3.5 h-3.5 text-emerald-600 rounded-md focus:ring-emerald-500"
                         />
-                        <span className="text-[11px] text-gray-600 font-semibold">주간 사역 다이제스트 수신</span>
+                        <span className="text-[11px] text-gray-600 font-semibold">{myTexts.whatsappWeeklyDigest}</span>
                       </label>
                     </div>
                   </div>
@@ -1456,19 +1448,19 @@ export default function MyPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-100">
                 <span className="text-xs font-bold text-rose-800 block">{t('activity.amen_count')}</span>
-                <span className="text-2xl font-black text-rose-950 mt-1 block">24 회</span>
+                <span className="text-2xl font-black text-rose-950 mt-1 block">24 {myTexts.unitTimes}</span>
                 <p className="text-[11px] text-rose-700/80 mt-1">{t('activity.amen_desc')}</p>
               </div>
 
               <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100">
                 <span className="text-xs font-bold text-emerald-800 block">{t('activity.my_prayers')}</span>
-                <span className="text-2xl font-black text-emerald-950 mt-1 block">3 건</span>
+                <span className="text-2xl font-black text-emerald-950 mt-1 block">3 {myTexts.unitCases}</span>
                 <p className="text-[11px] text-emerald-700/80 mt-1">{t('activity.my_prayers_desc')}</p>
               </div>
 
               <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100">
                 <span className="text-xs font-bold text-purple-800 block">{t('activity.my_posts')}</span>
-                <span className="text-2xl font-black text-purple-950 mt-1 block">8 개</span>
+                <span className="text-2xl font-black text-purple-950 mt-1 block">8 {myTexts.unitPosts}</span>
                 <p className="text-[11px] text-purple-700/80 mt-1">{t('activity.my_posts_desc')}</p>
               </div>
             </div>
@@ -1481,10 +1473,10 @@ export default function MyPage() {
                 <div className="p-4 flex items-center justify-between gap-4 hover:bg-gray-50/50">
                   <div>
                     <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] mr-2">
-                      🇲🇲 미얀마
+                      🇲🇲 {getLocalizedCountryName('MM', currentLocale)}
                     </span>
-                    <span className="font-bold text-gray-800">Zaw Min 목사님의 신학교 교육 프로그램 평화 워크숍</span>
-                    <span className="text-gray-400 text-[11px] block mt-0.5">2026-09-28 동참</span>
+                    <span className="font-bold text-gray-800">{myTexts.demoPrayer1Title}</span>
+                    <span className="text-gray-400 text-[11px] block mt-0.5">2026-09-28 {myTexts.joinedText}</span>
                   </div>
                   <span className="text-rose-600 font-bold flex items-center gap-1 shrink-0">
                     <Heart size={12} className="fill-rose-500" /> {t('activity.amen_completed')}
@@ -1494,10 +1486,10 @@ export default function MyPage() {
                 <div className="p-4 flex items-center justify-between gap-4 hover:bg-gray-50/50">
                   <div>
                     <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] mr-2">
-                      🇻🇳 베트남
+                      🇻🇳 {getLocalizedCountryName('VN', currentLocale)}
                     </span>
-                    <span className="font-bold text-gray-800">Sarah Nguyen 사역자님의 현지 주일학교 교사 훈련</span>
-                    <span className="text-gray-400 text-[11px] block mt-0.5">2026-09-27 동참</span>
+                    <span className="font-bold text-gray-800">{myTexts.demoPrayer2Title}</span>
+                    <span className="text-gray-400 text-[11px] block mt-0.5">2026-09-27 {myTexts.joinedText}</span>
                   </div>
                   <span className="text-rose-600 font-bold flex items-center gap-1 shrink-0">
                     <Heart size={12} className="fill-rose-500" /> {t('activity.amen_completed')}
@@ -1516,11 +1508,11 @@ export default function MyPage() {
               <div className="flex items-center gap-2">
                 <span>🌐</span>
                 <span className="font-bold">
-                  <strong>Google 계정은 기본 연동(수정 불가)</strong>이며, WhatsApp · Facebook · Telegram 등 추가 SNS 연동은 <strong>선택 사항</strong>입니다.
+                  {myTexts.securityBannerDesc}
                 </span>
               </div>
               <span className="text-[10px] font-black text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">
-                Google 기본 연동
+                {myTexts.securityGoogleDefaultBadge}
               </span>
             </div>
 
@@ -1561,7 +1553,7 @@ export default function MyPage() {
                   </div>
 
                   <span className="text-xs font-bold text-blue-700 bg-blue-100/60 px-3 py-1.5 rounded-xl shrink-0">
-                    기본 계정
+                    {myTexts.googleDefaultAccountBadge}
                   </span>
                 </div>
 
@@ -1589,7 +1581,7 @@ export default function MyPage() {
                   <button
                     onClick={() => {
                       setConnectedWhatsapp(!connectedWhatsapp)
-                      showToast(connectedWhatsapp ? 'WhatsApp 연동이 해제되었습니다.' : 'WhatsApp 번호가 성공적으로 연동되었습니다!')
+                      showToast(connectedWhatsapp ? myTexts.toastWhatsappDisconnected : myTexts.toastWhatsappConnected)
                     }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
                       connectedWhatsapp
@@ -1614,7 +1606,7 @@ export default function MyPage() {
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                             connectedFacebook ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-600'
                           }`}>
-                            {connectedFacebook ? '✅ 연동 완료' : t('social_accounts.status_disconnected')}
+                            {connectedFacebook ? myTexts.facebookConnectedBadge : t('social_accounts.status_disconnected')}
                           </span>
                         </div>
                         <p className="text-[11px] text-gray-500 mt-0.5">
@@ -1629,10 +1621,10 @@ export default function MyPage() {
                         if (!connectedFacebook) {
                           setConnectedFacebook(true)
                           setFacebookProfileName(`${cleanName(profileName)} (Facebook)`)
-                          showToast('🎉 Facebook 계정 연동이 성공적으로 활성화되었습니다!')
+                          showToast(myTexts.toastFacebookConnected)
                         } else {
                           setConnectedFacebook(false)
-                          showToast('Facebook 연동이 해제되었습니다.')
+                          showToast(myTexts.toastFacebookDisconnected)
                         }
                       }}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
@@ -1641,7 +1633,7 @@ export default function MyPage() {
                           : 'bg-[#1877F2] hover:bg-blue-700 text-white shadow-xs'
                       }`}
                     >
-                      {connectedFacebook ? t('social_accounts.disconnect_btn') : 'Facebook 연동하기'}
+                      {connectedFacebook ? t('social_accounts.disconnect_btn') : myTexts.facebookConnectBtn}
                     </button>
                   </div>
 
@@ -1649,7 +1641,7 @@ export default function MyPage() {
                   <div className="pt-2 border-t border-indigo-100 text-[11px] text-indigo-900/80 leading-relaxed flex items-center gap-1.5">
                     <span>💡</span>
                     <span>
-                      <strong>연동 방법:</strong> [Facebook 연동하기] 버튼을 누르면 Meta 공식 로그인 팝업을 통해 내 페이스북 프로필과 AAMEN 계정이 1:1로 안전하게 매칭됩니다. (미얀마·캄보디아·라오스 사역 네트워크 전용)
+                      <strong>{myTexts.facebookHelpTitle}</strong> {myTexts.facebookHelpDesc}
                     </span>
                   </div>
                 </div>
@@ -1678,7 +1670,7 @@ export default function MyPage() {
                   <button
                     onClick={() => {
                       setConnectedTelegram(!connectedTelegram)
-                      showToast(connectedTelegram ? 'Telegram 연동이 해제되었습니다.' : 'Telegram 계정이 안전하게 연동되었습니다!')
+                      showToast(connectedTelegram ? myTexts.toastTelegramDisconnected : myTexts.toastTelegramConnected)
                     }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
                       connectedTelegram
@@ -1698,10 +1690,10 @@ export default function MyPage() {
                 <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
                   <h3 className="text-base sm:text-lg font-black text-gray-900 flex items-center gap-2">
                     <Key size={18} className="text-gray-700" />
-                    <span>아이디 / 비밀번호 관리 및 계정 보안</span>
+                    <span>{myTexts.securitySectionTitle}</span>
                   </h3>
                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    계정 보안 센터
+                    {myTexts.securityCenterBadge}
                   </span>
                 </div>
 
@@ -1713,12 +1705,12 @@ export default function MyPage() {
                 <div className="p-4.5 rounded-2xl bg-gradient-to-r from-emerald-50/70 to-teal-50/40 border border-emerald-200/90 space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                      <span>🔑 로그인 아이디 (User ID)</span>
-                      <span className="text-[10px] font-black text-rose-500">*필수</span>
+                      <span>{myTexts.userIdLabel}</span>
+                      <span className="text-[10px] font-black text-rose-500">*{myTexts.required}</span>
                     </label>
                     <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                       <Lock size={9} />
-                      <span>Google 연동 식별자: {profileEmail}</span>
+                      <span>{myTexts.googleIdLabel} {profileEmail}</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1726,7 +1718,7 @@ export default function MyPage() {
                       type="text"
                       value={profileId}
                       onChange={(e) => setProfileId(e.target.value)}
-                      placeholder="로그인 아이디를 입력하세요"
+                      placeholder={myTexts.userIdPlaceholder}
                       className="flex-1 px-3.5 py-2.5 bg-white rounded-xl border border-emerald-300 text-xs sm:text-sm font-black font-mono text-emerald-950 focus:outline-emerald-600 shadow-2xs"
                     />
                     <button
@@ -1734,7 +1726,7 @@ export default function MyPage() {
                       onClick={handleSaveUserId}
                       className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
                     >
-                      아이디 저장
+                      {myTexts.saveUserIdBtn}
                     </button>
                   </div>
                 </div>
@@ -1747,7 +1739,7 @@ export default function MyPage() {
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="기존 비밀번호 (신규 설정 시 생략 가능)"
+                      placeholder={myTexts.currentPwPlaceholder}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600 text-xs sm:text-sm"
                     />
                   </div>
@@ -1759,7 +1751,7 @@ export default function MyPage() {
                       required
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="6자 이상 영문, 숫자 조합"
+                      placeholder={myTexts.newPwPlaceholder}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600 text-xs sm:text-sm"
                     />
                   </div>
@@ -1771,7 +1763,7 @@ export default function MyPage() {
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="새 비밀번호 다시 입력 확인"
+                      placeholder={myTexts.confirmPwPlaceholder}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600 text-xs sm:text-sm"
                     />
                   </div>
@@ -1788,9 +1780,9 @@ export default function MyPage() {
               </div>
 
               <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 text-xs text-amber-900 mt-4">
-                <span className="font-bold block mb-0.5">🔒 계정 보안 팁</span>
+                <span className="font-bold block mb-0.5">{myTexts.securityTipTitle}</span>
                 <p className="text-[11px] text-amber-800 leading-relaxed">
-                  Google 계정 연동을 유지하시면 비밀번호 유출 위험 없이 언제 어디서나 안전하고 신속하게 로그인하실 수 있습니다.
+                  {myTexts.securityTipDesc}
                 </p>
               </div>
             </div>
@@ -1798,10 +1790,10 @@ export default function MyPage() {
           </div>
         )}
 
-        {/* 🎭 아시아 13개국 인물 캐릭터 선택 모달 (Character Avatar Picker Modal) */}
+        {/* 🎭 50종 아바타 캐릭터 선택 모달 (Character Avatar Picker Modal) */}
         {isAvatarModalOpen && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
-            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-gray-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-gray-100 animate-in zoom-in-95 overflow-hidden">
               {/* 모달 상단 헤더 */}
               <div className="p-5 sm:p-6 pb-4 border-b border-gray-100 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -1826,120 +1818,47 @@ export default function MyPage() {
                 </button>
               </div>
 
-              {/* 필터 탭 (성별 & 연령대) */}
-              <div className="px-5 sm:px-6 pt-3 pb-2.5 bg-gray-50/80 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2.5">
-                {/* 1. 성별 필터 */}
-                <div className="flex items-center gap-1">
-                  <span className="text-[11px] font-bold text-gray-500 mr-1">{myTexts.genderLabel}</span>
-                  {[
-                    { id: 'all', label: myTexts.filterAll },
-                    { id: 'male', label: `${myTexts.filterMale} (8)` },
-                    { id: 'female', label: `${myTexts.filterFemale} (8)` },
-                  ].map((tab) => (
+              {/* 50종 아바타 카드 그리드 (묘사/텍스트/필터 제거, 순수 캐릭터 선택) */}
+              <div className="p-4 sm:p-6 overflow-y-auto max-h-[62vh] grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-3.5 bg-gray-50/50">
+                {AVATAR_LIST.map((avatar) => {
+                  const isSelected = profileAvatarId === avatar.id
+
+                  return (
                     <button
-                      key={tab.id}
+                      key={avatar.id}
                       type="button"
-                      onClick={() => setAvatarFilterGender(tab.id as any)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        avatarFilterGender === tab.id
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white hover:bg-gray-100 text-gray-600 border border-gray-200'
+                      onClick={() => setProfileAvatarId(avatar.id)}
+                      className={`aspect-square p-1.5 rounded-2xl border transition-all flex items-center justify-center cursor-pointer group relative bg-white ${
+                        isSelected
+                          ? 'border-emerald-500 ring-3 ring-emerald-500/40 shadow-lg scale-105 bg-emerald-50/80'
+                          : 'border-gray-200 hover:border-emerald-400 hover:shadow-md hover:scale-105'
                       }`}
                     >
-                      {tab.label}
+                      <div className="w-full h-full rounded-xl overflow-hidden bg-white shadow-2xs">
+                        <CharacterSvg id={avatar.id} className="w-full h-full rounded-xl" />
+                      </div>
+                      {isSelected && (
+                        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black shadow-md border-2 border-white">
+                          ✓
+                        </span>
+                      )}
                     </button>
-                  ))}
-                </div>
-
-                {/* 2. 연령대 필터 */}
-                <div className="flex items-center gap-1">
-                  <span className="text-[11px] font-bold text-gray-500 mr-1">{myTexts.ageLabel}</span>
-                  {[
-                    { id: 'all', label: myTexts.filterAll },
-                    { id: 'youth', label: `${myTexts.filterYouth} (8)` },
-                    { id: 'senior', label: `${myTexts.filterSenior} (8)` },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setAvatarFilterAge(tab.id as any)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        avatarFilterAge === tab.id
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-white hover:bg-gray-100 text-gray-600 border border-gray-200'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 캐릭터 카드 그리드 */}
-              <div className="p-4 sm:p-6 overflow-y-auto max-h-[58vh] grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {CHARACTER_LIST
-                  .filter((char) => avatarFilterGender === 'all' || char.gender === avatarFilterGender)
-                  .filter((char) => avatarFilterAge === 'all' || char.ageGroup === avatarFilterAge)
-                  .map((char) => {
-                    const isSelected = profileAvatarId === char.id
-
-                    return (
-                      <button
-                        key={char.id}
-                        type="button"
-                        onClick={() => {
-                          setProfileAvatarId(char.id)
-                        }}
-                        className={`p-3 rounded-2xl border transition-all text-center flex flex-col items-center gap-2 cursor-pointer group relative ${
-                          isSelected
-                            ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/30 shadow-xs'
-                            : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50/80 bg-white'
-                        }`}
-                      >
-                        {/* 아바타 SVG 박스 */}
-                        <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-gray-100 shadow-2xs bg-white shrink-0 transition-transform group-hover:scale-105">
-                          <CharacterSvg id={char.id} className="w-full h-full" />
-                        </div>
-
-                        {/* 캐릭터 정보 */}
-                        <div className="w-full min-w-0 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="text-xs font-black text-gray-900 truncate">
-                              {char.title}
-                            </span>
-                            {isSelected && (
-                              <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] shrink-0 font-bold">
-                                ✓
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded-md inline-block mt-0.5">
-                            {char.gender === 'male' ? myTexts.filterMale : myTexts.filterFemale} · {char.ageGroup === 'youth' ? myTexts.filterYouth : myTexts.filterSenior}
-                          </span>
-                          <p className="text-[11px] text-emerald-800 font-bold mt-1 line-clamp-1">
-                            {char.mood}
-                          </p>
-                          <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2 leading-tight">
-                            {char.outfitDesc}
-                          </p>
-                        </div>
-                      </button>
-                    )
-                  })}
+                  )
+                })}
               </div>
 
               {/* 모달 하단 액션 */}
-              <div className="p-4 sm:p-5 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-200 shadow-2xs bg-white shrink-0">
-                    <CharacterSvg id={profileAvatarId} className="w-full h-full" />
+              <div className="p-4 sm:p-5 bg-white border-t border-gray-100 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-white shrink-0 p-0.5">
+                    <CharacterSvg id={profileAvatarId} className="w-full h-full rounded-[14px]" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-xs font-black text-gray-900 block truncate">
-                      {currentCharacter.title}
+                    <span className="text-[11px] font-bold text-gray-500 block">
+                      {myTexts.selectedCharacter}
                     </span>
-                    <span className="text-[11px] text-emerald-700 block truncate">
-                      {currentCharacter.mood}
+                    <span className="text-xs sm:text-sm font-black text-gray-900 block truncate">
+                      AAMEN Avatar
                     </span>
                   </div>
                 </div>
@@ -1947,7 +1866,7 @@ export default function MyPage() {
                 <button
                   type="button"
                   onClick={() => setIsAvatarModalOpen(false)}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer shrink-0"
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md cursor-pointer shrink-0"
                 >
                   {myTexts.charConfirmBtn}
                 </button>

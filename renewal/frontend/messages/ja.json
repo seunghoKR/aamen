@@ -277,5 +277,38 @@
       "recent_prayers_title": "最近参加した祈り",
       "amen_completed": "アーメン完了"
     }
+  },
+  "auth": {
+    "login_title": "AAMEN 会員ログイン",
+    "login_subtitle": "アジア13か国のアナバプテスト・メノナイト信仰共同体へようこそ。",
+    "recommended_badge": "推奨：最も安全で素早いログイン",
+    "google_login_btn": "Google アカウントで続ける",
+    "google_checking": "Google アカウント確認中...",
+    "google_desc": "パスワード不要、1秒で安全に正会員として接続されます。",
+    "sns_title": "アジア13か国対応 メッセンジャー＆SNS簡単ログイン",
+    "divider_or": "または",
+    "email_toggle_btn": "メールアドレス / パスワードでログイン",
+    "id_label": "ユーザー名 または メールアドレス",
+    "id_placeholder": "admin または name@example.com",
+    "password_label": "パスワード",
+    "password_placeholder": "••••••••",
+    "email_login_btn": "メール / 管理者ログイン",
+    "logging_in": "ログイン認証中...",
+    "not_member_yet": "まだ会員登録されていませんか？",
+    "signup_link": "Googleですぐに始める →",
+    "language_switcher": "言語モードを選択 (Language)",
+    "signup_title": "AAMEN 新規会員登録",
+    "signup_subtitle": "Google認証後、マイページでID、パスワード、所属教会を登録して正会員としてご参加ください。",
+    "signup_official_badge": "公式認証：Google アカウント連携を標準適用",
+    "google_signup_btn": "Google アカウントで新規登録",
+    "google_signup_checking": "Google アカウント接続中...",
+    "already_member": "既にアカウントをお持ちですか？",
+    "login_link": "ログインする →",
+    "login_success_dev": "💻 [開発者] 管理権限でログインしました！",
+    "login_success_admin": "👑 ようこそ、[総括管理者：{name}] 様！",
+    "login_success_member": "✨ [{name}] 様としてログインしました！",
+    "login_error_credentials": "ユーザー名(メール)またはパスワードが正しくありません。",
+    "login_error_network": "ログイン処理中にエラーが発生しました。もう一度お試しください。",
+    "google_login_success": "🎉 Googleアカウント認証が完了しました！マイページで必要情報を設定してください。"
   }
 }

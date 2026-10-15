@@ -277,5 +277,38 @@
       "recent_prayers_title": "Сүүлд нэгдсэн залбирлууд",
       "amen_completed": "Амен хийгдсэн"
     }
+  },
+  "auth": {
+    "login_title": "AAMEN Гишүүний нэвтрэх",
+    "login_subtitle": "Азийн 13 орны Анабаптист Меннонит итгэлийн нийгэмлэгт тавтай морилно уу.",
+    "recommended_badge": "Санал болгож буй: Хамгийн хурдан бөгөөд аюулгүй нэвтрэх",
+    "google_login_btn": "Google хаягаар үргэлжлүүлэх",
+    "google_checking": "Google хаягийг шалгаж байна...",
+    "google_desc": "Нэмэлт нууц үггүйгээр 1 секундийн дотор аюулгүй холбогдоно.",
+    "sns_title": "Азийн 13 орны мессенжер ба сошиал хурдан нэвтрэлт",
+    "divider_or": "ЭСВЭЛ",
+    "email_toggle_btn": "Имэйл / Нууц үгээр нэвтрэх",
+    "id_label": "Хэрэглэгчийн нэр эсвэл имэйл хаяг",
+    "id_placeholder": "admin эсвэл name@example.com",
+    "password_label": "Нууц үг",
+    "password_placeholder": "••••••••",
+    "email_login_btn": "Имэйл / Админ нэвтрэх",
+    "logging_in": "Нэвтрэлтийг шалгаж байна...",
+    "not_member_yet": "Та гишүүн болж амжаагүй юу?",
+    "signup_link": "Google-ээр шууд эхлэх →",
+    "language_switcher": "Хэлний горим сонгох (Language)",
+    "signup_title": "AAMEN Гишүүнээр бүртгүүлэх",
+    "signup_subtitle": "Google баталгаажуулалтын дараа хувийн хуудсандаа ID, нууц үг, чуулганаа бүртгүүлэн жинхэнэ гишүүнээр оролцоорой.",
+    "signup_official_badge": "Албан ёсны: Google хаяг холболт",
+    "google_signup_btn": "Google хаягаар бүртгүүлэх",
+    "google_signup_checking": "Google хаяг холбож байна...",
+    "already_member": "Аль хэдийн бүртгэлтэй юу?",
+    "login_link": "Нэвтрэх →",
+    "login_success_dev": "💻 [Хөгжүүлэгч] эрхээр амжилттай нэвтэрлээ!",
+    "login_success_admin": "👑 Тавтай морилно уу, [Ерөнхий админ: {name}]!",
+    "login_success_member": "✨ [{name}] нэрээр нэвтэрлээ!",
+    "login_error_credentials": "Нэвтрэх нэр (эсвэл имэйл) болон нууц үг буруу байна.",
+    "login_error_network": "Нэвтрэх үед алдаа гарлаа. Дахин оролдоно уу.",
+    "google_login_success": "🎉 Google баталгаажуулалт амжилттай! Хувийн хуудсандаа мэдээллээ оруулна уу."
   }
 }

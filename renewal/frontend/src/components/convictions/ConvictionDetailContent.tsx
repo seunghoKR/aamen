@@ -29,8 +29,9 @@ export default function ConvictionDetailContent({
         const parsed = JSON.parse(savedI18n)
         const customItem = parsed[locale]?.[slug]
         if (customItem && customItem.meta) {
-          // 따옴표 글자 쪼개짐 버그('G'o'd')가 있는 구 데이터 필터링
-          if (customItem.meta.quote && customItem.meta.quote.includes("' '")) {
+          const rawStr = JSON.stringify(customItem)
+          // 따옴표 글자 쪼개짐 버그 또는 [KO] 태그가 포함된 구 데이터 필터링
+          if (rawStr.includes('[KO]') || (customItem.meta.quote && customItem.meta.quote.includes("' '"))) {
             // 오래된 잘못된 캐시 무시
           } else {
             setData(customItem)
@@ -80,8 +81,51 @@ export default function ConvictionDetailContent({
 
       {/* 본문 렌더링 카드 */}
       <article className="bg-white rounded-3xl p-6 sm:p-12 shadow-xl shadow-teal-950/5 border border-emerald-100/60 overflow-hidden">
+        {/* 언어별 줄바꿈 및 그리드 완벽 대응 스타일 */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          .lp-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .lp-container * {
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+          }
+          .lp-card-wrap {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+            gap: 20px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .lp-card {
+            min-width: 0 !important;
+            width: 100% !important;
+            overflow: hidden !important;
+            word-break: normal !important;
+            overflow-wrap: anywhere !important;
+            box-sizing: border-box !important;
+          }
+          .lp-box {
+            min-width: 0 !important;
+            width: 100% !important;
+            overflow: hidden !important;
+            word-break: normal !important;
+            overflow-wrap: anywhere !important;
+            box-sizing: border-box !important;
+          }
+          :lang(ja) .lp-card, :lang(ja) .lp-box,
+          :lang(zh-TW) .lp-card, :lang(zh-TW) .lp-box,
+          [lang^="zh"] .lp-card, [lang^="zh"] .lp-box,
+          [lang^="ja"] .lp-card, [lang^="ja"] .lp-box {
+            word-break: break-all !important;
+            overflow-wrap: anywhere !important;
+            line-break: loose !important;
+          }
+        `}} />
         <div
-          className="prose max-w-none"
+          className="prose max-w-none break-words"
           dangerouslySetInnerHTML={{ __html: displayData.rawHtml }}
         />
       </article>

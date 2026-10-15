@@ -1,10 +1,10 @@
 # 🌏 AAMEN (Asia Anabaptist Mennonite Education Network)
-### 아시아 아나밥티스트 메노나이트 교육 네트워크 플랫폼 (Release v1.3.0 - Lab Preview)
+### 아시아 아나밥티스트 메노나이트 교육 네트워크 플랫폼 (Release v1.4.0)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3.6-black.svg?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.8-blue.svg?style=flat&logo=react)](https://react.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38bdf8.svg?style=flat&logo=tailwindcss)](https://tailwindcss.com/)
-[![i18n](https://img.shields.io/badge/i18n-13_Nations-emerald.svg)](https://aamen2.iwinv.net/)
+[![i18n](https://img.shields.io/badge/i18n-13_Nations-emerald.svg)](https://aamen.net/)
 
 아시아 13개국(한국, 일본, 인도네시아, 베트남, 태국, 미얀마, 인도, 네팔, 필리핀, 캄보디아, 라오스, 몽골, 대만) 사역자와 성도들을 위한 평화·제자도 교육 및 중보기도 글로벌 네트워크 플랫폼입니다.
 
@@ -20,13 +20,14 @@
    - 13개국 성도들의 기도제목 실시간 공유 및 '아멘' 동참 카운터
    - 왓츠앱(WhatsApp) 및 텔레그램(Telegram) 알림 봇 연동
 
-3. **인물 캐릭터 아바타 & 맞춤형 마이페이지 (MyPage)**
-   - 성별, 연령(청년/장년), 분위기별 16종 일러스트 캐릭터 선택 모달
+3. **50종 인물 캐릭터 아바타 & 다국어 마이페이지 (MyPage)**
+   - 50종 일러스트 캐릭터 아바타 갤러리 (무작위 셔플링 & 직관적 원클릭 선택)
+   - 마이페이지 14개국어 완전 현지화 및 소속 국가별 자국어/영문/이니셜 표준화
    - 개인 프로필, 소속교회/단체/기관, 4대 SNS 및 메신저 연동 관리
-   - 실시간 변경 감지 및 이탈 방지 모달
 
 4. **체계적인 6단계 권한 관리 및 관리자 콘솔**
    - 0단계(게스트)부터 5단계(총괄 관리자) 및 개발자(Developer) 등급
+   - 체크박스 다중 선택 및 회원 일괄 삭제 기능
    - 배너 슬라이더 관리, 13개국 코디네이터 관리, 팝업 공지, Gemini AI 설정 등
 
 ---
@@ -68,9 +69,11 @@ AAMEN/
 ---
 
 ## 🌐 서버 및 배포 버전 정보
-- **공식 운영 서버:** [https://aamen2.iwinv.net](https://aamen2.iwinv.net) (`v1.3.0 Stable Release` - MWC 7대 신념 13개국 완역 교안 및 관리자 대시보드 100% 한/영 이중화 지원)
-- **최신 릴리즈 기능:** 
-  1. MWC 7대 신념 13개국 공식 교안 완역본 및 노코드 관리자 편집기 탑재
-  2. 관리자 콘솔 전 페이지 100% 한/영 바이링궐 인터페이스 (사이드바 토글 지원)
-  3. 5단계 회원 등급 & 권한 매트릭스 실시간 동기화
+- **공식 운영 서버:** [https://aamen.net](https://aamen.net) (`v1.4.0 Release`)
+- **최신 릴리즈 기능 (v1.4.0):** 
+  1. 마이페이지 14개국어 완전 번역 & 자국어/영어/이니셜 표기 표준화
+  2. 50종 캐릭터 아바타 컬렉션 무작위 셔플 탑재 & 정밀 크롭
+  3. MWC / MCSK 사역자 회원 등록 및 권한 부여
+  4. 관리자 회원 목록 체크박스 다중 선택 및 일괄 삭제 기능
+  5. 프론트엔드 API 예외 방어 및 백엔드 라우트 핸들러 무결성 확보
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useLocale } from 'next-intl'
 import Link from 'next/link'
+import Image from 'next/image'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import {
@@ -50,12 +51,24 @@ export default function NetworkView() {
         }
       }
 
-      // 2. 13개국 코디네이터 데이터 로드
+      // 2. 13개국 코디네이터 데이터 로드 및 최신 영문/현지어 데이터 병합
       const savedCoords = localStorage.getItem('aamen_coordinators_data')
       if (savedCoords) {
         const parsed = JSON.parse(savedCoords)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setCoordinators(parsed)
+          const merged = initialCoordinators.map((init) => {
+            const saved = parsed.find((p: any) => p.countryCode === init.countryCode || p.id === init.id)
+            if (!saved) return init
+            return {
+              ...init,
+              ...saved,
+              nameNative: init.nameNative,
+              nameEn: init.nameEn,
+              name: init.name,
+              email: saved.email || init.email,
+            }
+          })
+          setCoordinators(merged)
         }
       }
     } catch (e) {
@@ -267,52 +280,68 @@ export default function NetworkView() {
                 </div>
               </div>
 
-              {/* 🌟 PC 모드 1열에 4명 (grid-cols-1 sm:grid-cols-2 lg:grid-cols-4) */}
+              {/* 🌟 PC 모드 1열에 4명 (국가 이니셜 알파벳 순서 정렬) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                {coordinators.map((lead) => (
-                  <div
-                    key={lead.id}
-                    className="p-5 rounded-2xl bg-gray-50/80 border border-gray-200 hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between text-center relative group"
-                  >
-                    <div>
-                      {/* 국기 및 국가명 */}
-                      <div className="text-3xl mb-1.5">{lead.flag}</div>
-                      <div className="text-xs font-bold text-gray-500 font-mono mb-2">
-                        {lead.countryName}
-                      </div>
-
-                      {/* 이름 & 직책 */}
-                      <h4 className="font-black text-base text-gray-900 mb-1">
-                        {lead.name}
-                      </h4>
-                      <p className="text-xs font-bold text-emerald-700 leading-tight mb-3">
-                        {lead.role}
-                      </p>
-
-                      {/* 연락처 / 이메일 */}
-                      <div className="space-y-1 mb-4 text-[11px] text-gray-500 font-mono bg-white p-2 rounded-xl border border-gray-100">
-                        <div className="truncate" title={lead.email}>
-                          📧 {lead.email}
-                        </div>
-                        {lead.phone && (
-                          <div className="font-bold text-gray-700">
-                            📞 {lead.phone}
+                {[...coordinators]
+                  .sort((a, b) => a.countryCode.localeCompare(b.countryCode))
+                  .map((lead) => {
+                    const flagSvg = `/images/flags/${lead.countryCode.toLowerCase()}.svg`
+                    return (
+                      <div
+                        key={lead.id}
+                        className="p-5 rounded-2xl bg-white border border-gray-200/90 hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between text-center relative group"
+                      >
+                        <div>
+                          {/* 1. 국가명 위에 선명한 국기 이미지 표시 */}
+                          <div className="flex justify-center mb-2.5">
+                            <div className="w-12 h-8 rounded-sm overflow-hidden shadow-2xs border border-gray-200/80 bg-gray-50 flex items-center justify-center">
+                              <Image
+                                src={flagSvg}
+                                alt={lead.countryName}
+                                width={48}
+                                height={32}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* 💬 WhatsApp 사이트 초청 / 다이렉트 소통 버튼 */}
-                    <button
-                      type="button"
-                      onClick={() => sendWhatsAppInvitation(lead.phone, lead.name, lead.countryName)}
-                      className="w-full py-2 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                    >
-                      <MessageCircle size={13} />
-                      <span>{t.coordinators.whatsappInviteBtn}</span>
-                    </button>
-                  </div>
-                ))}
+                          {/* 2. 국가 이니셜 & 국가명 */}
+                          <div className="text-[11px] font-bold text-gray-500 font-mono tracking-wide mb-3">
+                            {lead.countryName}
+                          </div>
+
+                          {/* 3. 이름: 해당국가 언어 + 영문 표기 */}
+                          <div className="mb-2">
+                            <h4 className="font-black text-lg text-gray-900 tracking-tight leading-snug">
+                              {lead.nameNative || lead.name}
+                            </h4>
+                            {lead.nameEn && (
+                              <p className="text-xs font-bold text-gray-400 font-mono uppercase tracking-wider mt-0.5">
+                                {lead.nameEn}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* 4. 사역 직책 */}
+                          <p className="text-xs font-semibold text-emerald-700 leading-tight mb-4">
+                            {lead.role}
+                          </p>
+                        </div>
+
+                        {/* 5. 이메일 (구분선과 함께 깔끔하게 표기 / 전화번호 & 초청장 전송 제거) */}
+                        <div className="pt-3 border-t border-gray-100">
+                          <a
+                            href={`mailto:${lead.email}`}
+                            className="inline-flex items-center justify-center gap-1.5 text-xs text-gray-600 hover:text-emerald-700 font-mono transition-colors truncate max-w-full"
+                            title={lead.email}
+                          >
+                            <Mail size={13} className="text-emerald-600 shrink-0" />
+                            <span className="truncate">{lead.email}</span>
+                          </a>
+                        </div>
+                      </div>
+                    )
+                  })}
               </div>
             </div>
           )}

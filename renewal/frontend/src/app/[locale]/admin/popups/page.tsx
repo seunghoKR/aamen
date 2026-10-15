@@ -71,7 +71,10 @@ export default function AdminPopupsPage() {
 
     // 서버 API 동기화
     fetch('/api/banners?admin=1')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return null
+        return res.json()
+      })
       .then((res) => {
         // 서버에서 저장된 팝업 설정이 있다면 반영
       })

@@ -26,6 +26,7 @@ import {
   type AamenEventItem,
 } from '@/data/scheduleData'
 import { networkTranslations } from '@/data/networkTranslations'
+import { getStoredUser, AUTH_ROLE_KEY } from '@/lib/auth'
 
 export default function ScheduleView() {
   const locale = useLocale()
@@ -36,20 +37,27 @@ export default function ScheduleView() {
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar')
   const [selectedMonth, setSelectedMonth] = useState<number>(0) // 0: 전체, 1~12: 월별
 
-  // 구글 캘린더 ID (로컬스토리지 연동 가능)
-  const defaultCalId = 'ko.south_korea#holiday@group.v.calendar.google.com' // 기본 공용 캘린더 및 AAMEN 캘린더
+  // 공식 캘린더 ID (AAMEN 공식 사역 캘린더)
+  const defaultCalId = '47b9a808f2d0ae426575ccdc371c17222415e37d95c8fe47578eed8a0512a789@group.calendar.google.com'
   const [googleCalendarId, setGoogleCalendarId] = useState<string>(defaultCalId)
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [customCalInput, setCustomCalInput] = useState('')
+  const [isDeveloper, setIsDeveloper] = useState(false)
 
   useEffect(() => {
     try {
+      const u = getStoredUser()
+      const role = u?.role || (typeof window !== 'undefined' ? localStorage.getItem(AUTH_ROLE_KEY) : null)
+      setIsDeveloper(role === 'developer')
+
       const savedCalId = localStorage.getItem('aamen_google_calendar_id')
-      if (savedCalId) {
+      if (savedCalId && !savedCalId.includes('holiday@group.v.calendar.google.com')) {
         setGoogleCalendarId(savedCalId)
         setCustomCalInput(savedCalId)
       } else {
+        setGoogleCalendarId(defaultCalId)
         setCustomCalInput(defaultCalId)
+        localStorage.setItem('aamen_google_calendar_id', defaultCalId)
       }
     } catch (e) {
       console.error(e)
@@ -62,7 +70,7 @@ export default function ScheduleView() {
     setGoogleCalendarId(trimmed)
     localStorage.setItem('aamen_google_calendar_id', trimmed)
     setIsConfigOpen(false)
-    alert(isKo ? '구글 캘린더 ID가 저장되었습니다!' : 'Google Calendar ID has been updated!')
+    alert(isKo ? '공식 캘린더 ID가 저장되었습니다!' : 'Official Calendar ID has been updated!')
   }
 
   // 월별 필터링
@@ -80,10 +88,10 @@ export default function ScheduleView() {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
-  // 구글 캘린더 임베드 URL (월간 기준 mode=MONTH)
+  // 공식 캘린더 임베드 URL (월간 기준 mode=MONTH, 탭/타이틀/타임존/로고 숨김)
   const embedUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(
     googleCalendarId
-  )}&ctz=Asia%2FSeoul&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0`
+  )}&ctz=Asia%2FSeoul&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&showTz=0`
 
   const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
@@ -103,26 +111,29 @@ export default function ScheduleView() {
               <span>{t.schedulePage.backToNetwork}</span>
             </Link>
 
-            <button
-              onClick={() => setIsConfigOpen(!isConfigOpen)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-blue-700 bg-white px-3.5 py-2 rounded-xl border border-gray-200 transition-all shadow-2xs cursor-pointer"
-            >
-              <Settings2 size={14} />
-              <span>{isKo ? '구글 캘린더 ID 설정' : 'Google Calendar Settings'}</span>
-            </button>
+            {/* 개발자 전용 캘린더 ID 설정 버튼 */}
+            {isDeveloper && (
+              <button
+                onClick={() => setIsConfigOpen(!isConfigOpen)}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-blue-700 bg-white px-3.5 py-2 rounded-xl border border-gray-200 transition-all shadow-2xs cursor-pointer"
+              >
+                <Settings2 size={14} />
+                <span>{isKo ? '캘린더 ID 설정 (DEV)' : 'Calendar ID Settings (DEV)'}</span>
+              </button>
+            )}
           </div>
 
-          {/* 구글 캘린더 ID 설정 모달/박스 (관리자용) */}
-          {isConfigOpen && (
+          {/* 캘린더 ID 설정 모달/박스 (개발자 전용) */}
+          {isDeveloper && isConfigOpen && (
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 shadow-xs animate-in fade-in">
               <h4 className="text-xs font-extrabold text-blue-950 mb-1 flex items-center gap-1.5">
                 <Settings2 size={14} />
-                <span>{isKo ? '연동할 Google 캘린더 ID 설정 (공개 캘린더)' : 'Set Public Google Calendar ID'}</span>
+                <span>{isKo ? '연동할 캘린더 ID 설정 (개발자 전용)' : 'Set Calendar ID (DEV Only)'}</span>
               </h4>
               <p className="text-[11px] text-blue-700 mb-3">
                 {isKo
-                  ? 'AAMEN 본부 공식 구글 캘린더의 계정 ID 또는 공개 캘린더 ID를 입력하면 아래 월간 뷰에 실시간으로 표시됩니다.'
-                  : 'Enter public Google Calendar ID to sync and display monthly events in real-time.'}
+                  ? 'AAMEN 본부 공식 캘린더 ID를 입력하면 아래 월간 뷰에 실시간으로 표시됩니다.'
+                  : 'Enter Calendar ID to sync and display monthly events in real-time.'}
               </p>
               <form onSubmit={handleSaveCalendarId} className="flex flex-col sm:flex-row gap-2">
                 <input
@@ -154,7 +165,7 @@ export default function ScheduleView() {
               {t.schedulePage.desc}
             </p>
 
-            {/* 뷰 스위처 (구글 캘린더 월간 뷰 vs 월별 일정 리스트) */}
+            {/* 뷰 스위처 (월간 캘린더 vs 월별 사역 일정 목록) */}
             <div className="flex flex-wrap items-center gap-2 mt-6 pt-6 border-t border-white/15">
               <button
                 onClick={() => setViewMode('calendar')}
@@ -165,7 +176,7 @@ export default function ScheduleView() {
                 }`}
               >
                 <CalendarIcon size={14} />
-                <span>{isKo ? '📅 구글 캘린더 (월간 보기)' : '📅 Google Calendar (Monthly)'}</span>
+                <span>{isKo ? '📅 월간 캘린더 보기' : '📅 Monthly Calendar'}</span>
               </button>
 
               <button
@@ -179,20 +190,10 @@ export default function ScheduleView() {
                 <Filter size={14} />
                 <span>{isKo ? '📋 월별 사역 일정 목록' : '📋 Monthly Event List'}</span>
               </button>
-
-              <a
-                href={`https://calendar.google.com/calendar/u/0/r`}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all flex items-center gap-1.5 backdrop-blur-xs"
-              >
-                <span>{t.schedulePage.openGoogleCalendarBtn}</span>
-                <ExternalLink size={13} />
-              </a>
             </div>
           </div>
 
-          {/* 1. 구글 캘린더 (월간 일정 기준 임베드 뷰) */}
+          {/* 1. 공식 캘린더 (월간 일정 기준 임베드 뷰) */}
           {viewMode === 'calendar' && (
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/90 shadow-sm space-y-5">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
@@ -204,7 +205,7 @@ export default function ScheduleView() {
                     <h3 className="font-extrabold text-xl text-gray-900 flex items-center gap-2">
                       <span>{t.schedulePage.googleCalendarTitle}</span>
                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black">
-                        Monthly View
+                        Official Monthly
                       </span>
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
@@ -212,22 +213,10 @@ export default function ScheduleView() {
                     </p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <a
-                    href="https://calendar.google.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>Google Calendar</span>
-                    <ExternalLink size={13} />
-                  </a>
-                </div>
               </div>
 
-              {/* 반응형 Google 캘린더 iframe 임베드 */}
-              <div className="w-full aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] min-h-[500px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner bg-gray-50">
+              {/* 반응형 캘린더 iframe 임베드 */}
+              <div className="w-full aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] min-h-[520px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner bg-gray-50">
                 <iframe
                   src={embedUrl}
                   style={{ border: 0 }}
@@ -235,7 +224,7 @@ export default function ScheduleView() {
                   height="100%"
                   frameBorder="0"
                   scrolling="no"
-                  title="AAMEN Google Calendar Monthly View"
+                  title="AAMEN Official Monthly Calendar"
                   className="w-full h-full"
                 />
               </div>
@@ -245,15 +234,15 @@ export default function ScheduleView() {
                   <span className="text-base">💡</span>
                   <span>
                     {isKo
-                      ? '일정을 클릭하면 구글 캘린더 세부 정보가 열리며, 본인의 구글 계정으로 즉시 복사 및 알림 등록이 가능합니다.'
-                      : 'Click any event to view details and copy it directly to your personal Google Calendar.'}
+                      ? '일정을 클릭하시면 사역 안내와 세부 정보를 확인하실 수 있습니다.'
+                      : 'Click any event to view detailed schedules, locations, and ministry overviews.'}
                   </span>
                 </div>
                 <button
                   onClick={() => setViewMode('list')}
                   className="font-bold text-emerald-700 hover:text-emerald-800 shrink-0 cursor-pointer"
                 >
-                  {isKo ? '월별 일정 리스트 보기 👉' : 'View Monthly Event List 👉'}
+                  {isKo ? '월별 사역 일정 목록 보기 👉' : 'View Monthly Event List 👉'}
                 </button>
               </div>
             </div>
@@ -373,7 +362,7 @@ export default function ScheduleView() {
                             href={gcalUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex-1 sm:flex-initial py-2.5 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                            className="flex-1 sm:flex-initial py-2.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
                           >
                             <CalendarIcon size={13} />
                             <span>{t.schedulePage.addToGoogleCalendarBtn}</span>

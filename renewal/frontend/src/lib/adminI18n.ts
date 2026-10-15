@@ -8,7 +8,7 @@ export const ADMIN_TEXTS = {
     layout: {
       brandTitle: 'AAMEN 통합 관리자',
       serverBadge: 'MariaDB & PHP 8.4',
-      versionBadge: 'v1.3.0',
+      versionBadge: 'v1.4.0',
       adminConsole: 'AAMEN 관리자 콘솔',
       overviewBadge: '개요',
       adminRoleSuper: '배용하 관리자',
@@ -41,7 +41,7 @@ export const ADMIN_TEXTS = {
     },
     home: {
       welcomeBadge: 'AAMEN Administration',
-      versionBadge: 'v1.3.0',
+      versionBadge: 'v1.4.0',
       welcomeTitle: '관리자님, 환영합니다! 👑',
       welcomeSubtitle:
         '13개국 아시아 아나밥티스트 메노나이트 교육 네트워크의 회원 등급, 상단 배너, 공지 팝업 및 다국어 교안을 실시간으로 총괄 제어할 수 있는 관리자 화면입니다.',
@@ -230,7 +230,7 @@ export const ADMIN_TEXTS = {
 
     convictions: {
       studioBadge: 'MWC 7대 신념 교안 관리 스튜디오',
-      versionSub: 'v1.3.0 노코드 에디터',
+      versionSub: 'v1.4.0 노코드 에디터',
       title: '7대 신념 13개국 언어 교안 대시보드',
       subtitle: '코딩 지식이 없어도 걱정 NO! 🙅‍♀️ 각국 대표자 및 관리자님께서 자국어 문장만 입력하면 예쁜 교안으로 자동 조립됩니다. ✨',
       roleSuper: '총괄 관리자 (전 국가 편집 가능)',
@@ -288,7 +288,7 @@ export const ADMIN_TEXTS = {
     layout: {
       brandTitle: 'AAMEN Global Admin',
       serverBadge: 'MariaDB & PHP 8.4',
-      versionBadge: 'v1.3.0',
+      versionBadge: 'v1.4.0',
       adminConsole: 'AAMEN Admin Console',
       overviewBadge: 'Overview',
       adminRoleSuper: 'Super Admin',
@@ -321,7 +321,7 @@ export const ADMIN_TEXTS = {
     },
     home: {
       welcomeBadge: 'AAMEN Administration',
-      versionBadge: 'v1.3.0',
+      versionBadge: 'v1.4.0',
       welcomeTitle: 'Welcome, Administrator! 👑',
       welcomeSubtitle:
         'Centralized real-time administration portal for member tier permissions, hero banners, notice popups, and multilingual curricula across 13 Asian Anabaptist Mennonite nations.',
@@ -510,7 +510,7 @@ export const ADMIN_TEXTS = {
 
     convictions: {
       studioBadge: 'MWC Shared Convictions Curriculum Studio',
-      versionSub: 'v1.3.0 No-Code Editor',
+      versionSub: 'v1.4.0 No-Code Editor',
       title: '7 Shared Convictions 13-Nation Curriculum Editor',
       subtitle: 'No coding required! Input local language sentences and curriculum pages will assemble automatically. ✨',
       roleSuper: 'Super Admin (All Nations Editable)',

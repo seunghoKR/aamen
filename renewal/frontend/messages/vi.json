@@ -277,5 +277,38 @@
       "recent_prayers_title": "Các lời cầu nguyện gần đây",
       "amen_completed": "Đã Amen"
     }
+  },
+  "auth": {
+    "login_title": "Đăng nhập thành viên AAMEN",
+    "login_subtitle": "Chào mừng bạn đến với Cộng đồng Đức tin Anabaptist Mennonite 13 quốc gia Châu Á.",
+    "recommended_badge": "Được đề xuất: Đăng nhập nhanh nhất và an toàn nhất",
+    "google_login_btn": "Tiếp tục với Google",
+    "google_checking": "Đang kiểm tra tài khoản Google...",
+    "google_desc": "Kết nối an toàn trong 1 giây mà không cần mật khẩu riêng.",
+    "sns_title": "Đăng nhập nhanh qua ứng dụng nhắn tin & mạng xã hội 13 nước Châu Á",
+    "divider_or": "HOẶC",
+    "email_toggle_btn": "Đăng nhập bằng Email / Mật khẩu",
+    "id_label": "Tên đăng nhập hoặc Địa chỉ Email",
+    "id_placeholder": "admin hoặc name@example.com",
+    "password_label": "Mật khẩu",
+    "password_placeholder": "••••••••",
+    "email_login_btn": "Đăng nhập Email / Quản trị viên",
+    "logging_in": "Đang xác thực đăng nhập...",
+    "not_member_yet": "Bạn chưa có tài khoản?",
+    "signup_link": "Bắt đầu ngay với Google →",
+    "language_switcher": "Chọn chế độ ngôn ngữ (Language)",
+    "signup_title": "Đăng ký thành viên AAMEN",
+    "signup_subtitle": "Sau khi xác thực Google, hãy thiết lập ID, mật khẩu và hội thánh trên Trang cá nhân để tham gia với tư cách thành viên chính thức.",
+    "signup_official_badge": "Xác thực chính thức: Mặc định liên kết tài khoản Google",
+    "google_signup_btn": "Đăng ký bằng tài khoản Google",
+    "google_signup_checking": "Đang kết nối tài khoản Google...",
+    "already_member": "Bạn đã có tài khoản?",
+    "login_link": "Đăng nhập ngay →",
+    "login_success_dev": "💻 Đã đăng nhập với quyền [Nhà phát triển]!",
+    "login_success_admin": "👑 Chào mừng [Tổng quản trị viên: {name}]!",
+    "login_success_member": "✨ Đã đăng nhập với tư cách [{name}]!",
+    "login_error_credentials": "Tên đăng nhập (email) hoặc mật khẩu không chính xác.",
+    "login_error_network": "Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.",
+    "google_login_success": "🎉 Xác thực Google thành công! Vui lòng cập nhật thông tin tại Trang cá nhân."
   }
 }

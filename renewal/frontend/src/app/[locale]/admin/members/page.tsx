@@ -143,6 +143,21 @@ const countryNameMapEn: Record<string, string> = {
   US: 'United States',
 }
 
+const sampleIds = new Set(['m2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9'])
+const sampleEmails = new Set([
+  'zawmin@aamen.net',
+  'sarah.nguyen@aamen.net',
+  'somchai@aamen.net',
+  'budi.santoso@aamen.net',
+  'eunhye.kim@church.kr',
+  'kenji.sato@menno.jp',
+  'ramesh.ad@nepal.org',
+  'sophea.meas@cambodia.org',
+])
+
+const isSampleMember = (m: any) =>
+  sampleIds.has(m.id) || (m.email && sampleEmails.has(m.email.toLowerCase()))
+
 export default function AdminMembersPage() {
   const params = useParams()
   const currentLocale = (params?.locale as string) || 'ko'
@@ -154,8 +169,15 @@ export default function AdminMembersPage() {
 
   const [activeTab, setActiveTab] = useState<'members' | 'permissions'>('members')
   const [members, setMembers] = useState<Member[]>(
-    initialMembers.filter((m) => m.role !== ('developer' as any) && !m.name.includes('개발자') && m.email !== 'admin@aamen.net')
+    initialMembers.filter(
+      (m) =>
+        m.role !== ('developer' as any) &&
+        !m.name.includes('개발자') &&
+        m.email !== 'admin@aamen.net' &&
+        !isSampleMember(m)
+    )
   )
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLevel, setFilterLevel] = useState<string>('ALL')
   const [filterCountry, setFilterCountry] = useState<string>('ALL')
@@ -187,11 +209,15 @@ export default function AdminMembersPage() {
     async function loadMembers() {
       try {
         const res = await fetch('/api/members')
+        if (!res.ok) return
+        const contentType = res.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) return
         const data = await res.json()
         const list = Array.isArray(data) ? data : data.data || []
         if (list.length > 0) {
           const countryMap: Record<string, { name: string; flag: string }> = {
             KR: { name: '대한민국', flag: '🇰🇷' },
+            US: { name: '미국', flag: '🇺🇸' },
             MM: { name: '미얀마', flag: '🇲🇲' },
             VN: { name: '베트남', flag: '🇻🇳' },
             TH: { name: '태국', flag: '🇹🇭' },
@@ -237,7 +263,27 @@ export default function AdminMembersPage() {
         const saved = localStorage.getItem('aamen_members')
         if (saved) {
           const parsed: Member[] = JSON.parse(saved)
-          setMembers(parsed.filter((m) => m.role !== ('developer' as any) && !m.name.includes('개발자') && m.email !== 'admin@aamen.net'))
+          const existingIds = new Set(parsed.map((m) => m.id))
+          const missing = initialMembers.filter((m) => !existingIds.has(m.id))
+          const merged = [...missing, ...parsed].filter(
+            (m) =>
+              m.role !== ('developer' as any) &&
+              !m.name.includes('개발자') &&
+              m.email !== 'admin@aamen.net' &&
+              !isSampleMember(m)
+          )
+          setMembers(merged)
+          localStorage.setItem('aamen_members', JSON.stringify(merged))
+        } else {
+          const initialList = initialMembers.filter(
+            (m) =>
+              m.role !== ('developer' as any) &&
+              !m.name.includes('개발자') &&
+              m.email !== 'admin@aamen.net' &&
+              !isSampleMember(m)
+          )
+          setMembers(initialList)
+          localStorage.setItem('aamen_members', JSON.stringify(initialList))
         }
       } catch (e) {}
     }
@@ -322,6 +368,60 @@ export default function AdminMembersPage() {
     }
   }
 
+  // 🌟 다중 선택 체크박스 핸들러
+  const handleToggleSelectAll = () => {
+    if (filtered.length === 0) return
+    const allFilteredIds = filtered.map((m) => m.id)
+    const isAllSelected = allFilteredIds.every((id) => selectedMemberIds.includes(id))
+
+    if (isAllSelected) {
+      setSelectedMemberIds((prev) => prev.filter((id) => !allFilteredIds.includes(id)))
+    } else {
+      setSelectedMemberIds((prev) => Array.from(new Set([...prev, ...allFilteredIds])))
+    }
+  }
+
+  const handleToggleSelectMember = (id: string) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  // 🗑️ 선택된 회원 일괄 삭제 핸들러
+  const handleDeleteSelected = async () => {
+    if (selectedMemberIds.length === 0) return
+
+    const count = selectedMemberIds.length
+    const confirmMsg = isEn
+      ? `Are you sure you want to delete ${count} selected member(s)?`
+      : `정말 선택한 ${count}명의 회원을 일괄 삭제하시겠습니까?`
+
+    if (confirm(confirmMsg)) {
+      const idsToDelete = new Set(selectedMemberIds)
+      const updated = members.filter((m) => !idsToDelete.has(m.id))
+      persistMembers(
+        updated,
+        isEn
+          ? `${count} member(s) have been deleted.`
+          : `${count}명의 회원이 성공적으로 삭제되었습니다.`
+      )
+
+      try {
+        for (const id of selectedMemberIds) {
+          fetch('/api/members', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id }),
+          }).catch(() => {})
+        }
+      } catch (e) {
+        console.error('Batch delete error:', e)
+      }
+
+      setSelectedMemberIds([])
+    }
+  }
+
   // 권한 체크박스 토글
   const handleTogglePermission = (lvl: MemberLevel, permKey: keyof MemberTierInfo['permissions']) => {
     setTierSettings((prev) => {
@@ -378,6 +478,7 @@ export default function AdminMembersPage() {
 
     const countryMap: Record<string, { name: string; flag: string }> = {
       KR: { name: isEn ? 'South Korea' : '대한민국', flag: '🇰🇷' },
+      US: { name: isEn ? 'United States' : '미국', flag: '🇺🇸' },
       MM: { name: isEn ? 'Myanmar' : '미얀마', flag: '🇲🇲' },
       VN: { name: isEn ? 'Vietnam' : '베트남', flag: '🇻🇳' },
       TH: { name: isEn ? 'Thailand' : '태국', flag: '🇹🇭' },
@@ -422,9 +523,14 @@ export default function AdminMembersPage() {
     })
   }
 
-  // 검색 및 필터링 (개발자 제외 확실히 보장)
+  // 검색 및 필터링 (개발자 및 샘플 제외 확실히 보장)
   const filtered = members.filter((m) => {
-    if (m.role === ('developer' as any) || m.name.includes('개발자') || m.email === 'admin@aamen.net') {
+    if (
+      m.role === ('developer' as any) ||
+      m.name.includes('개발자') ||
+      m.email === 'admin@aamen.net' ||
+      isSampleMember(m)
+    ) {
       return false
     }
     const cDisplayName = isEn ? (countryNameMapEn[m.countryCode] || m.countryName) : m.countryName
@@ -574,12 +680,54 @@ export default function AdminMembersPage() {
             </div>
           </div>
 
+          {/* 🌟 다중 선택 일괄 액션 바 */}
+          {selectedMemberIds.length > 0 && (
+            <div className="p-4 px-5 bg-rose-50 border border-rose-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-2.5">
+                <span className="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs font-black shadow-2xs">
+                  {selectedMemberIds.length}
+                </span>
+                <span className="text-sm font-black text-rose-950">
+                  {isEn
+                    ? `${selectedMemberIds.length} member(s) selected`
+                    : `총 ${selectedMemberIds.length}명의 회원이 선택되었습니다.`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedMemberIds([])}
+                  className="px-3.5 py-1.5 bg-white hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 transition-colors cursor-pointer shadow-2xs"
+                >
+                  {isEn ? 'Deselect All' : '선택 해제'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteSelected}
+                  className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 size={14} />
+                  <span>{isEn ? 'Delete Selected' : '선택 회원 일괄 삭제'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* 회원 테이블 */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    <th className="py-3.5 px-4 w-12 text-center">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all"
+                        checked={filtered.length > 0 && filtered.every((m) => selectedMemberIds.includes(m.id))}
+                        onChange={handleToggleSelectAll}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 cursor-pointer"
+                      />
+                    </th>
                     <th className="py-3.5 px-6">{isEn ? 'Member Info' : '회원 정보'}</th>
                     <th className="py-3.5 px-4">{isEn ? 'Country' : '국가'}</th>
                     <th className="py-3.5 px-4">{isEn ? 'Tier Adjustment (5 Levels)' : '회원 등급 조정 (5단계)'}</th>
@@ -593,11 +741,34 @@ export default function AdminMembersPage() {
                     const currentLvl = member.level || getMemberLevel(member.role)
                     const tierMeta = tierLabels[currentLvl]
                     const countryDisplay = isEn ? (countryNameMapEn[member.countryCode] || member.countryName) : member.countryName
+                    const isSelected = selectedMemberIds.includes(member.id)
                     return (
-                      <tr key={member.id} className="hover:bg-gray-50/70 transition-colors">
+                      <tr
+                        key={member.id}
+                        className={`hover:bg-gray-50/70 transition-colors ${
+                          isSelected ? 'bg-rose-50/40' : ''
+                        }`}
+                      >
+                        {/* 다중 선택 체크박스 */}
+                        <td className="py-4 px-4 text-center whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelectMember(member.id)}
+                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 cursor-pointer"
+                          />
+                        </td>
+
                         {/* 이름 & 이메일 */}
                         <td className="py-4 px-6">
-                          <div className="font-bold text-gray-900">{member.name}</div>
+                          <div className="font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                            <span>{member.name}</span>
+                            {member.affiliation && (
+                              <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                                {member.affiliation}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-400 font-mono">{member.email}</div>
                         </td>
 
@@ -819,6 +990,7 @@ export default function AdminMembersPage() {
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
                     <option value="KR">🇰🇷 {isEn ? 'South Korea' : '대한민국'}</option>
+                    <option value="US">🇺🇸 {isEn ? 'United States' : '미국'}</option>
                     <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
                     <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
                     <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>

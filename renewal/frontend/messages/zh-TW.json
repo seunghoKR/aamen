@@ -277,5 +277,38 @@
       "recent_prayers_title": "近期參與之代禱",
       "amen_completed": "阿們完成"
     }
+  },
+  "auth": {
+    "login_title": "AAMEN 會員登入",
+    "login_subtitle": "歡迎來到亞洲13國重浸派門諾會信仰團契。",
+    "recommended_badge": "推薦：最快速且安全的登入方式",
+    "google_login_btn": "使用 Google 帳號繼續",
+    "google_checking": "正在驗證 Google 帳號...",
+    "google_desc": "無需額外密碼，1秒內安全連接成為正式會員。",
+    "sns_title": "亞洲13國專屬通訊軟體與社群快速登入",
+    "divider_or": "或",
+    "email_toggle_btn": "使用電子郵件 / 密碼登入",
+    "id_label": "帳號或電子郵件地址",
+    "id_placeholder": "admin 或 name@example.com",
+    "password_label": "密碼",
+    "password_placeholder": "••••••••",
+    "email_login_btn": "電子郵件 / 管理員登入",
+    "logging_in": "正在驗證登入...",
+    "not_member_yet": "還不是會員嗎？",
+    "signup_link": "立即以 Google 開始 →",
+    "language_switcher": "選擇語言模式 (Language)",
+    "signup_title": "AAMEN 註冊會員",
+    "signup_subtitle": "通過 Google 驗證後，請至個人中心設定帳號、密碼及所屬教會，成為正式會員。",
+    "signup_official_badge": "官方認證：預設套用 Google 帳號連結",
+    "google_signup_btn": "使用 Google 帳號註冊",
+    "google_signup_checking": "正在連結 Google 帳號...",
+    "already_member": "已經有帳號了嗎？",
+    "login_link": "前往登入 →",
+    "login_success_dev": "💻 [開發者] 已取得管理權限登入！",
+    "login_success_admin": "👑 歡迎 [總召管理員：{name}]！",
+    "login_success_member": "✨ 已以 [{name}] 身份登入！",
+    "login_error_credentials": "帳號（電子郵件）或密碼不正確。",
+    "login_error_network": "登入處理時發生錯誤，請稍後再試。",
+    "google_login_success": "🎉 Google 帳號驗證完成！請至個人中心設定必填資料。"
   }
 }

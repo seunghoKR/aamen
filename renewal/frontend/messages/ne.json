@@ -277,5 +277,38 @@
       "recent_prayers_title": "हालका मध्यस्थता प्रार्थनाहरू",
       "amen_completed": "आमेन सम्पन्न भयो"
     }
+  },
+  "auth": {
+    "login_title": "AAMEN सदस्य लगइन",
+    "login_subtitle": "१३ वटा एसियाली एनाबाप्टिस्ट मेनोनाइट विश्वासी समुदायमा स्वागत छ।",
+    "recommended_badge": "सिफारिस गरिएको: सबैभन्दा छिटो र सुरक्षित लगइन",
+    "google_login_btn": "Google मार्फत जारी राख्नुहोस्",
+    "google_checking": "Google खाता प्रमाणीकरण गर्दै...",
+    "google_desc": "कुनै अतिरिक्त पासवर्ड बिना १ सेकेन्डमा सुरक्षित रूपमा सदस्य बन्नुहोस्।",
+    "sns_title": "एसियाली १३ देशहरूको मेसेन्जर र सामाजिक सञ्जालबाट द्रुत लगइन",
+    "divider_or": "वा",
+    "email_toggle_btn": "इमेल / पासवर्ड मार्फत लगइन गर्नुहोस्",
+    "id_label": "प्रयोगकर्ता नाम वा इमेल ठेगाना",
+    "id_placeholder": "admin वा name@example.com",
+    "password_label": "पासवर्ड",
+    "password_placeholder": "••••••••",
+    "email_login_btn": "इमेल / व्यवस्थापक लगइन",
+    "logging_in": "लगइन प्रमाणीकरण गर्दै...",
+    "not_member_yet": "अझै सदस्य हुनुहुन्न?",
+    "signup_link": "Google मार्फत सुरु गर्नुहोस् →",
+    "language_switcher": "भाषा मोड चयन गर्नुहोस् (Language)",
+    "signup_title": "AAMEN सदस्य दर्ता",
+    "signup_subtitle": "Google प्रमाणीकरण पछि, पूर्ण सदस्य बन्नको लागि आफ्नो प्रोफाइलमा आईडी, पासवर्ड र मण्डली विवरण दर्ता गर्नुहोस्।",
+    "signup_official_badge": "आधिकारिक: Google खाता एकीकरण",
+    "google_signup_btn": "Google मार्फत दर्ता गर्नुहोस्",
+    "google_signup_checking": "Google खाता जोड्दै...",
+    "already_member": "के तपाईंसँग पहिले नै खाता छ?",
+    "login_link": "लगइन गर्नुहोस् →",
+    "login_success_dev": "💻 [विकासकर्ता] व्यवस्थापन अधिकार सहित लगइन भयो!",
+    "login_success_admin": "👑 स्वागत छ [प्रमुख व्यवस्थापक: {name}]!",
+    "login_success_member": "✨ [{name}] को रूपमा लगइन गरियो!",
+    "login_error_credentials": "प्रयोगकर्ता नाम (इमेल) वा पासवर्ड गलत छ।",
+    "login_error_network": "लगइन गर्दा त्रुटि भयो। कृपया पुनः प्रयास गर्नुहोस्।",
+    "google_login_success": "🎉 Google प्रमाणीकरण सफल भयो! कृपया आफ्नो प्रोफाइल विवरण भर्नुहोस्।"
   }
 }

@@ -277,5 +277,38 @@
       "recent_prayers_title": "Doa Syafaat Terbaru",
       "amen_completed": "Amin Selesai"
     }
+  },
+  "auth": {
+    "login_title": "Masuk Anggota AAMEN",
+    "login_subtitle": "Selamat datang di Komunitas Iman Anabaptis Menonit 13 Negara Asia.",
+    "recommended_badge": "Direkomendasikan: Masuk Tercepat & Paling Aman",
+    "google_login_btn": "Lanjutkan dengan Google",
+    "google_checking": "Memverifikasi akun Google...",
+    "google_desc": "Terhubung secara aman dalam 1 detik tanpa kata sandi terpisah.",
+    "sns_title": "Masuk Cepat via Messenger & Media Sosial 13 Negara Asia",
+    "divider_or": "ATAU",
+    "email_toggle_btn": "Masuk dengan Email / Kata Sandi",
+    "id_label": "Nama Pengguna atau Alamat Email",
+    "id_placeholder": "admin atau name@example.com",
+    "password_label": "Kata Sandi",
+    "password_placeholder": "••••••••",
+    "email_login_btn": "Masuk Email / Administrator",
+    "logging_in": "Memverifikasi masuk...",
+    "not_member_yet": "Belum memiliki akun?",
+    "signup_link": "Mulai sekarang dengan Google →",
+    "language_switcher": "Pilih Mode Bahasa (Language)",
+    "signup_title": "Daftar Anggota AAMEN",
+    "signup_subtitle": "Setelah verifikasi Google, atur ID, kata sandi, dan gereja Anda di Halaman Saya untuk bergabung sebagai anggota penuh.",
+    "signup_official_badge": "Verifikasi Resmi: Integrasi Akun Google Standar",
+    "google_signup_btn": "Daftar dengan Google",
+    "google_signup_checking": "Menghubungkan Akun Google...",
+    "already_member": "Sudah punya akun?",
+    "login_link": "Masuk sekarang →",
+    "login_success_dev": "💻 Berhasil masuk dengan hak akses [Pengembang]!",
+    "login_success_admin": "👑 Selamat datang [Administrator Utama: {name}]!",
+    "login_success_member": "✨ Berhasil masuk sebagai [{name}]!",
+    "login_error_credentials": "Nama pengguna (email) atau kata sandi salah.",
+    "login_error_network": "Terjadi kesalahan saat masuk. Silakan coba lagi.",
+    "google_login_success": "🎉 Verifikasi Google berhasil! Silakan atur informasi di Halaman Saya."
   }
 }

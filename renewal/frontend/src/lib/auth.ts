@@ -5,7 +5,7 @@ export interface AuthUser {
   id: string
   email: string
   name: string
-  role: 'developer' | 'super_admin' | 'country_admin' | 'regular' | 'associate' | 'guest'
+  role: 'developer' | 'super_admin' | 'country_admin' | 'level3_worker' | 'regular' | 'associate' | 'guest'
   tierLevel: MemberLevel
   status?: string
   country_code?: string

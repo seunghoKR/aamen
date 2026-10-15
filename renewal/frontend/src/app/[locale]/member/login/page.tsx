@@ -4,16 +4,127 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import { ShieldCheck, CheckCircle2, ArrowRight, Mail, Lock, Settings, UserCheck, MessageSquare, Send } from 'lucide-react'
+import { ShieldCheck, Mail, Lock, MessageSquare, Send } from 'lucide-react'
 import { saveAuthUser, AuthUser } from '@/lib/auth'
+import { MemberLevel } from '@/lib/store'
+import AuthLanguageSwitcher from '@/components/common/AuthLanguageSwitcher'
+import { getAuthText } from '@/data/authTranslations'
+
+interface PresetMember {
+  id: string
+  name: string
+  email: string
+  passwords: string[]
+  role: AuthUser['role']
+  tierLevel: MemberLevel
+  country_code: string
+  affiliation?: string
+}
+
+const PRESET_MEMBERS: PresetMember[] = [
+  {
+    id: 'admin',
+    name: '이승호',
+    email: 'leeshkr@gmail.com',
+    passwords: ['seungho0409!', 'a14241425', 'admin1234', 'aamen2026!', '1234'],
+    role: 'developer',
+    tierLevel: 5,
+    country_code: 'KR',
+    affiliation: '누리오 (개발자)',
+  },
+  {
+    id: 'gimac',
+    name: '배용하',
+    email: 'gimac1424@gmail.com',
+    passwords: ['a14241425', 'aamen1234', 'aamen2026!'],
+    role: 'super_admin',
+    tierLevel: 5,
+    country_code: 'KR',
+    affiliation: 'AAMEN 본부',
+  },
+  {
+    id: 'Jeanette',
+    name: 'Jeanette Hanson',
+    email: 'Jeanette.m.hanson@gmail.com',
+    passwords: ['Jeanette2026!!', 'aamen2026!'],
+    role: 'super_admin',
+    tierLevel: 5,
+    country_code: 'US',
+    affiliation: 'MWC',
+  },
+  {
+    id: 'Jeremiah',
+    name: 'Jeremiah',
+    email: 'hkjerechoi@gmail.com',
+    passwords: ['Jeremiah2026!!', 'aamen2026!'],
+    role: 'country_admin',
+    tierLevel: 4,
+    country_code: 'HK',
+    affiliation: '',
+  },
+  {
+    id: 'Paulus',
+    name: 'Paulus S. Widjaja',
+    email: 'psw.dosen@gmail.com',
+    passwords: ['Paulus2026!!', 'aamen2026!'],
+    role: 'country_admin',
+    tierLevel: 4,
+    country_code: 'ID',
+    affiliation: '',
+  },
+  {
+    id: 'Andi',
+    name: 'Andi Santoso',
+    email: 'andiospeace@gmail.com',
+    passwords: ['Andi2026!!', 'aamen2026!'],
+    role: 'country_admin',
+    tierLevel: 4,
+    country_code: 'ID',
+    affiliation: 'MWC / MNN',
+  },
+  {
+    id: 'Hiro',
+    name: 'Hiro Katano',
+    email: 'h98484435@gmail.com',
+    passwords: ['Hiro2026!!', 'aamen2026!'],
+    role: 'country_admin',
+    tierLevel: 4,
+    country_code: 'US',
+    affiliation: '',
+  },
+  {
+    id: 'bockki',
+    name: 'Kim Bockki',
+    email: 'bockkikim@gmail.com',
+    passwords: ['bockki2026!!', 'aamen2026!'],
+    role: 'level3_worker',
+    tierLevel: 3,
+    country_code: 'KR',
+    affiliation: 'MCSK',
+  },
+]
 
 export default function LoginPage() {
   const router = useRouter()
   const params = useParams()
   const currentLocale = (params?.locale as string) || 'ko'
   const getLocalizedPath = (path: string) => `/${currentLocale}${path.startsWith('/') ? path : `/${path}`}`
+
+  // next-intl 번역 훅 (auth 네임스페이스)
+  const tRaw = useTranslations('auth')
+  const t = (key: any, values?: Record<string, string>): string => {
+    try {
+      if (values) {
+        return tRaw(key, values)
+      }
+      return tRaw(key)
+    } catch {
+      return getAuthText(currentLocale, key, key)
+    }
+  }
 
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
@@ -46,17 +157,17 @@ export default function LoginPage() {
             provider: 'google',
             role: 'regular',
             tierLevel: 2,
-            country_code: 'KR',
+            country_code: currentLocale === 'ja' ? 'JP' : currentLocale === 'zh-TW' ? 'TW' : currentLocale === 'th' ? 'TH' : 'KR',
             status: 'active',
           }
 
       saveAuthUser(user)
       setIsLoading(false)
       if (isDev) {
-        alert('🎉 Google 계정(leeshkr@gmail.com) [개발자] 관리 권한으로 로그인이 완료되었습니다!')
+        alert(t('login_success_dev'))
         router.push(getLocalizedPath('/admin'))
       } else {
-        alert('🎉 Google 계정 인증이 완료되었습니다! 마이페이지에서 필수 정보(아이디, 비밀번호, 소속교회)를 설정해 주세요.')
+        alert(t('google_login_success'))
         router.push(getLocalizedPath('/member/mypage?welcome=true'))
       }
     }, 600)
@@ -85,7 +196,7 @@ export default function LoginPage() {
       }
       saveAuthUser(user)
       setIsLoading(false)
-      alert(`🎉 ${providerNames[provider]} 계정으로 정회원 인증 로그인이 완료되었습니다!`)
+      alert(`🎉 ${providerNames[provider]} ${t('login_success_member', { name: providerNames[provider] })}`)
       router.push(getLocalizedPath('/'))
     }, 600)
   }
@@ -132,98 +243,109 @@ export default function LoginPage() {
         setIsLoading(false)
 
         if (userRole === 'developer') {
-          alert('💻 [개발자] 관리 권한으로 로그인되었습니다!')
+          alert(t('login_success_dev'))
           router.push(getLocalizedPath('/admin'))
         } else if (userRole === 'super_admin') {
-          alert('👑 [총괄 관리자: ' + m.name + '] 님 환영합니다!')
+          alert(t('login_success_admin', { name: m.name }))
           router.push(getLocalizedPath('/'))
         } else {
-          alert('✨ [' + m.name + '] 님으로 로그인되었습니다!')
+          alert(t('login_success_member', { name: m.name }))
           router.push(getLocalizedPath('/'))
         }
         return
       }
 
-      // 오프라인/정적 빌드 환경 또는 fallback 처리
-      if (
-        ident.toLowerCase() === 'admin' ||
-        ident.toLowerCase() === 'leeshkr@gmail.com' ||
-        ident.toLowerCase() === 'nuriohga@gmail.com'
-      ) {
-        const devUser: AuthUser = {
-          id: 'admin',
-          name: '이승호',
-          email: 'leeshkr@gmail.com',
-          role: 'developer',
-          tierLevel: 5,
-          country_code: 'KR',
+      // 🌟 등록된 회원 및 관리자 계정 인증 (Jeanette, Jeremiah, Paulus, Andi, Hiro, Bockki 등)
+      const matchedAccount = PRESET_MEMBERS.find(
+        (acc) =>
+          (acc.id.toLowerCase() === ident.toLowerCase() || acc.email.toLowerCase() === ident.toLowerCase()) &&
+          (acc.passwords.includes(pw) || pw === 'aamen2026!')
+      )
+
+      if (matchedAccount) {
+        const authUser: AuthUser = {
+          id: matchedAccount.id,
+          name: matchedAccount.name,
+          email: matchedAccount.email,
+          role: matchedAccount.role,
+          tierLevel: matchedAccount.tierLevel,
+          country_code: matchedAccount.country_code,
           status: 'active',
         }
-        saveAuthUser(devUser)
+
+        saveAuthUser(authUser)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('aamen_profile_id', matchedAccount.id)
+          localStorage.setItem('aamen_profile_name', matchedAccount.name)
+          localStorage.setItem('aamen_profile_name_en', matchedAccount.name)
+          localStorage.setItem('aamen_profile_country', matchedAccount.country_code)
+          localStorage.setItem('aamen_profile_password', pw)
+          if (matchedAccount.affiliation) {
+            localStorage.setItem('aamen_profile_affiliation', matchedAccount.affiliation)
+          }
+        }
+
         setIsLoading(false)
-        alert('💻 [개발자: ' + devUser.name + '] 관리 권한으로 로그인되었습니다!')
-        router.push(getLocalizedPath('/admin'))
+        if (matchedAccount.role === 'developer') {
+          alert(t('login_success_dev'))
+          router.push(getLocalizedPath('/admin'))
+        } else if (matchedAccount.role === 'super_admin') {
+          alert(t('login_success_admin', { name: matchedAccount.name }))
+          router.push(getLocalizedPath('/'))
+        } else {
+          alert(t('login_success_member', { name: matchedAccount.name }))
+          router.push(getLocalizedPath('/'))
+        }
         return
       }
 
-      if (
-        (ident.toLowerCase() === 'gimac' || ident.toLowerCase() === 'gimac1424@gmail.com') &&
-        (pw === 'a14241425' || pw === 'aamen1234' || pw === 'aamen2026!')
-      ) {
-        const adminUser: AuthUser = {
-          id: 'gimac',
-          name: '배용하',
-          email: 'gimac1424@gmail.com',
-          role: 'super_admin',
-          tierLevel: 5,
-          country_code: 'KR',
-          status: 'active',
-        }
-        saveAuthUser(adminUser)
-        setIsLoading(false)
-        alert('👑 [총괄 관리자: 배용하] 님 환영합니다!')
-        router.push(getLocalizedPath('/'))
-        return
-      }
-
-      setErrorMessage(data.error || '아이디(이메일) 또는 비밀번호가 올바르지 않습니다.')
+      setErrorMessage(data.error || t('login_error_credentials'))
     } catch (err) {
       console.error(err)
       // 네트워크 에러 시 로컬 fallback 인증
-      if (
-        ident.toLowerCase() === 'admin' ||
-        ident.toLowerCase() === 'leeshkr@gmail.com' ||
-        ident.toLowerCase() === 'nuriohga@gmail.com'
-      ) {
-        saveAuthUser({
-          id: 'admin',
-          name: '개발자 관리자 (이승호)',
-          email: 'leeshkr@gmail.com',
-          role: 'developer',
-          tierLevel: 5,
-          country_code: 'KR',
+      const matchedAccount = PRESET_MEMBERS.find(
+        (acc) =>
+          (acc.id.toLowerCase() === ident.toLowerCase() || acc.email.toLowerCase() === ident.toLowerCase()) &&
+          (acc.passwords.includes(pw) || pw === 'aamen2026!')
+      )
+
+      if (matchedAccount) {
+        const authUser: AuthUser = {
+          id: matchedAccount.id,
+          name: matchedAccount.name,
+          email: matchedAccount.email,
+          role: matchedAccount.role,
+          tierLevel: matchedAccount.tierLevel,
+          country_code: matchedAccount.country_code,
           status: 'active',
-        })
-        alert('💻 [개발자] 관리 권한으로 로그인되었습니다!')
-        router.push(getLocalizedPath('/admin'))
+        }
+
+        saveAuthUser(authUser)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('aamen_profile_id', matchedAccount.id)
+          localStorage.setItem('aamen_profile_name', matchedAccount.name)
+          localStorage.setItem('aamen_profile_name_en', matchedAccount.name)
+          localStorage.setItem('aamen_profile_country', matchedAccount.country_code)
+          localStorage.setItem('aamen_profile_password', pw)
+          if (matchedAccount.affiliation) {
+            localStorage.setItem('aamen_profile_affiliation', matchedAccount.affiliation)
+          }
+        }
+
+        setIsLoading(false)
+        if (matchedAccount.role === 'developer') {
+          alert(t('login_success_dev'))
+          router.push(getLocalizedPath('/admin'))
+        } else if (matchedAccount.role === 'super_admin') {
+          alert(t('login_success_admin', { name: matchedAccount.name }))
+          router.push(getLocalizedPath('/'))
+        } else {
+          alert(t('login_success_member', { name: matchedAccount.name }))
+          router.push(getLocalizedPath('/'))
+        }
         return
       }
-      if (
-        (ident.toLowerCase() === 'gimac' || ident.toLowerCase() === 'gimac1424@gmail.com') &&
-        (pw === 'a14241425' || pw === 'aamen1234')
-      ) {
-        saveAuthUser({
-          id: 'gimac',
-          name: '배용하',
-          email: 'gimac1424@gmail.com',
-          role: 'super_admin',
-          tierLevel: 5,
-        })
-        alert('👑 [총괄 관리자: 배용하] 님 환영합니다!')
-        router.push(getLocalizedPath('/'))
-        return
-      }
-      setErrorMessage('로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.')
+      setErrorMessage(t('login_error_network'))
     } finally {
       setIsLoading(false)
     }
@@ -235,6 +357,15 @@ export default function LoginPage() {
 
       <main className="flex-1 flex items-center justify-center py-16 px-4">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-10 border border-gray-100 shadow-xl text-center space-y-6">
+          {/* 상단 다국어 모드 선택기 */}
+          <div className="flex items-center justify-between pb-1 border-b border-gray-100/60">
+            <span className="text-[11px] font-extrabold text-emerald-800 tracking-wider uppercase flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              AAMEN 13 Nations
+            </span>
+            <AuthLanguageSwitcher currentLocale={currentLocale} label={t('language_switcher')} />
+          </div>
+
           {/* 로고 & 환영 헤더 */}
           <div>
             <div className="flex justify-center mb-4">
@@ -248,10 +379,10 @@ export default function LoginPage() {
               />
             </div>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-              AAMEN 회원 로그인
+              {t('login_title')}
             </h1>
             <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-              13개국 아시아 아나밥티스트 메노나이트 신앙 공동체에 오신 것을 환영합니다.
+              {t('login_subtitle')}
             </p>
           </div>
 
@@ -259,14 +390,14 @@ export default function LoginPage() {
           <div className="p-5 rounded-2xl bg-gradient-to-b from-gray-50/80 to-emerald-50/30 border border-gray-200/80 shadow-2xs space-y-3">
             <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800">
               <ShieldCheck size={15} />
-              <span>권장: 가장 빠르고 안전한 로그인</span>
+              <span>{t('recommended_badge')}</span>
             </div>
 
             {/* 공식 구글 로그인 버튼 */}
             <button
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="w-full py-3.5 px-4 bg-white hover:bg-gray-50 border border-gray-300 rounded-2xl font-bold text-sm text-gray-800 shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-3 active:scale-[0.99]"
+              className="w-full py-3.5 px-4 bg-white hover:bg-gray-50 border border-gray-300 rounded-2xl font-bold text-sm text-gray-800 shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
             >
               {/* 구글 4색 공식 로고 SVG */}
               <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
@@ -287,18 +418,18 @@ export default function LoginPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              <span>{isLoading ? 'Google 계정 확인 중...' : 'Google 계정으로 계속하기'}</span>
+              <span>{isLoading ? t('google_checking') : t('google_login_btn')}</span>
             </button>
 
             <p className="text-[11px] text-gray-400 leading-snug">
-              별도 비밀번호 없이 1초 만에 안전하게 정회원으로 연결됩니다.
+              {t('google_desc')}
             </p>
           </div>
 
           {/* 🌐 아시아 13개국 맞춤형 3대 SNS 간편 로그인 */}
           <div className="space-y-2 pt-1">
             <div className="text-[11px] font-bold text-gray-500 text-center">
-              아시아 13개국 맞춤형 메신저 & SNS 간편 로그인
+              {t('sns_title')}
             </div>
             <div className="grid grid-cols-3 gap-2">
               {/* WhatsApp */}
@@ -342,7 +473,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-[11px] uppercase">
-              <span className="bg-white px-3 text-gray-400 font-semibold">또는</span>
+              <span className="bg-white px-3 text-gray-400 font-semibold">{t('divider_or')}</span>
             </div>
           </div>
 
@@ -357,35 +488,35 @@ export default function LoginPage() {
           {!showEmailForm ? (
             <button
               onClick={() => setShowEmailForm(true)}
-              className="w-full py-2.5 px-4 text-xs font-bold text-gray-600 hover:text-emerald-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 px-4 text-xs font-bold text-gray-600 hover:text-emerald-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Mail size={14} />
-              <span>기존 이메일/비밀번호로 로그인</span>
+              <span>{t('email_toggle_btn')}</span>
             </button>
           ) : (
             <form onSubmit={handleEmailLogin} className="space-y-3 text-left">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  아이디 또는 이메일 주소
+                  {t('id_label')}
                 </label>
                 <input
                   type="text"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin 또는 name@example.com"
+                  placeholder={t('id_placeholder')}
                   className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">비밀번호</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">{t('password_label')}</label>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t('password_placeholder')}
                   className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                 />
               </div>
@@ -393,14 +524,14 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
               >
                 {isLoading ? (
-                  <span>로그인 인증 중...</span>
+                  <span>{t('logging_in')}</span>
                 ) : (
                   <>
                     <Lock size={15} />
-                    <span>이메일 / 관리자 로그인</span>
+                    <span>{t('email_login_btn')}</span>
                   </>
                 )}
               </button>
@@ -409,12 +540,12 @@ export default function LoginPage() {
 
           {/* 하단 안내 */}
           <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-            <span>아직 회원이 아니신가요?</span>
+            <span>{t('not_member_yet')}</span>
             <Link
               href={getLocalizedPath('/member/signup')}
               className="font-bold text-emerald-700 hover:underline cursor-pointer"
             >
-              Google로 바로 시작하기 →
+              {t('signup_link')}
             </Link>
           </div>
         </div>

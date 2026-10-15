@@ -211,6 +211,9 @@ export default function RecentPostsSection() {
     async function fetchLive() {
       try {
         const res = await fetch('/api/posts?limit=12&role=regular')
+        if (!res.ok) return
+        const contentType = res.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) return
         const data = await res.json()
         if (data.success && data.data && data.data.length > 0) {
           const apiPosts = data.data
@@ -233,7 +236,7 @@ export default function RecentPostsSection() {
           }
         }
       } catch (e) {
-        console.error('Failed to load live community posts:', e)
+        // 백엔드 미연결 시 기본 데이터 유지
       }
     }
     fetchLive()

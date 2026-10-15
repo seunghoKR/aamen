@@ -277,5 +277,38 @@
       "recent_prayers_title": "हाल की मध्यस्थता प्रार्थनाएं",
       "amen_completed": "आमीन पूर्ण हुआ"
     }
+  },
+  "auth": {
+    "login_title": "AAMEN सदस्य लॉगिन",
+    "login_subtitle": "13 एशियाई देशों के एनाबैप्टिस्ट मेनोनाइट विश्वास समुदाय में आपका स्वागत है।",
+    "recommended_badge": "अनुशंसित: सबसे तेज़ और सुरक्षित लॉगिन",
+    "google_login_btn": "Google के साथ जारी रखें",
+    "google_checking": "Google खाते की पुष्टि हो रही है...",
+    "google_desc": "बिना किसी अतिरिक्त पासवर्ड के 1 सेकंड में सुरक्षित रूप से सदस्य बनें।",
+    "sns_title": "13 एशियाई देशों के मैसेंजर और सोशल मीडिया के जरिए त्वरित लॉगिन",
+    "divider_or": "या",
+    "email_toggle_btn": "ईमेल / पासवर्ड से लॉगिन करें",
+    "id_label": "उपयोगकर्ता नाम या ईमेल पता",
+    "id_placeholder": "admin या name@example.com",
+    "password_label": "पासवर्ड",
+    "password_placeholder": "••••••••",
+    "email_login_btn": "ईमेल / व्यवस्थापक लॉगिन",
+    "logging_in": "लॉगिन प्रमाणित किया जा रहा है...",
+    "not_member_yet": "क्या आप अभी तक सदस्य नहीं हैं?",
+    "signup_link": "Google से तुरंत शुरू करें →",
+    "language_switcher": "भाषा मोड चुनें (Language)",
+    "signup_title": "AAMEN सदस्य पंजीकरण",
+    "signup_subtitle": "Google सत्यापन के बाद, पूर्ण सदस्य के रूप में शामिल होने के लिए अपने प्रोफ़ाइल में आईडी, पासवर्ड और चर्च का विवरण दर्ज करें।",
+    "signup_official_badge": "आधिकारिक सत्यापन: Google खाता एकीकरण डिफ़ॉल्ट",
+    "google_signup_btn": "Google से पंजीकरण करें",
+    "google_signup_checking": "Google खाता जोड़ा जा रहा है...",
+    "already_member": "क्या आपके पास पहले से खाता है?",
+    "login_link": "लॉगिन करें →",
+    "login_success_dev": "💻 [डेवलपर] प्रबंधन अधिकारों के साथ लॉगिन किया गया!",
+    "login_success_admin": "👑 स्वागत है [मुख्य व्यवस्थापक: {name}]!",
+    "login_success_member": "✨ [{name}] के रूप में लॉगिन किया गया!",
+    "login_error_credentials": "उपयोगकर्ता नाम (ईमेल) या पासवर्ड गलत है।",
+    "login_error_network": "लॉगिन के दौरान त्रुटि हुई। कृपया पुनः प्रयास करें।",
+    "google_login_success": "🎉 Google सत्यापन पूरा हुआ! कृपया प्रोफ़ाइल में अपनी जानकारी सेट करें।"
   }
 }

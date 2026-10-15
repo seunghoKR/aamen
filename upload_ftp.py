@@ -45,5 +45,20 @@ def main():
     ftp.quit()
     print(f"All files uploaded successfully to {target.upper()} ({cfg['domain']})!")
 
+    # 실서버 압축 해제 자동 실행
+    print(f"Triggering unzipper via HTTP: {cfg['domain']}/clean_unzip.php ...")
+    try:
+        import urllib.request
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(f"{cfg['domain']}/clean_unzip.php", headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=90, context=ctx) as response:
+            res_body = response.read().decode('utf-8')
+            print(f"Unzip response: {res_body}")
+    except Exception as e:
+        print(f"Warning: Could not trigger unzip via HTTP: {e}")
+
 if __name__ == "__main__":
     main()

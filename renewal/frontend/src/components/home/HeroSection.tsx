@@ -49,11 +49,18 @@ export default function HeroSection() {
       console.error(e)
     }
 
-    // 2. 서버 API 동기화
+    // 2. 서버 API 동기화 (오프라인/로컬 환경 대응)
     fetch('/api/banners')
-      .then((res) => res.json())
       .then((res) => {
-        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        if (!res.ok) return null
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          return res.json()
+        }
+        return null
+      })
+      .then((res) => {
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
           const mapped: BannerConfig[] = res.data.map((b: any) => ({
             id: b.id,
             type: b.banner_type === 'image' ? 'image' : 'gradient_text',
@@ -73,8 +80,8 @@ export default function HeroSection() {
           localStorage.setItem('aamen_banners_list', JSON.stringify(mapped))
         }
       })
-      .catch((err) => {
-        console.log('Using local banner defaults:', err)
+      .catch(() => {
+        // Fallback to local default banners cleanly
       })
 
     // 스토리지 변경 이벤트 리스너 (관리자 페이지 수정 실시간 반영)
