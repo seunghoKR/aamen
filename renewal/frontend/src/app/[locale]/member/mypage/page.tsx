@@ -73,6 +73,25 @@ function getCallingCodeForCountry(countryCode?: string): string {
   return COUNTRY_CALLING_CODES[upper]?.code || '+82'
 }
 
+function parsePhoneNumber(rawPhone: string, countryCode?: string): { callingCode: string; localNumber: string } {
+  const trimmed = (rawPhone || '').trim()
+  if (trimmed.startsWith('+')) {
+    const spaceIdx = trimmed.indexOf(' ')
+    if (spaceIdx !== -1) {
+      return {
+        callingCode: trimmed.slice(0, spaceIdx).trim(),
+        localNumber: trimmed.slice(spaceIdx + 1).trim(),
+      }
+    }
+    const match = trimmed.match(/^(\+\d{1,4})(.*)$/)
+    if (match) {
+      return { callingCode: match[1], localNumber: match[2].trim() }
+    }
+  }
+  const defaultCode = getCallingCodeForCountry(countryCode)
+  return { callingCode: defaultCode, localNumber: trimmed }
+}
+
 // 🌟 등록된 주요 회원 프리셋 정보 (사용자별 고유 정보 및 국가별 0 채움 전화번호)
 const MEMBER_PRESETS: Record<string, {
   name: string
@@ -168,6 +187,7 @@ export default function MyPage() {
   const locale = useLocale()
   const t = useTranslations('mypage')
   const currentLocale = locale || 'ko'
+  const isKo = currentLocale === 'ko'
   const getLocalizedPath = (path: string) => `/${currentLocale}${path.startsWith('/') ? path : `/${path}`}`
 
   const myTexts = getMyPageTexts(currentLocale)
@@ -235,17 +255,20 @@ export default function MyPage() {
   const [telegramEmergencyOnly, setTelegramEmergencyOnly] = useState(false)
   const [isSendingTelegramTest, setIsSendingTelegramTest] = useState(false)
 
-  // 💬 왓츠앱(WhatsApp) 1번 방식 연동 & 소통 설정
+  // 💬 왓츠앱(WhatsApp) 연동 & 소통 설정
   const [whatsappEnabled, setWhatsappEnabled] = useState(true)
   const [whatsappCountryCode, setWhatsappCountryCode] = useState('+82')
-  const [whatsappPhone, setWhatsappPhone] = useState('010-1234-5678')
+  const [whatsappPhone, setWhatsappPhone] = useState('')
   const [whatsappUrgentPrayer, setWhatsappUrgentPrayer] = useState(true)
   const [whatsappWeeklyDigest, setWhatsappWeeklyDigest] = useState(true)
   const [isSendingWhatsAppTest, setIsSendingWhatsAppTest] = useState(false)
+  const [isWhatsAppVerifyModalOpen, setIsWhatsAppVerifyModalOpen] = useState(false)
+  const [verifyCountryCode, setVerifyCountryCode] = useState('+82')
+  const [verifyPhone, setVerifyPhone] = useState('')
 
   // 🌐 Google 중심 4대 SNS 및 메신저 연동 상태
   const [connectedGoogle, setConnectedGoogle] = useState(true)
-  const [connectedWhatsapp, setConnectedWhatsapp] = useState(true)
+  const [connectedWhatsapp, setConnectedWhatsapp] = useState(false) // 🔒 실제 인증 완료 전에는 false!
   const [connectedFacebook, setConnectedFacebook] = useState(true)
   const [facebookProfileName, setFacebookProfileName] = useState('이승호 (Facebook)')
   const [connectedTelegram, setConnectedTelegram] = useState(true)
@@ -317,8 +340,19 @@ export default function MyPage() {
     setProfilePhone(resolvedPhone)
     setProfileAvatarId(resolvedAvatar)
 
-    // WhatsApp 국가 코드 자동 동기화
-    setWhatsappCountryCode(getCallingCodeForCountry(resolvedCountry))
+    // WhatsApp 국가 코드 및 번호, 인증 상태 동기화
+    const parsedWa = parsePhoneNumber(resolvedPhone, resolvedCountry)
+    const savedWaPhone = typeof window !== 'undefined' ? localStorage.getItem(`aamen_whatsapp_phone_${rawId}`) : null
+    const savedWaCountry = typeof window !== 'undefined' ? localStorage.getItem(`aamen_whatsapp_country_${rawId}`) : null
+    const isWaVerified = typeof window !== 'undefined' ? localStorage.getItem(`aamen_whatsapp_verified_${rawId}`) === 'true' : false
+
+    // 기존 더미 번호(010-1234-5678)는 프로필 번호로 덮어쓰기
+    const finalWaPhone = (savedWaPhone && !savedWaPhone.includes('1234-5678')) ? savedWaPhone : parsedWa.localNumber
+    const finalWaCountry = savedWaCountry || parsedWa.callingCode
+
+    setWhatsappCountryCode(finalWaCountry)
+    setWhatsappPhone(finalWaPhone)
+    setConnectedWhatsapp(isWaVerified)
 
     // 초기값 세팅 (프로필 변경 감지 기준)
     setInitialProfile({
@@ -547,6 +581,20 @@ export default function MyPage() {
       return
     }
 
+    // WhatsApp 연동 번호도 프로필 전화번호로 자동 동기화!
+    const parsedWa = parsePhoneNumber(cleanPhone, profileCountry)
+    setWhatsappCountryCode(parsedWa.callingCode)
+    setWhatsappPhone(parsedWa.localNumber)
+
+    // 만약 기존에 인증되어 있던 번호와 달라졌다면, 새 번호에 대해 재검증이 필요하도록 상태 변경
+    const prevPhone = typeof window !== 'undefined' ? localStorage.getItem(`aamen_profile_phone_${profileId}`) : null
+    if (prevPhone && prevPhone !== cleanPhone) {
+      setConnectedWhatsapp(false)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`aamen_whatsapp_verified_${profileId}`, 'false')
+      }
+    }
+
     if (typeof window !== 'undefined') {
       localStorage.setItem(`aamen_profile_name_${profileId}`, cleanLocalName)
       localStorage.setItem(`aamen_profile_name_en_${profileId}`, cleanEnName)
@@ -554,6 +602,10 @@ export default function MyPage() {
       localStorage.setItem(`aamen_profile_country_${profileId}`, profileCountry)
       localStorage.setItem(`aamen_profile_phone_${profileId}`, cleanPhone)
       localStorage.setItem(`aamen_profile_avatar_${profileId}`, profileAvatarId)
+      localStorage.setItem(`aamen_whatsapp_phone_${profileId}`, parsedWa.localNumber)
+      localStorage.setItem(`aamen_whatsapp_country_${profileId}`, parsedWa.callingCode)
+      localStorage.setItem('aamen_whatsapp_phone', parsedWa.localNumber)
+      localStorage.setItem('aamen_whatsapp_country', parsedWa.callingCode)
 
       // AuthUser 동기화 (헤더와 사이트 전역에 반영)
       if (currentUser) {
@@ -590,6 +642,84 @@ export default function MyPage() {
     setIsWelcomeBanner(false)
     showToast(myTexts.toastProfileSaved)
     if (onSuccess) onSuccess()
+  }
+
+  // 💬 WhatsApp 인증 모달 열기
+  const handleOpenWhatsAppVerifyModal = () => {
+    const parsed = parsePhoneNumber(profilePhone, profileCountry)
+    setVerifyCountryCode(whatsappCountryCode || parsed.callingCode)
+    setVerifyPhone(whatsappPhone || parsed.localNumber)
+    setIsWhatsAppVerifyModalOpen(true)
+  }
+
+  // 💬 WhatsApp 인증 확인 링크 열기 (1단계)
+  const handleSendWhatsAppVerifyLink = () => {
+    const cleanNum = verifyPhone.replace(/[^0-9]/g, '')
+    if (!cleanNum || cleanNum.includes('0000000') || cleanNum.includes('12345678')) {
+      showToast(isKo ? '실제 사용하시는 유효한 WhatsApp 번호를 입력하세요.' : 'Please enter a valid active WhatsApp number.')
+      return
+    }
+    const cleanCalling = verifyCountryCode.replace(/[^0-9]/g, '')
+    const fullDigits = `${cleanCalling}${cleanNum.startsWith('0') ? cleanNum.slice(1) : cleanNum}`
+    const msg = `🕊️ *[AAMEN 아시아 네트워크 WhatsApp 연동 인증]*\n\n샬롬! *${cleanName(profileName)}*님,\n본 전화번호(${verifyCountryCode} ${verifyPhone})를 AAMEN 네트워크 계정과 연동합니다.\n\n• 인증 회원: ${cleanName(profileName)} (${profileEmail})\n• 소속: ${profileAffiliation || 'AAMEN 네트워크'}\n• 인증 일시: ${new Date().toLocaleString()}\n\n이 메시지를 확인하셨다면 AAMEN 웹사이트에서 [인증 완료]를 눌러주세요.`
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+    showToast(isKo ? '💬 WhatsApp 인증 확인 창이 열렸습니다!' : '💬 WhatsApp verification window opened!')
+  }
+
+  // 💬 WhatsApp 인증 및 연동 완료 처리 (2단계)
+  const handleCompleteWhatsAppVerify = () => {
+    const cleanNum = verifyPhone.trim()
+    if (!cleanNum || cleanNum.includes('000-0000') || cleanNum.includes('1234-5678') || cleanNum.length < 5) {
+      alert(isKo ? '실제 사용하시는 유효한 WhatsApp 전화번호를 입력해 주세요.' : 'Please enter a valid active WhatsApp phone number.')
+      return
+    }
+
+    const newFullPhone = `${verifyCountryCode} ${cleanNum}`
+    setWhatsappCountryCode(verifyCountryCode)
+    setWhatsappPhone(cleanNum)
+    setProfilePhone(newFullPhone)
+    setConnectedWhatsapp(true)
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`aamen_whatsapp_verified_${profileId}`, 'true')
+      localStorage.setItem(`aamen_whatsapp_phone_${profileId}`, cleanNum)
+      localStorage.setItem(`aamen_whatsapp_country_${profileId}`, verifyCountryCode)
+      localStorage.setItem(`aamen_profile_phone_${profileId}`, newFullPhone)
+      localStorage.setItem('aamen_whatsapp_phone', cleanNum)
+      localStorage.setItem('aamen_whatsapp_country', verifyCountryCode)
+
+      if (profileId.toLowerCase() === 'admin') {
+        localStorage.setItem('aamen_profile_phone', newFullPhone)
+      }
+
+      if (currentUser) {
+        const updated: AuthUser = {
+          ...currentUser,
+          phone: newFullPhone,
+        }
+        saveAuthUser(updated)
+        setCurrentUser(updated)
+      }
+    }
+
+    setIsWhatsAppVerifyModalOpen(false)
+    showToast(
+      isKo
+        ? `🎉 WhatsApp 번호(${newFullPhone})가 성공적으로 인증 및 연동되었습니다!`
+        : `🎉 WhatsApp (${newFullPhone}) verified and connected successfully!`
+    )
+  }
+
+  // 💬 WhatsApp 연동 해제 핸들러
+  const handleDisconnectWhatsApp = () => {
+    if (confirm(isKo ? 'WhatsApp 연동을 해제하시겠습니까? 알림 및 비상 연락 수신이 중단됩니다.' : 'Disconnect WhatsApp integration?')) {
+      setConnectedWhatsapp(false)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`aamen_whatsapp_verified_${profileId}`, 'false')
+      }
+      showToast(myTexts.toastWhatsappDisconnected)
+    }
   }
 
   // 🔑 계정 & 보안: 로그인 아이디(User ID) 저장 핸들러
@@ -1697,39 +1827,58 @@ export default function MyPage() {
                 </div>
 
                 {/* 2. WhatsApp 메신저 (동남아·남아시아 표준) */}
-                <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <div className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                  connectedWhatsapp ? 'bg-emerald-50/50 border-emerald-200' : 'bg-gray-50/70 border-gray-200'
+                }`}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0 shadow-xs ${
+                      connectedWhatsapp ? 'bg-emerald-600' : 'bg-gray-400'
+                    }`}>
                       <MessageSquare size={20} />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs sm:text-sm font-extrabold text-gray-900">{t('social_accounts.whatsapp_title')}</span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                          connectedWhatsapp ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'
+                          connectedWhatsapp
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            : 'bg-amber-100 text-amber-800 border border-amber-200'
                         }`}>
-                          {connectedWhatsapp ? t('social_accounts.status_connected') : t('social_accounts.status_disconnected')}
+                          {connectedWhatsapp
+                            ? (currentLocale === 'ko' ? '✅ 인증 및 연동 완료' : currentLocale === 'ja' ? '✅ 認証・連携完了' : 'Verified & Connected')
+                            : (currentLocale === 'ko' ? '⚠️ 미연동 (인증 필요)' : currentLocale === 'ja' ? '⚠️ 未連携 (認証要)' : 'Not Verified')}
                         </span>
                       </div>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
-                        {connectedWhatsapp ? `${whatsappCountryCode} ${whatsappPhone}` : t('social_accounts.whatsapp_desc')}
+                      <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                        {connectedWhatsapp
+                          ? `${whatsappCountryCode} ${whatsappPhone} (AAMEN 알림 수신 중)`
+                          : (whatsappPhone
+                              ? `${currentLocale === 'ko' ? '등록 대기 번호:' : 'Pending:'} ${whatsappCountryCode} ${whatsappPhone}`
+                              : (currentLocale === 'ko' ? '전화번호 인증 후 WhatsApp 알림을 수신하세요.' : 'Verify phone number to receive WhatsApp alerts.'))}
                       </p>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setConnectedWhatsapp(!connectedWhatsapp)
-                      showToast(connectedWhatsapp ? myTexts.toastWhatsappDisconnected : myTexts.toastWhatsappConnected)
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                      connectedWhatsapp
-                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                    }`}
-                  >
-                    {connectedWhatsapp ? t('social_accounts.disconnect_btn') : t('social_accounts.connect_btn')}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    {connectedWhatsapp ? (
+                      <button
+                        type="button"
+                        onClick={handleDisconnectWhatsApp}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all cursor-pointer"
+                      >
+                        {t('social_accounts.disconnect_btn')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleOpenWhatsAppVerifyModal}
+                        className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <MessageSquare size={13} />
+                        <span>{currentLocale === 'ko' ? 'WhatsApp 인증 및 연동' : 'Verify & Connect'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* 3. Facebook 계정 (미얀마·캄보디아·라오스 핵심) */}
@@ -2078,6 +2227,139 @@ export default function MyPage() {
                   className="py-2.5 px-2 sm:px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
                 >
                   {myTexts.leaveSaveAndGo}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* 💬 WhatsApp 번호 인증 & 연동 모달 (WhatsApp Verification & Integration Modal) */}
+        {isWhatsAppVerifyModalOpen && (
+          <div
+            onClick={() => setIsWhatsAppVerifyModalOpen(false)}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in zoom-in-95 border border-gray-100 max-h-[92vh] overflow-y-auto text-left"
+            >
+              {/* 상단 헤더 */}
+              <div className="flex items-start justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 shadow-xs">
+                    <MessageSquare size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base sm:text-lg text-gray-900 leading-tight">
+                      {isKo ? 'WhatsApp 메신저 연동 & 실시간 인증' : 'WhatsApp Verification & Link'}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {isKo
+                        ? 'AAMEN 네트워크 긴급 알림 및 사역 소통용 실제 번호를 인증합니다.'
+                        : 'Verify active WhatsApp phone for AAMEN ministry alerts.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsWhatsAppVerifyModalOpen(false)}
+                  className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer shrink-0"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* 연동할 전화번호 입력 */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-gray-700">
+                  {isKo ? '연동할 WhatsApp 전화번호' : 'WhatsApp Phone Number'}
+                </label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={verifyCountryCode}
+                    onChange={(e) => setVerifyCountryCode(e.target.value)}
+                    className="px-2.5 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-xs font-bold focus:outline-emerald-500 shrink-0"
+                  >
+                    <option value="+82">🇰🇷 +82 ({getLocalizedCountryName('KR', currentLocale)})</option>
+                    <option value="+62">🇮🇩 +62 ({getLocalizedCountryName('ID', currentLocale)})</option>
+                    <option value="+66">🇹🇭 +66 ({getLocalizedCountryName('TH', currentLocale)})</option>
+                    <option value="+84">🇻🇳 +84 ({getLocalizedCountryName('VN', currentLocale)})</option>
+                    <option value="+95">🇲🇲 +95 ({getLocalizedCountryName('MM', currentLocale)})</option>
+                    <option value="+91">🇮🇳 +91 ({getLocalizedCountryName('IN', currentLocale)})</option>
+                    <option value="+977">🇳🇵 +977 ({getLocalizedCountryName('NP', currentLocale)})</option>
+                    <option value="+81">🇯🇵 +81 ({getLocalizedCountryName('JP', currentLocale)})</option>
+                    <option value="+855">🇰🇭 +855 ({getLocalizedCountryName('KH', currentLocale)})</option>
+                    <option value="+856">🇱🇦 +856 ({getLocalizedCountryName('LA', currentLocale)})</option>
+                    <option value="+886">🇹🇼 +886 ({getLocalizedCountryName('TW', currentLocale)})</option>
+                    <option value="+852">🇭🇰 +852 ({getLocalizedCountryName('HK', currentLocale)})</option>
+                    <option value="+976">🇲🇳 +976 ({getLocalizedCountryName('MN', currentLocale)})</option>
+                    <option value="+63">🇵🇭 +63 ({getLocalizedCountryName('PH', currentLocale)})</option>
+                    <option value="+1">🇺🇸 +1 ({getLocalizedCountryName('US', currentLocale)})</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    value={verifyPhone}
+                    onChange={(e) => setVerifyPhone(e.target.value)}
+                    placeholder="010-4069-2739"
+                    className="flex-1 px-3.5 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-xs sm:text-sm font-mono font-bold focus:outline-emerald-500 focus:bg-white"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  {isKo
+                    ? '💡 프로필에 등록된 전화번호와 실시간으로 동기화됩니다.'
+                    : '💡 Automatically synchronizes with your profile phone number.'}
+                </p>
+              </div>
+
+              {/* 단계별 인증 가이드 카드 */}
+              <div className="space-y-3 p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/80">
+                <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
+                  <span>{isKo ? '1단계: WhatsApp에서 내 번호 확인 링크 열기' : 'Step 1: Open WhatsApp Test Link'}</span>
+                </div>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  {isKo
+                    ? '아래 버튼을 누르면 새 창에서 본인의 WhatsApp 앱 또는 웹이 열리며, AAMEN 공식 연동 메시지 확인 창이 나타납니다.'
+                    : 'Click below to open WhatsApp with your AAMEN verification test message.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSendWhatsAppVerifyLink}
+                  className="w-full py-2.5 bg-white hover:bg-emerald-100/60 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+                >
+                  <ExternalLink size={13} className="text-emerald-600" />
+                  <span>{isKo ? 'WhatsApp 열기 & 인증 링크 확인' : 'Open WhatsApp & Verify Link'}</span>
+                </button>
+              </div>
+
+              <div className="space-y-3 p-4 rounded-2xl bg-gray-50 border border-gray-200/80">
+                <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-gray-800 text-white flex items-center justify-center text-[10px] font-black">2</span>
+                  <span>{isKo ? '2단계: 연동 완료 및 검증 승인' : 'Step 2: Confirm & Complete Verification'}</span>
+                </div>
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  {isKo
+                    ? 'WhatsApp 번호 확인을 마치셨다면 [내 번호로 인증 완료]를 눌러 계정과 1:1로 영구 연결하세요.'
+                    : 'Confirm that this WhatsApp phone belongs to you and complete the connection.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCompleteWhatsAppVerify}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle2 size={14} />
+                  <span>{isKo ? '내 번호로 인증 완료 (연동 활성화)' : 'Complete Verification & Connect'}</span>
+                </button>
+              </div>
+
+              {/* 하단 취소 닫기 */}
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsWhatsAppVerifyModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  {isKo ? '닫기' : 'Close'}
                 </button>
               </div>
             </div>
