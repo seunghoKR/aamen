@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useParams } from 'next/navigation'
@@ -19,11 +19,30 @@ import {
   Plus,
   Check,
   User,
+  Trash2,
 } from 'lucide-react'
 import { saveAuthUser, AuthUser } from '@/lib/auth'
 import { MemberLevel } from '@/lib/store'
 import AuthLanguageSwitcher from '@/components/common/AuthLanguageSwitcher'
 import { getAuthText } from '@/data/authTranslations'
+
+export interface BrowserGoogleAccount {
+  name: string
+  email: string
+  avatar?: string
+}
+
+// 🌟 브라우저 초기 기본 계정 (사용자 본인의 기본 등록 계정)
+const DEFAULT_BROWSER_ACCOUNTS: BrowserGoogleAccount[] = [
+  {
+    name: '이승호',
+    email: 'leeshkr@gmail.com',
+  },
+  {
+    name: '배용하',
+    email: 'byh1424@gmail.com',
+  },
+]
 
 interface PresetMember {
   id: string
@@ -180,6 +199,49 @@ export default function LoginPage() {
   const [customGoogleEmail, setCustomGoogleEmail] = useState('')
   const [customGoogleName, setCustomGoogleName] = useState('')
 
+  // 🌟 이 브라우저에 저장된 사용자 본인의 구글 계정 목록 (로컬 브라우저 기억)
+  const [browserAccounts, setBrowserAccounts] = useState<BrowserGoogleAccount[]>([])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('aamen_saved_google_accounts')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setBrowserAccounts(parsed)
+            return
+          }
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      setBrowserAccounts(DEFAULT_BROWSER_ACCOUNTS)
+      localStorage.setItem('aamen_saved_google_accounts', JSON.stringify(DEFAULT_BROWSER_ACCOUNTS))
+    }
+  }, [])
+
+  const saveAccountToBrowser = (acc: BrowserGoogleAccount) => {
+    setBrowserAccounts((prev) => {
+      const filtered = prev.filter((a) => a.email.toLowerCase() !== acc.email.toLowerCase())
+      const updated = [acc, ...filtered]
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('aamen_saved_google_accounts', JSON.stringify(updated))
+      }
+      return updated
+    })
+  }
+
+  const removeBrowserAccount = (emailToRemove: string) => {
+    setBrowserAccounts((prev) => {
+      const updated = prev.filter((a) => a.email.toLowerCase() !== emailToRemove.toLowerCase())
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('aamen_saved_google_accounts', JSON.stringify(updated))
+      }
+      return updated
+    })
+  }
+
   // 🌟 구글 로그인 버튼 클릭 시 계정 선택 모달 열기
   const handleGoogleLogin = () => {
     setErrorMessage('')
@@ -257,6 +319,7 @@ export default function LoginPage() {
       }
 
       saveAuthUser(authUser)
+      saveAccountToBrowser({ name: finalMember.name, email: finalMember.email })
 
       if (typeof window !== 'undefined') {
         localStorage.setItem('aamen_profile_id', authUser.id)
@@ -739,9 +802,16 @@ export default function LoginPage() {
             className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-4 animate-in zoom-in-95 border border-gray-100 max-h-[92vh] overflow-y-auto text-left"
           >
             {/* 구글 모달 헤더 */}
-            <div className="flex items-start justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2.5">
-                <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24">
+            <div className="relative text-center pb-4 border-b border-gray-100">
+              <button
+                onClick={() => setIsGoogleModalOpen(false)}
+                className="absolute right-0 top-0 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex justify-center mb-2.5">
+                <svg className="w-8 h-8" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -759,110 +829,122 @@ export default function LoginPage() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <div>
-                  <h3 className="font-bold text-base text-gray-900 leading-tight">
-                    {isKo ? 'Google 계정으로 로그인' : 'Sign in with Google'}
-                  </h3>
-                  <p className="text-[11px] text-gray-500">
-                    {isKo ? 'AAMEN 아시아 네트워크와 연동할 계정을 선택하세요.' : 'Choose an account to continue to AAMEN.'}
-                  </p>
-                </div>
               </div>
+              <h3 className="font-bold text-lg text-gray-900 leading-tight">
+                {isKo ? '계정 선택' : 'Choose an account'}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                {isKo
+                  ? 'AAMEN 아시아 네트워크에 연동할 본인 계정을 선택하세요.'
+                  : 'to continue to AAMEN Asian Network'}
+              </p>
+            </div>
+
+            {/* 사용자 본인의 브라우저 구글 계정 목록 */}
+            <div className="space-y-1 divide-y divide-gray-100">
+              <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1 pb-1">
+                {isKo ? '내 Google 계정 선택' : 'Select your Google Account'}
+              </div>
+
+              {browserAccounts.map((acc) => (
+                <div
+                  key={acc.email}
+                  onClick={() => executeGoogleLogin({ name: acc.name, email: acc.email })}
+                  className="w-full p-3 hover:bg-emerald-50/50 rounded-2xl flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                      {acc.name ? acc.name.slice(0, 1) : 'G'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-gray-900 truncate">
+                        {acc.name}
+                      </div>
+                      <div className="text-xs text-gray-500 font-mono truncate">{acc.email}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {browserAccounts.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeBrowserAccount(acc.email)
+                        }}
+                        title={isKo ? '이 브라우저 목록에서 삭제' : 'Remove from list'}
+                        className="p-1.5 text-gray-300 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                    <ChevronRight size={16} className="text-gray-300 group-hover:text-emerald-600 shrink-0" />
+                  </div>
+                </div>
+              ))}
+
+              {/* 다른 Google 계정 사용 버튼 */}
               <button
-                onClick={() => setIsGoogleModalOpen(false)}
-                className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                type="button"
+                onClick={() => setIsCustomGoogleOpen(!isCustomGoogleOpen)}
+                className="w-full p-3 hover:bg-gray-50 rounded-2xl flex items-center gap-3 text-left transition-colors cursor-pointer"
               >
-                <X size={18} />
+                <div className="w-10 h-10 rounded-full border border-gray-300 border-dashed flex items-center justify-center text-gray-500 shrink-0">
+                  <Plus size={18} />
+                </div>
+                <div className="text-xs font-bold text-gray-700">
+                  {isKo ? '다른 Google 계정 사용' : 'Use another Google account'}
+                </div>
               </button>
             </div>
 
-            {/* 계정 선택 목록 (공식 8명 회원) */}
-            <div className="space-y-1.5 divide-y divide-gray-50">
-              <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1">
-                {isKo ? '등록된 계정 선택' : 'Select an Account'}
-              </div>
-
-              {PRESET_MEMBERS.map((acc) => (
-                <button
-                  key={acc.id}
-                  onClick={() => executeGoogleLogin(acc)}
-                  className="w-full p-2.5 hover:bg-emerald-50/60 rounded-2xl flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-100 to-gray-200 border border-gray-300 flex items-center justify-center font-black text-sm text-gray-700 shrink-0 group-hover:border-emerald-400">
-                      {acc.flag}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs sm:text-sm text-gray-900 flex items-center gap-1.5 truncate">
-                        <span>{acc.name}</span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 font-semibold">
-                          {acc.id}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-gray-500 font-mono truncate">{acc.email}</div>
-                      <div className="text-[10px] text-emerald-700 font-semibold truncate">{acc.roleTitle}</div>
-                    </div>
-                  </div>
-                  <ChevronRight size={16} className="text-gray-300 group-hover:text-emerald-600 shrink-0" />
-                </button>
-              ))}
-            </div>
-
-            {/* 다른 Google 계정 직접 입력 토글 */}
-            <div className="pt-2 border-t border-gray-100">
-              {!isCustomGoogleOpen ? (
-                <button
-                  onClick={() => setIsCustomGoogleOpen(true)}
-                  className="w-full py-2 px-3 text-xs font-bold text-gray-600 hover:text-emerald-700 hover:bg-gray-50 rounded-xl border border-dashed border-gray-300 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Plus size={14} />
-                  <span>{isKo ? '다른 Google 계정으로 로그인' : 'Use another Google account'}</span>
-                </button>
-              ) : (
-                <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-200 space-y-2.5">
-                  <div className="text-xs font-bold text-gray-700">
-                    {isKo ? '직접 구글 이메일 입력' : 'Enter Custom Google Email'}
-                  </div>
-                  <input
-                    type="email"
-                    value={customGoogleEmail}
-                    onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                    placeholder="example@gmail.com"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 bg-white font-mono focus:outline-emerald-600"
-                  />
-                  <input
-                    type="text"
-                    value={customGoogleName}
-                    onChange={(e) => setCustomGoogleName(e.target.value)}
-                    placeholder={isKo ? '성명 (선택)' : 'Name (Optional)'}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 bg-white focus:outline-emerald-600"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setIsCustomGoogleOpen(false)}
-                      className="px-3 py-1.5 text-xs text-gray-500 font-bold"
-                    >
-                      취소
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!customGoogleEmail.includes('@')) {
-                          alert('유효한 이메일을 입력해 주세요.')
-                          return
-                        }
-                        executeGoogleLogin({
-                          name: customGoogleName.trim() || 'Google Member',
-                          email: customGoogleEmail.trim(),
-                        })
-                      }}
-                      className="px-4 py-1.5 text-xs bg-emerald-600 text-white rounded-xl font-bold shadow-xs hover:bg-emerald-700"
-                    >
-                      {isKo ? '이 계정으로 계속' : 'Continue'}
-                    </button>
-                  </div>
+            {/* 다른 Google 계정 직접 입력 폼 */}
+            {isCustomGoogleOpen && (
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-3 animate-in fade-in">
+                <div className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                  <Mail size={14} className="text-emerald-600" />
+                  <span>{isKo ? '본인의 Google 계정 입력' : 'Enter your Google Email'}</span>
                 </div>
-              )}
-            </div>
+                <input
+                  type="email"
+                  value={customGoogleEmail}
+                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                  placeholder="yourname@gmail.com"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 bg-white font-mono focus:outline-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                />
+                <input
+                  type="text"
+                  value={customGoogleName}
+                  onChange={(e) => setCustomGoogleName(e.target.value)}
+                  placeholder={isKo ? '성명 또는 닉네임 (선택)' : 'Name or Nickname (Optional)'}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-300 bg-white focus:outline-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                />
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomGoogleOpen(false)}
+                    className="px-3 py-1.5 text-xs text-gray-500 font-bold hover:text-gray-700 cursor-pointer"
+                  >
+                    {isKo ? '취소' : 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!customGoogleEmail.includes('@') || !customGoogleEmail.includes('.')) {
+                        alert(isKo ? '유효한 Google 이메일 주소를 입력해 주세요.' : 'Please enter a valid Google email.')
+                        return
+                      }
+                      executeGoogleLogin({
+                        name: customGoogleName.trim() || customGoogleEmail.split('@')[0],
+                        email: customGoogleEmail.trim(),
+                      })
+                    }}
+                    className="px-4 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs cursor-pointer transition-all"
+                  >
+                    {isKo ? '이 계정으로 계속' : 'Continue'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* 권한 제공 및 서비스 이용 동의 박스 */}
             <div className="p-3.5 bg-gray-50/90 rounded-2xl border border-gray-200 text-xs text-gray-600 space-y-2">
