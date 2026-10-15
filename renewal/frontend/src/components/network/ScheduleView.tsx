@@ -25,6 +25,11 @@ import {
   Palette,
   CalendarCheck,
   Download,
+  Trash2,
+  Edit2,
+  RotateCcw,
+  Tag,
+  Check,
 } from 'lucide-react'
 import {
   initialAamenEvents,
@@ -34,49 +39,121 @@ import {
 import { networkTranslations } from '@/data/networkTranslations'
 import { getStoredUser, AUTH_ROLE_KEY } from '@/lib/auth'
 
-// 🎨 카테고리별 감각적인 디자인 컬러 테마 (AAMEN 맞춤형 5색 팔레트)
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; dot: string; labelKo: string; labelEn: string }> = {
-  총회: {
+export interface CalendarCategoryConfig {
+  id: string
+  nameKo: string
+  nameEn: string
+  keywords: string[]
+  colorKey: string
+}
+
+export const COLOR_STYLES: Record<
+  string,
+  { bg: string; text: string; border: string; dot: string; badge: string; label: string }
+> = {
+  purple: {
     bg: 'bg-purple-50 hover:bg-purple-100/90 text-purple-900',
     text: 'text-purple-700',
     border: 'border-purple-200',
     dot: 'bg-purple-500',
-    labelKo: '총회',
-    labelEn: 'General Assembly',
+    badge: 'bg-purple-100 text-purple-800 border-purple-200',
+    label: '보라 (Purple)',
   },
-  컨퍼런스: {
+  indigo: {
     bg: 'bg-indigo-50 hover:bg-indigo-100/90 text-indigo-900',
     text: 'text-indigo-700',
     border: 'border-indigo-200',
     dot: 'bg-indigo-500',
-    labelKo: '컨퍼런스',
-    labelEn: 'Conference',
+    badge: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    label: '인디고 (Indigo)',
   },
-  워크숍: {
+  blue: {
     bg: 'bg-blue-50 hover:bg-blue-100/90 text-blue-900',
     text: 'text-blue-700',
     border: 'border-blue-200',
     dot: 'bg-blue-500',
-    labelKo: '워크숍 / 세미나',
-    labelEn: 'Workshop / Seminar',
+    badge: 'bg-blue-100 text-blue-800 border-blue-200',
+    label: '블루 (Blue)',
   },
-  교육: {
+  emerald: {
     bg: 'bg-emerald-50 hover:bg-emerald-100/90 text-emerald-900',
     text: 'text-emerald-700',
     border: 'border-emerald-200',
     dot: 'bg-emerald-500',
-    labelKo: '교육 / 교재 번역',
-    labelEn: 'Education / Curriculum',
+    badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    label: '에메랄드 (Emerald)',
   },
-  기도회: {
+  amber: {
     bg: 'bg-amber-50 hover:bg-amber-100/90 text-amber-900',
     text: 'text-amber-700',
     border: 'border-amber-200',
     dot: 'bg-amber-500',
-    labelKo: '기도회 / 묵상회',
-    labelEn: 'Prayer Fellowship',
+    badge: 'bg-amber-100 text-amber-800 border-amber-200',
+    label: '앰버/골드 (Amber)',
+  },
+  rose: {
+    bg: 'bg-rose-50 hover:bg-rose-100/90 text-rose-900',
+    text: 'text-rose-700',
+    border: 'border-rose-200',
+    dot: 'bg-rose-500',
+    badge: 'bg-rose-100 text-rose-800 border-rose-200',
+    label: '로즈/레드 (Rose)',
+  },
+  cyan: {
+    bg: 'bg-cyan-50 hover:bg-cyan-100/90 text-cyan-900',
+    text: 'text-cyan-700',
+    border: 'border-cyan-200',
+    dot: 'bg-cyan-500',
+    badge: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+    label: '시안/스카이 (Cyan)',
+  },
+  slate: {
+    bg: 'bg-slate-50 hover:bg-slate-100/90 text-slate-900',
+    text: 'text-slate-700',
+    border: 'border-slate-200',
+    dot: 'bg-slate-500',
+    badge: 'bg-slate-100 text-slate-800 border-slate-200',
+    label: '슬레이트 (기본)',
   },
 }
+
+export const DEFAULT_CALENDAR_CATEGORIES: CalendarCategoryConfig[] = [
+  {
+    id: 'cat_assembly',
+    nameKo: '총회',
+    nameEn: 'General Assembly',
+    keywords: ['총회', 'Assembly', 'MWC', '연차'],
+    colorKey: 'purple',
+  },
+  {
+    id: 'cat_conf',
+    nameKo: '컨퍼런스',
+    nameEn: 'Conference',
+    keywords: ['컨퍼런스', 'Conference', '학술', '대회', '심포지엄', 'Symposium'],
+    colorKey: 'indigo',
+  },
+  {
+    id: 'cat_workshop',
+    nameKo: '워크숍',
+    nameEn: 'Workshop',
+    keywords: ['워크숍', 'Workshop', '세미나', 'Seminar', '포럼', 'Forum', '캠프', 'Camp'],
+    colorKey: 'blue',
+  },
+  {
+    id: 'cat_edu',
+    nameKo: '교육',
+    nameEn: 'Education',
+    keywords: ['교육', 'Education', '교재', 'Curriculum', '아카데미', 'Academy', '훈련', 'Training', '신학'],
+    colorKey: 'emerald',
+  },
+  {
+    id: 'cat_prayer',
+    nameKo: '기도회',
+    nameEn: 'Prayer Fellowship',
+    keywords: ['기도', 'Prayer', '중보기도', '묵상', 'Meditation', '예배', 'Worship', '사순절'],
+    colorKey: 'amber',
+  },
+]
 
 export default function ScheduleView() {
   const locale = useLocale()
@@ -90,7 +167,7 @@ export default function ScheduleView() {
   const [currentYear, setCurrentYear] = useState(2026)
   const [currentMonth, setCurrentMonth] = useState(10) // 1 ~ 12
 
-  // 이벤트 목록 상태 (로컬 스토리지와 동기화)
+  // 이벤트 목록 상태 (구글 캘린더 iCal 연동 및 초기 데이터)
   const [events, setEvents] = useState<AamenEventItem[]>(initialAamenEvents)
   const [selectedEvent, setSelectedEvent] = useState<AamenEventItem | null>(null)
 
@@ -101,22 +178,19 @@ export default function ScheduleView() {
   const [customCalInput, setCustomCalInput] = useState(officialCalendarId)
   const [isDeveloper, setIsDeveloper] = useState(false)
 
-  // 새 일정 추가 모달 상태
-  const [isAddEventOpen, setIsAddEventOpen] = useState(false)
-  const [newEvent, setNewEvent] = useState({
-    titleKo: '',
-    titleEn: '',
-    startDate: '2026-10-15',
-    endDate: '',
-    timeStr: '19:00 - 21:00 (KST)',
-    locationKo: '',
-    locationEn: '',
-    isOnline: false,
-    organizer: 'AAMEN',
-    category: '컨퍼런스' as AamenEventItem['category'],
-    descKo: '',
-    descEn: '',
-  })
+  // 🎨 카테고리 관리 상태 (개발자/관리자 전용)
+  const [categories, setCategories] = useState<CalendarCategoryConfig[]>(DEFAULT_CALENDAR_CATEGORIES)
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [editingCatId, setEditingCatId] = useState<string | null>(null)
+  const [editCatNameKo, setEditCatNameKo] = useState('')
+  const [editCatNameEn, setEditCatNameEn] = useState('')
+  const [editCatKeywords, setEditCatKeywords] = useState('')
+  const [editCatColor, setEditCatColor] = useState('purple')
+
+  const [newCatNameKo, setNewCatNameKo] = useState('')
+  const [newCatNameEn, setNewCatNameEn] = useState('')
+  const [newCatKeywords, setNewCatKeywords] = useState('')
+  const [newCatColor, setNewCatColor] = useState('purple')
 
   useEffect(() => {
     try {
@@ -124,18 +198,24 @@ export default function ScheduleView() {
       const role = u?.role || (typeof window !== 'undefined' ? localStorage.getItem(AUTH_ROLE_KEY) : null)
       setIsDeveloper(role === 'developer' || role === 'super_admin' || role === 'country_admin')
 
-      // 저장된 사용자 정의 일정 불러오기
-      const savedEvents = localStorage.getItem('aamen_custom_calendar_events')
-      if (savedEvents) {
-        const parsed = JSON.parse(savedEvents)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setEvents(parsed)
-        }
+      // 1) 저장된 카테고리 설정 불러오기
+      const savedCats = localStorage.getItem('aamen_calendar_categories')
+      if (savedCats) {
+        try {
+          const parsed = JSON.parse(savedCats)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCategories(parsed)
+          }
+        } catch (e) {}
       }
 
-      // 캘린더 ID 로드
+      // 2) 캘린더 ID 로드
       const savedCalId = localStorage.getItem('aamen_google_calendar_id')
-      if (savedCalId && !savedCalId.includes('holiday@group.v.calendar.google.com') && !savedCalId.includes('47b9a808f2d0ae426575c')) {
+      if (
+        savedCalId &&
+        !savedCalId.includes('holiday@group.v.calendar.google.com') &&
+        !savedCalId.includes('47b9a808f2d0ae426575c')
+      ) {
         setGoogleCalendarId(savedCalId)
         setCustomCalInput(savedCalId)
       } else {
@@ -147,6 +227,135 @@ export default function ScheduleView() {
       console.error(e)
     }
   }, [])
+
+  // 🌟 구글 캘린더 iCal 실시간 연동 (PHP 프록시 API 호출)
+  useEffect(() => {
+    const fetchGoogleEvents = async () => {
+      try {
+        const res = await fetch(`/api/calendar.php?cal_id=${encodeURIComponent(googleCalendarId)}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.status === 'success' && Array.isArray(data.events) && data.events.length > 0) {
+            setEvents(data.events)
+            return
+          }
+        }
+      } catch (err) {
+        console.error('Google Calendar fetch error:', err)
+      }
+      // 구글 캘린더에 아직 등록된 일정이 없거나 오프라인일 때는 기본 사역 일정 유지
+      setEvents(initialAamenEvents)
+    }
+
+    fetchGoogleEvents()
+  }, [googleCalendarId])
+
+  // 🌟 제목의 키워드를 기반으로 카테고리 및 색상 자동 매칭
+  const getEventCategoryInfo = (title: string) => {
+    const lower = (title || '').toLowerCase()
+    for (const cat of categories) {
+      for (const kw of cat.keywords) {
+        const trimmed = kw.trim().toLowerCase()
+        if (trimmed && lower.includes(trimmed)) {
+          const style = COLOR_STYLES[cat.colorKey] || COLOR_STYLES.slate
+          return {
+            categoryName: isKo ? cat.nameKo : cat.nameEn,
+            colorKey: cat.colorKey,
+            style,
+          }
+        }
+      }
+    }
+    return {
+      categoryName: isKo ? '일반 사역' : 'General Ministry',
+      colorKey: 'slate',
+      style: COLOR_STYLES.slate,
+    }
+  }
+
+  // 카테고리 저장 헬퍼
+  const persistCategories = (updated: CalendarCategoryConfig[]) => {
+    setCategories(updated)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aamen_calendar_categories', JSON.stringify(updated))
+    }
+  }
+
+  // 신규 카테고리 추가
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newCatNameKo.trim()) {
+      alert(isKo ? '카테고리 이름을 입력하세요.' : 'Please enter category name.')
+      return
+    }
+    const kwList = newCatKeywords
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean)
+    if (kwList.length === 0) {
+      kwList.push(newCatNameKo.trim())
+    }
+
+    const newCat: CalendarCategoryConfig = {
+      id: `cat_${Date.now()}`,
+      nameKo: newCatNameKo.trim(),
+      nameEn: newCatNameEn.trim() || newCatNameKo.trim(),
+      keywords: kwList,
+      colorKey: newCatColor,
+    }
+
+    const updated = [...categories, newCat]
+    persistCategories(updated)
+    setNewCatNameKo('')
+    setNewCatNameEn('')
+    setNewCatKeywords('')
+    alert(isKo ? `[${newCat.nameKo}] 카테고리가 추가되었습니다!` : 'Category added successfully!')
+  }
+
+  // 기존 카테고리 수정 저장
+  const handleSaveEditCategory = (catId: string) => {
+    const kwList = editCatKeywords
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean)
+
+    const updated = categories.map((c) => {
+      if (c.id === catId) {
+        return {
+          ...c,
+          nameKo: editCatNameKo.trim() || c.nameKo,
+          nameEn: editCatNameEn.trim() || c.nameEn,
+          keywords: kwList.length > 0 ? kwList : c.keywords,
+          colorKey: editCatColor || c.colorKey,
+        }
+      }
+      return c
+    })
+
+    persistCategories(updated)
+    setEditingCatId(null)
+    alert(isKo ? '카테고리 설정이 수정되었습니다!' : 'Category updated!')
+  }
+
+  // 카테고리 삭제
+  const handleDeleteCategory = (catId: string) => {
+    if (categories.length <= 1) {
+      alert(isKo ? '최소 1개 이상의 카테고리가 유지되어야 합니다.' : 'At least one category required.')
+      return
+    }
+    if (confirm(isKo ? '이 카테고리를 삭제하시겠습니까?' : 'Delete this category?')) {
+      const updated = categories.filter((c) => c.id !== catId)
+      persistCategories(updated)
+    }
+  }
+
+  // 기본 카테고리 복원
+  const handleResetCategories = () => {
+    if (confirm(isKo ? '카테고리와 키워드를 기본 설정값으로 복원하시겠습니까?' : 'Reset to default categories?')) {
+      persistCategories(DEFAULT_CALENDAR_CATEGORIES)
+      alert(isKo ? '기본 카테고리로 복원되었습니다!' : 'Restored to defaults!')
+    }
+  }
 
   // 캘린더 ID 저장
   const handleSaveCalendarId = (e: React.FormEvent) => {
@@ -264,43 +473,6 @@ export default function ScheduleView() {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
-  // 신규 사역 일정 저장
-  const handleCreateEvent = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newEvent.titleKo && !newEvent.titleEn) {
-      alert(isKo ? '일정 제목을 입력해 주세요.' : 'Please enter event title.')
-      return
-    }
-
-    const monthNum = parseInt(newEvent.startDate.substring(5, 7), 10) || currentMonth
-    const createdItem: AamenEventItem = {
-      id: `evt_custom_${Date.now()}`,
-      month: monthNum,
-      startDate: newEvent.startDate,
-      endDate: newEvent.endDate || undefined,
-      timeStr: newEvent.timeStr || '하루 종일',
-      titleKo: newEvent.titleKo || newEvent.titleEn,
-      titleEn: newEvent.titleEn || newEvent.titleKo,
-      descKo: newEvent.descKo || '',
-      descEn: newEvent.descEn || '',
-      locationKo: newEvent.locationKo || (newEvent.isOnline ? '온라인 Zoom' : '현장 모임'),
-      locationEn: newEvent.locationEn || (newEvent.isOnline ? 'Online Zoom' : 'On-site Fellowship'),
-      isOnline: newEvent.isOnline,
-      organizer: newEvent.organizer || 'AAMEN',
-      category: newEvent.category,
-      badgeColor: CATEGORY_COLORS[newEvent.category]?.bg || 'bg-emerald-100 text-emerald-800',
-    }
-
-    const updated = [createdItem, ...events]
-    setEvents(updated)
-    try {
-      localStorage.setItem('aamen_custom_calendar_events', JSON.stringify(updated))
-    } catch (err) {}
-
-    setIsAddEventOpen(false)
-    alert(isKo ? '새 사역 일정이 캘린더에 등록되었습니다!' : 'New ministry event added successfully!')
-  }
-
   // 공식 구글 캘린더 임베드 URL
   const embedUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(
     googleCalendarId
@@ -329,14 +501,25 @@ export default function ScheduleView() {
             </Link>
 
             <div className="flex items-center gap-2">
-              {/* 관리자 및 리더 전용 일정 추가 버튼 */}
+              {/* 구글 캘린더에서 직접 일정 등록 버튼 */}
+              <a
+                href={`https://calendar.google.com/calendar/u/0/r/eventedit?src=${encodeURIComponent(googleCalendarId)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                <ExternalLink size={14} />
+                <span>{isKo ? 'Google 캘린더에서 일정 등록' : 'Add Event via Google Calendar'}</span>
+              </a>
+
+              {/* 개발자 및 관리자 전용 카테고리 & 키워드 색상 설정 버튼 */}
               {isDeveloper && (
                 <button
-                  onClick={() => setIsAddEventOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3.5 py-2 rounded-xl transition-all shadow-2xs cursor-pointer"
                 >
-                  <Plus size={14} />
-                  <span>{isKo ? '새 사역 일정 추가' : 'Add Ministry Event'}</span>
+                  <Palette size={14} className="text-purple-600" />
+                  <span>{isKo ? '🎨 카테고리 & 키워드 색상 관리' : '🎨 Category & Keywords'}</span>
                 </button>
               )}
 
@@ -504,16 +687,20 @@ export default function ScheduleView() {
 
                 {/* 카테고리 컬러 범례 (Legend) */}
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-gray-400 font-bold text-[11px] mr-1">분류:</span>
-                  {Object.entries(CATEGORY_COLORS).map(([catKey, catMeta]) => (
-                    <div
-                      key={catKey}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200/80 text-[11px] font-semibold text-gray-700"
-                    >
-                      <span className={`w-2 h-2 rounded-full ${catMeta.dot}`}></span>
-                      <span>{isKo ? catMeta.labelKo : catMeta.labelEn}</span>
-                    </div>
-                  ))}
+                  <span className="text-gray-400 font-bold text-[11px] mr-1">{isKo ? '분류 키워드:' : 'Categories:'}</span>
+                  {categories.map((cat) => {
+                    const style = COLOR_STYLES[cat.colorKey] || COLOR_STYLES.slate
+                    return (
+                      <div
+                        key={cat.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200/80 text-[11px] font-semibold text-gray-700"
+                        title={cat.keywords.join(', ')}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${style.dot}`}></span>
+                        <span>{isKo ? cat.nameKo : cat.nameEn}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -574,18 +761,18 @@ export default function ScheduleView() {
                         {/* 일정 뱃지 목록 (사역 성격에 따른 감각적인 컬러 테마) */}
                         <div className="space-y-1 flex-1 overflow-hidden">
                           {dayEvents.slice(0, 3).map((evt) => {
-                            const colorTheme = CATEGORY_COLORS[evt.category] || CATEGORY_COLORS['컨퍼런스']
                             const evtTitle = isKo ? evt.titleKo : evt.titleEn
+                            const catInfo = getEventCategoryInfo(evtTitle)
 
                             return (
                               <button
                                 key={evt.id}
                                 onClick={() => setSelectedEvent(evt)}
-                                className={`w-full text-left px-2 py-1 rounded-md text-[11px] font-bold border transition-all truncate block shadow-2xs cursor-pointer ${colorTheme.bg} ${colorTheme.border}`}
-                                title={`${evtTitle} (${evt.timeStr})`}
+                                className={`w-full text-left px-2 py-1 rounded-md text-[11px] font-bold border transition-all truncate block shadow-2xs cursor-pointer ${catInfo.style.bg} ${catInfo.style.border}`}
+                                title={`${evtTitle} (${evt.timeStr}) - [${catInfo.categoryName}]`}
                               >
                                 <div className="flex items-center gap-1 truncate">
-                                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colorTheme.dot}`}></span>
+                                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${catInfo.style.dot}`}></span>
                                   <span className="truncate">{evtTitle}</span>
                                 </div>
                               </button>
@@ -655,7 +842,7 @@ export default function ScheduleView() {
                   const title = isKo ? evt.titleKo : evt.titleEn
                   const desc = isKo ? evt.descKo : evt.descEn
                   const loc = isKo ? evt.locationKo : evt.locationEn
-                  const colorTheme = CATEGORY_COLORS[evt.category] || CATEGORY_COLORS['컨퍼런스']
+                  const catInfo = getEventCategoryInfo(title)
 
                   return (
                     <div
@@ -664,8 +851,8 @@ export default function ScheduleView() {
                     >
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${colorTheme.bg} ${colorTheme.border}`}>
-                            {isKo ? colorTheme.labelKo : colorTheme.labelEn}
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${catInfo.style.bg} ${catInfo.style.border} ${catInfo.style.text}`}>
+                            {catInfo.categoryName}
                           </span>
                           <span className="text-xs font-mono font-bold text-gray-500 flex items-center gap-1">
                             <Clock size={13} />
@@ -787,9 +974,14 @@ export default function ScheduleView() {
             className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-in zoom-in-95 border border-gray-100"
           >
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold border ${CATEGORY_COLORS[selectedEvent.category]?.bg} ${CATEGORY_COLORS[selectedEvent.category]?.border}`}>
-                {isKo ? CATEGORY_COLORS[selectedEvent.category]?.labelKo : CATEGORY_COLORS[selectedEvent.category]?.labelEn}
-              </span>
+              {(() => {
+                const catInfo = getEventCategoryInfo(isKo ? selectedEvent.titleKo : selectedEvent.titleEn)
+                return (
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold border ${catInfo.style.bg} ${catInfo.style.border} ${catInfo.style.text}`}>
+                    {catInfo.categoryName}
+                  </span>
+                )
+              })()}
               <button
                 onClick={() => setSelectedEvent(null)}
                 className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
@@ -852,141 +1044,285 @@ export default function ScheduleView() {
       )}
 
       {/* =========================================================================
-          ➕ 새 사역 일정 추가 모달 (Add Event Modal - 관리자/리더 전용)
+          🎨 사역 카테고리 & 키워드 색상 관리 모달 (Category & Keywords Manager)
          ========================================================================= */}
-      {isAddEventOpen && (
+      {isCategoryModalOpen && (
         <div
-          onClick={() => setIsAddEventOpen(false)}
+          onClick={() => {
+            setIsCategoryModalOpen(false)
+            setEditingCatId(null)
+          }}
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-4 animate-in zoom-in-95 border border-gray-100 max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 animate-in zoom-in-95 border border-gray-100 max-h-[90vh] overflow-y-auto"
           >
+            {/* 상단 헤더 */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                <Plus size={18} className="text-emerald-600" />
-                <span>새 사역 일정 등록</span>
-              </h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <Palette size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900">
+                    {isKo ? '사역 카테고리 & 키워드 색상 관리' : 'Manage Categories & Keyword Colors'}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {isKo
+                      ? '구글 캘린더 일정 제목(Summary) 속 키워드로 일정의 색상을 자동 분류합니다.'
+                      : 'Automatically color-code events by keywords in Google Calendar titles.'}
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => setIsAddEventOpen(false)}
-                className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                onClick={() => {
+                  setIsCategoryModalOpen(false)
+                  setEditingCatId(null)
+                }}
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateEvent} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">일정 제목 (한국어)</label>
-                <input
-                  type="text"
-                  value={newEvent.titleKo}
-                  onChange={(e) => setNewEvent({ ...newEvent, titleKo: e.target.value })}
-                  placeholder="예: 2026 아시아 청년 평화 컨퍼런스"
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600"
-                />
-              </div>
+            {/* 현재 등록된 카테고리 목록 */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-black text-gray-700 flex items-center gap-1.5 uppercase tracking-wider">
+                <Tag size={13} className="text-purple-600" />
+                <span>{isKo ? '현재 설정된 카테고리 목록' : 'Configured Categories'} ({categories.length})</span>
+              </h4>
 
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">일정 제목 (영어)</label>
-                <input
-                  type="text"
-                  value={newEvent.titleEn}
-                  onChange={(e) => setNewEvent({ ...newEvent, titleEn: e.target.value })}
-                  placeholder="e.g. 2026 Asian Youth Peace Conference"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600"
-                />
-              </div>
+              <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                {categories.map((cat) => {
+                  const style = COLOR_STYLES[cat.colorKey] || COLOR_STYLES.slate
+                  const isEditing = editingCatId === cat.id
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">시작일</label>
-                  <input
-                    type="date"
-                    value={newEvent.startDate}
-                    onChange={(e) => setNewEvent({ ...newEvent, startDate: e.target.value })}
-                    required
-                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-emerald-600 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">종료일 (선택)</label>
-                  <input
-                    type="date"
-                    value={newEvent.endDate}
-                    onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-emerald-600 font-mono"
-                  />
-                </div>
-              </div>
+                  if (isEditing) {
+                    return (
+                      <div key={cat.id} className="p-4 rounded-2xl bg-purple-50/50 border border-purple-200 space-y-3 animate-in fade-in">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">카테고리명 (한글)</label>
+                            <input
+                              type="text"
+                              value={editCatNameKo}
+                              onChange={(e) => setEditCatNameKo(e.target.value)}
+                              className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 focus:outline-purple-600"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">카테고리명 (영문)</label>
+                            <input
+                              type="text"
+                              value={editCatNameEn}
+                              onChange={(e) => setEditCatNameEn(e.target.value)}
+                              className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 focus:outline-purple-600"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">색상 테마</label>
+                            <select
+                              value={editCatColor}
+                              onChange={(e) => setEditCatColor(e.target.value)}
+                              className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 font-bold focus:outline-purple-600"
+                            >
+                              {Object.entries(COLOR_STYLES).map(([key, cVal]) => (
+                                <option key={key} value={key}>
+                                  {cVal.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
 
-              <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                            감지 키워드 (쉼표 ','로 구분)
+                          </label>
+                          <input
+                            type="text"
+                            value={editCatKeywords}
+                            onChange={(e) => setEditCatKeywords(e.target.value)}
+                            placeholder="예: 총회, Assembly, MWC, 연차"
+                            className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 focus:outline-purple-600"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditingCatId(null)}
+                            className="px-3 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-xs font-bold text-gray-700 cursor-pointer"
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEditCategory(cat.id)}
+                            className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-xs font-bold text-white shadow-xs cursor-pointer"
+                          >
+                            저장 완료
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div
+                      key={cat.id}
+                      className="p-3.5 rounded-2xl bg-white border border-gray-200/90 hover:border-gray-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs"
+                    >
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${style.bg} ${style.border} ${style.text}`}>
+                            {isKo ? cat.nameKo : cat.nameEn}
+                          </span>
+                          <span className="text-[11px] text-gray-400 font-mono">
+                            ({style.label})
+                          </span>
+                          {cat.nameEn && cat.nameEn !== cat.nameKo && (
+                            <span className="text-[11px] text-gray-500 font-semibold">
+                              · {cat.nameEn}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] font-bold text-gray-500 shrink-0">키워드:</span>
+                          {cat.keywords.map((kw, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-[11px] font-mono border border-gray-200/60"
+                            >
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCatId(cat.id)
+                            setEditCatNameKo(cat.nameKo)
+                            setEditCatNameEn(cat.nameEn)
+                            setEditCatKeywords(cat.keywords.join(', '))
+                            setEditCatColor(cat.colorKey)
+                          }}
+                          className="p-2 rounded-xl text-gray-500 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer"
+                          title="수정"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="삭제"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 새 카테고리 추가 섹션 */}
+            <form onSubmit={handleAddCategory} className="p-4 rounded-2xl bg-gray-50 border border-gray-200/90 space-y-3">
+              <h4 className="text-xs font-black text-gray-800 flex items-center gap-1.5">
+                <Plus size={14} className="text-emerald-600" />
+                <span>새 카테고리 & 키워드 등록</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">시간 안내</label>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">카테고리명 (한글)</label>
                   <input
                     type="text"
-                    value={newEvent.timeStr}
-                    onChange={(e) => setNewEvent({ ...newEvent, timeStr: e.target.value })}
-                    placeholder="19:00 - 21:00 (KST)"
-                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-emerald-600"
+                    value={newCatNameKo}
+                    onChange={(e) => setNewCatNameKo(e.target.value)}
+                    placeholder="예: 청년수련회"
+                    required
+                    className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 focus:outline-emerald-600"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">사역 카테고리 (색상 연동)</label>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">카테고리명 (영문)</label>
+                  <input
+                    type="text"
+                    value={newCatNameEn}
+                    onChange={(e) => setNewCatNameEn(e.target.value)}
+                    placeholder="e.g. Youth Camp"
+                    className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 focus:outline-emerald-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">색상 테마</label>
                   <select
-                    value={newEvent.category}
-                    onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value as any })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-emerald-600 font-bold"
+                    value={newCatColor}
+                    onChange={(e) => setNewCatColor(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 font-bold focus:outline-emerald-600"
                   >
-                    <option value="총회">🟣 총회 (보라색)</option>
-                    <option value="컨퍼런스">🔵 컨퍼런스 (인디고)</option>
-                    <option value="워크숍">🔷 워크숍 / 세미나 (블루)</option>
-                    <option value="교육">🟢 교육 / 교재 번역 (에메랄드)</option>
-                    <option value="기도회">🟠 기도회 / 묵상회 (오렌지)</option>
+                    {Object.entries(COLOR_STYLES).map(([key, cVal]) => (
+                      <option key={key} value={key}>
+                        {cVal.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700 mb-1">장소</label>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  감지할 제목 키워드 (쉼표 ','로 여러 개 입력)
+                </label>
                 <input
                   type="text"
-                  value={newEvent.locationKo}
-                  onChange={(e) => setNewEvent({ ...newEvent, locationKo: e.target.value })}
-                  placeholder="예: 서울 종로 연합회관 / 온라인 Zoom"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600"
+                  value={newCatKeywords}
+                  onChange={(e) => setNewCatKeywords(e.target.value)}
+                  placeholder="예: 청년, Youth, 수련회, 캠프, Camp"
+                  className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 focus:outline-emerald-600"
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">상세 사역 설명</label>
-                <textarea
-                  value={newEvent.descKo}
-                  onChange={(e) => setNewEvent({ ...newEvent, descKo: e.target.value })}
-                  placeholder="일정 세부 내용 및 참가 안내..."
-                  rows={3}
-                  className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-emerald-600"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddEventOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 font-bold text-gray-700"
-                >
-                  취소
-                </button>
+              <div className="flex justify-end pt-1">
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold text-white shadow-xs"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  캘린더에 일정 등록
+                  <Plus size={14} />
+                  <span>카테고리 추가</span>
                 </button>
               </div>
             </form>
+
+            {/* 하단 액션 버튼 */}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={handleResetCategories}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-100 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RotateCcw size={13} />
+                <span>기본값 복원</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCategoryModalOpen(false)
+                  setEditingCatId(null)
+                }}
+                className="px-5 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              >
+                닫기
+              </button>
+            </div>
           </div>
         </div>
       )}

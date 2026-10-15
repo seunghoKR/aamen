@@ -47,6 +47,24 @@ const countryNameMapEn: Record<string, string> = {
   US: 'United States (US)',
 }
 
+// 🌟 직책이 코디네이터(Level 4)인 회원만 필터링 (개발자, Boss/최고관리자, Helper/사역자 엄격 제외)
+function isStrictCoordinator(c: CountryCoordinator): boolean {
+  if (!c) return false
+  if (c.id === 'coord_kr' || c.memberId === 'admin' || c.memberId === 'Jeanette' || c.memberId === 'Bockki') return false
+  const r = (c.role || '').toLowerCase()
+  if (
+    r.includes('developer') ||
+    r.includes('개발자') ||
+    r.includes('boss') ||
+    r.includes('최고관리자') ||
+    r.includes('helper') ||
+    r.includes('사역자')
+  ) {
+    return false
+  }
+  return true
+}
+
 export default function AdminCoordinatorsPage() {
   const params = useParams()
   const currentLocale = (params?.locale as string) || 'ko'
@@ -54,7 +72,9 @@ export default function AdminCoordinatorsPage() {
   const t = getAdminTexts(currentLocale).coordinators
   const localePath = (p: string) => `/${currentLocale}${p.startsWith('/') ? p : `/${p}`}`
 
-  const [coordinators, setCoordinators] = useState<CountryCoordinator[]>(initialCoordinators)
+  const [coordinators, setCoordinators] = useState<CountryCoordinator[]>(() =>
+    initialCoordinators.filter(isStrictCoordinator)
+  )
   const [members, setMembers] = useState<Member[]>(initialMembers)
   const [selectedCoord, setSelectedCoord] = useState<CountryCoordinator | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -80,11 +100,16 @@ export default function AdminCoordinatorsPage() {
       if (savedCoords) {
         const parsed = JSON.parse(savedCoords)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const existingIds = new Set(parsed.map((c: any) => c.id))
-          const missing = initialCoordinators.filter((c) => !existingIds.has(c.id))
-          const merged = [...parsed, ...missing]
+          const validSaved = parsed.filter(isStrictCoordinator)
+          const existingIds = new Set(validSaved.map((c: any) => c.id))
+          const missing = initialCoordinators.filter(isStrictCoordinator).filter((c) => !existingIds.has(c.id))
+          const merged = [...validSaved, ...missing]
           setCoordinators(merged)
+        } else {
+          setCoordinators(initialCoordinators.filter(isStrictCoordinator))
         }
+      } else {
+        setCoordinators(initialCoordinators.filter(isStrictCoordinator))
       }
 
       const savedMembers = localStorage.getItem('aamen_members')
@@ -188,16 +213,17 @@ export default function AdminCoordinatorsPage() {
   // 기본값으로 초기화
   const handleResetToDefault = () => {
     const confirmMsg = isEn
-      ? 'Reset all 13 country coordinator data to initial defaults?'
-      : '13개국 코디네이터 데이터를 기본 설정값으로 복원하시겠습니까?'
+      ? 'Reset all country coordinator data to initial defaults?'
+      : '각 국가별 코디네이터 데이터를 기본 설정값으로 복원하시겠습니까?'
     if (confirm(confirmMsg)) {
-      setCoordinators(initialCoordinators)
+      const defaultList = initialCoordinators.filter(isStrictCoordinator)
+      setCoordinators(defaultList)
       try {
-        localStorage.setItem('aamen_coordinators_data', JSON.stringify(initialCoordinators))
+        localStorage.setItem('aamen_coordinators_data', JSON.stringify(defaultList))
       } catch (e) {
         console.error(e)
       }
-      showToast(isEn ? 'Restored 13 coordinators to default settings.' : '13개국 코디네이터가 기본값으로 초기화되었습니다.')
+      showToast(isEn ? 'Restored country coordinators to default settings.' : '각 국가별 코디네이터가 기본값으로 초기화되었습니다.')
     }
   }
 
@@ -241,7 +267,7 @@ export default function AdminCoordinatorsPage() {
               <span>{isEn ? 'Admin Home' : '관리자 콘솔 홈'}</span>
             </Link>
             <span className="text-xs font-bold uppercase tracking-widest bg-emerald-500/30 px-3 py-1 rounded-full text-emerald-200 border border-emerald-400/30">
-              13 Nations Coordinators
+              Country Coordinators
             </span>
           </div>
 
@@ -278,18 +304,21 @@ export default function AdminCoordinatorsPage() {
           <span>
             <strong>{isEn ? 'Admin Guide:' : '관리자 안내:'}</strong>{' '}
             {isEn
-              ? 'Click [Edit Info / Select Member] on each country card to link a registered member from the Member Directory. If a phone number is provided, you can send an official WhatsApp invitation instantly.'
-              : '각 국가 카드의 [대표 수정] 버튼을 누르면 가입된 회원 목록(Member List)에서 대표를 쉽게 선택하여 연동할 수 있습니다. 전화번호가 있으면 WhatsApp 초청장을 1초 만에 전송할 수 있습니다.'}
+              ? 'Only official Country Coordinators (Level 4) are displayed here. Developers, Boss, and Workers are excluded.'
+              : '각 국가별 코디네이터(Level 4) 직책을 가진 대표자만 표시됩니다. (시스템 개발자, 최고관리자, 사역자 등 다른 직책은 엄격히 제외됩니다.)'}
           </span>
         </div>
         <span className="px-2.5 py-1 rounded-full bg-emerald-200 text-emerald-900 font-black shrink-0">
-          {isEn ? '13 Nations Active' : '총 13개국 활성'}
+          {isEn
+            ? `${coordinators.filter(isStrictCoordinator).length} Nations Active`
+            : `총 ${coordinators.filter(isStrictCoordinator).length}개국 활성`}
         </span>
       </div>
 
-      {/* 🌟 13개국 대표 코디네이터 카드 리스트 (PC 1열 4명 그리드 / 국가 이니셜 알파벳 순) */}
+      {/* 🌟 각 국가별 코디네이터 카드 리스트 (PC 1열 4명 그리드 / 국가 이니셜 알파벳 순) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {[...coordinators]
+          .filter(isStrictCoordinator)
           .sort((a, b) => a.countryCode.localeCompare(b.countryCode))
           .map((lead) => {
             const countryDisplay = isEn ? (countryNameMapEn[lead.countryCode] || lead.countryName) : lead.countryName
@@ -430,11 +459,19 @@ export default function AdminCoordinatorsPage() {
                     ? '-- Direct Entry (Do not link from member list) --'
                     : '-- 직접 입력 (회원 목록에서 선택 안함) --'}
                 </option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} ({countryNameMapEn[m.countryCode] || m.countryName}) - {m.email} [{m.role}]
-                  </option>
-                ))}
+                {members
+                  .filter((m) => {
+                    // 개발자(admin), Boss(Jeanette), 사역자(Bockki) 제외하고 순수 코디네이터(country_admin / level 4)만 허용
+                    if (m.id === 'admin' || m.id === 'Jeanette' || m.id === 'Bockki') {
+                      return false
+                    }
+                    return m.role === 'country_admin' || m.level === 4
+                  })
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({countryNameMapEn[m.countryCode] || m.countryName}) - {m.email} [{m.role}]
+                    </option>
+                  ))}
               </select>
               <p className="text-[11px] text-emerald-800">
                 {isEn
