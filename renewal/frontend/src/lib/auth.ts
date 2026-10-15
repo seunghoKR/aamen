@@ -9,6 +9,7 @@ export interface AuthUser {
   tierLevel: MemberLevel
   status?: string
   country_code?: string
+  phone?: string
   provider?: string
 }
 

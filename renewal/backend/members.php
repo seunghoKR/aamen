@@ -136,7 +136,8 @@ if ($method === 'GET') {
                     'role' => 'developer',
                     'tierLevel' => 5,
                     'status' => 'active',
-                    'country_code' => 'KR'
+                    'country_code' => 'KR',
+                    'phone' => '+82 10-4069-2739'
                 ]
             ]);
         }
@@ -153,19 +154,20 @@ if ($method === 'GET') {
                     'role' => 'super_admin',
                     'tierLevel' => 5,
                     'status' => 'active',
-                    'country_code' => 'KR'
+                    'country_code' => 'KR',
+                    'phone' => '+82 10-0000-0000'
                 ]
             ]);
         }
 
         // 3) 6명 신규 등록 리더십 & 사역자 계정 인증
         $preset_accounts = [
-            'jeanette' => ['id' => 'Jeanette', 'name' => 'Jeanette Hanson', 'email' => 'Jeanette.m.hanson@gmail.com', 'pw' => 'Jeanette2026!!', 'role' => 'super_admin', 'tierLevel' => 5, 'country_code' => 'US'],
-            'jeremiah' => ['id' => 'Jeremiah', 'name' => 'Jeremiah', 'email' => 'hkjerechoi@gmail.com', 'pw' => 'Jeremiah2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'HK'],
-            'paulus' => ['id' => 'Paulus', 'name' => 'Paulus S. Widjaja', 'email' => 'psw.dosen@gmail.com', 'pw' => 'Paulus2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'ID'],
-            'andi' => ['id' => 'Andi', 'name' => 'Andi Santoso', 'email' => 'andiospeace@gmail.com', 'pw' => 'Andi2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'ID'],
-            'hiro' => ['id' => 'Hiro', 'name' => 'Hiro Katano', 'email' => 'h98484435@gmail.com', 'pw' => 'Hiro2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'US'],
-            'bockki' => ['id' => 'bockki', 'name' => 'Kim Bockki', 'email' => 'bockkikim@gmail.com', 'pw' => 'bockki2026!!', 'role' => 'level3_worker', 'tierLevel' => 3, 'country_code' => 'KR'],
+            'jeanette' => ['id' => 'Jeanette', 'name' => 'Jeanette Hanson', 'email' => 'Jeanette.m.hanson@gmail.com', 'pw' => 'Jeanette2026!!', 'role' => 'super_admin', 'tierLevel' => 5, 'country_code' => 'US', 'phone' => '+1 000-000-0000'],
+            'jeremiah' => ['id' => 'Jeremiah', 'name' => 'Jeremiah', 'email' => 'hkjerechoi@gmail.com', 'pw' => 'Jeremiah2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'HK', 'phone' => '+852 0000-0000'],
+            'paulus' => ['id' => 'Paulus', 'name' => 'Paulus S. Widjaja', 'email' => 'psw.dosen@gmail.com', 'pw' => 'Paulus2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'ID', 'phone' => '+62 000-0000-0000'],
+            'andi' => ['id' => 'Andi', 'name' => 'Andi Santoso', 'email' => 'andiospeace@gmail.com', 'pw' => 'Andi2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'ID', 'phone' => '+62 000-0000-0000'],
+            'hiro' => ['id' => 'Hiro', 'name' => 'Hiro Katano', 'email' => 'h98484435@gmail.com', 'pw' => 'Hiro2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'US', 'phone' => '+1 000-000-0000'],
+            'bockki' => ['id' => 'bockki', 'name' => 'Kim Bockki', 'email' => 'bockkikim@gmail.com', 'pw' => 'bockki2026!!', 'role' => 'level3_worker', 'tierLevel' => 3, 'country_code' => 'KR', 'phone' => '+82 10-0000-0000'],
         ];
 
         $lowerIdent = strtolower($ident);
@@ -182,7 +184,8 @@ if ($method === 'GET') {
                             'role' => $acc['role'],
                             'tierLevel' => $acc['tierLevel'],
                             'status' => 'active',
-                            'country_code' => $acc['country_code']
+                            'country_code' => $acc['country_code'],
+                            'phone' => $acc['phone']
                         ]
                     ]);
                 }

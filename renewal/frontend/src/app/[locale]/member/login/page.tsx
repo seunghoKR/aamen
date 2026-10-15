@@ -22,6 +22,7 @@ interface PresetMember {
   tierLevel: MemberLevel
   country_code: string
   affiliation?: string
+  phone?: string
 }
 
 const PRESET_MEMBERS: PresetMember[] = [
@@ -34,6 +35,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     tierLevel: 5,
     country_code: 'KR',
     affiliation: '누리오 (개발자)',
+    phone: '+82 10-4069-2739',
   },
   {
     id: 'gimac',
@@ -44,6 +46,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     tierLevel: 5,
     country_code: 'KR',
     affiliation: 'AAMEN 본부',
+    phone: '+82 10-0000-0000',
   },
   {
     id: 'Jeanette',
@@ -54,6 +57,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     tierLevel: 5,
     country_code: 'US',
     affiliation: 'MWC',
+    phone: '+1 000-000-0000',
   },
   {
     id: 'Jeremiah',
@@ -64,6 +68,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     tierLevel: 4,
     country_code: 'HK',
     affiliation: '',
+    phone: '+852 0000-0000',
   },
   {
     id: 'Paulus',
@@ -74,6 +79,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     tierLevel: 4,
     country_code: 'ID',
     affiliation: '',
+    phone: '+62 000-0000-0000',
   },
   {
     id: 'Andi',
@@ -84,6 +90,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     tierLevel: 4,
     country_code: 'ID',
     affiliation: 'MWC / MNN',
+    phone: '+62 000-0000-0000',
   },
   {
     id: 'Hiro',
@@ -94,6 +101,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     tierLevel: 4,
     country_code: 'US',
     affiliation: '',
+    phone: '+1 000-000-0000',
   },
   {
     id: 'bockki',
@@ -104,6 +112,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     tierLevel: 3,
     country_code: 'KR',
     affiliation: 'MCSK',
+    phone: '+82 10-0000-0000',
   },
 ]
 
@@ -270,6 +279,7 @@ export default function LoginPage() {
           role: matchedAccount.role,
           tierLevel: matchedAccount.tierLevel,
           country_code: matchedAccount.country_code,
+          phone: matchedAccount.phone,
           status: 'active',
         }
 
@@ -279,6 +289,10 @@ export default function LoginPage() {
           localStorage.setItem('aamen_profile_name', matchedAccount.name)
           localStorage.setItem('aamen_profile_name_en', matchedAccount.name)
           localStorage.setItem('aamen_profile_country', matchedAccount.country_code)
+          if (matchedAccount.phone) {
+            localStorage.setItem('aamen_profile_phone', matchedAccount.phone)
+            localStorage.setItem(`aamen_profile_phone_${matchedAccount.id}`, matchedAccount.phone)
+          }
           localStorage.setItem('aamen_profile_password', pw)
           if (matchedAccount.affiliation) {
             localStorage.setItem('aamen_profile_affiliation', matchedAccount.affiliation)
@@ -317,6 +331,7 @@ export default function LoginPage() {
           role: matchedAccount.role,
           tierLevel: matchedAccount.tierLevel,
           country_code: matchedAccount.country_code,
+          phone: matchedAccount.phone,
           status: 'active',
         }
 
@@ -326,6 +341,10 @@ export default function LoginPage() {
           localStorage.setItem('aamen_profile_name', matchedAccount.name)
           localStorage.setItem('aamen_profile_name_en', matchedAccount.name)
           localStorage.setItem('aamen_profile_country', matchedAccount.country_code)
+          if (matchedAccount.phone) {
+            localStorage.setItem('aamen_profile_phone', matchedAccount.phone)
+            localStorage.setItem(`aamen_profile_phone_${matchedAccount.id}`, matchedAccount.phone)
+          }
           localStorage.setItem('aamen_profile_password', pw)
           if (matchedAccount.affiliation) {
             localStorage.setItem('aamen_profile_affiliation', matchedAccount.affiliation)

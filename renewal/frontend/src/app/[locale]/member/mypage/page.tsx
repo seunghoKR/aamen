@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import Header from '@/components/layout/Header'
@@ -43,6 +43,110 @@ import {
   getLocalizedCountryName,
   getMyPageTexts,
 } from '@/lib/mypageI18n'
+
+// 🌍 국가별 국제전화 국가번호 및 0으로 채워진 기본 전화번호 포맷
+const COUNTRY_CALLING_CODES: Record<string, { code: string; defaultPhone: string }> = {
+  KR: { code: '+82', defaultPhone: '+82 10-0000-0000' },
+  US: { code: '+1', defaultPhone: '+1 000-000-0000' },
+  ID: { code: '+62', defaultPhone: '+62 000-0000-0000' },
+  HK: { code: '+852', defaultPhone: '+852 0000-0000' },
+  JP: { code: '+81', defaultPhone: '+81 00-0000-0000' },
+  MM: { code: '+95', defaultPhone: '+95 09-000-0000' },
+  VN: { code: '+84', defaultPhone: '+84 00-000-0000' },
+  TH: { code: '+66', defaultPhone: '+66 00-000-0000' },
+  NP: { code: '+977', defaultPhone: '+977 00-000-0000' },
+  IN: { code: '+91', defaultPhone: '+91 00000-00000' },
+  KH: { code: '+855', defaultPhone: '+855 00-000-000' },
+  LA: { code: '+856', defaultPhone: '+856 20-0000-0000' },
+  MN: { code: '+976', defaultPhone: '+976 00-0000-0000' },
+  TW: { code: '+886', defaultPhone: '+886 0900-000-000' },
+  PH: { code: '+63', defaultPhone: '+63 000-000-0000' },
+}
+
+function getDefaultPhoneForCountry(countryCode?: string): string {
+  const upper = countryCode?.toUpperCase() || 'KR'
+  return COUNTRY_CALLING_CODES[upper]?.defaultPhone || `+${upper} 000-000-0000`
+}
+
+function getCallingCodeForCountry(countryCode?: string): string {
+  const upper = countryCode?.toUpperCase() || 'KR'
+  return COUNTRY_CALLING_CODES[upper]?.code || '+82'
+}
+
+// 🌟 등록된 주요 회원 프리셋 정보 (사용자별 고유 정보 및 국가별 0 채움 전화번호)
+const MEMBER_PRESETS: Record<string, {
+  name: string
+  nameEn: string
+  country: string
+  affiliation: string
+  phone: string
+  avatarId?: string
+}> = {
+  admin: {
+    name: '이승호',
+    nameEn: 'Seungho Lee',
+    country: 'KR',
+    affiliation: '누리오 (개발자)',
+    phone: '+82 10-4069-2739',
+    avatarId: 'avatar_01',
+  },
+  gimac: {
+    name: '배용하',
+    nameEn: 'Yongha Bae',
+    country: 'KR',
+    affiliation: 'AAMEN 본부',
+    phone: '+82 10-0000-0000',
+    avatarId: 'avatar_02',
+  },
+  Jeanette: {
+    name: 'Jeanette Hanson',
+    nameEn: 'Jeanette Hanson',
+    country: 'US',
+    affiliation: 'MWC',
+    phone: '+1 000-000-0000',
+    avatarId: 'avatar_03',
+  },
+  Jeremiah: {
+    name: 'Jeremiah',
+    nameEn: 'Jeremiah',
+    country: 'HK',
+    affiliation: 'Hong Kong Network',
+    phone: '+852 0000-0000',
+    avatarId: 'avatar_04',
+  },
+  Paulus: {
+    name: 'Paulus S. Widjaja',
+    nameEn: 'Paulus S. Widjaja',
+    country: 'ID',
+    affiliation: 'GKMI / Duta Wacana Christian University',
+    phone: '+62 000-0000-0000',
+    avatarId: 'avatar_05',
+  },
+  Andi: {
+    name: 'Andi Santoso',
+    nameEn: 'Andi Santoso',
+    country: 'ID',
+    affiliation: 'MWC / MNN',
+    phone: '+62 000-0000-0000',
+    avatarId: 'avatar_06',
+  },
+  Hiro: {
+    name: 'Hiro Katano',
+    nameEn: 'Hiro Katano',
+    country: 'US',
+    affiliation: 'US Anabaptist Network',
+    phone: '+1 000-000-0000',
+    avatarId: 'avatar_07',
+  },
+  bockki: {
+    name: 'Kim Bockki',
+    nameEn: 'Kim Bockki',
+    country: 'KR',
+    affiliation: 'MCSK',
+    phone: '+82 10-0000-0000',
+    avatarId: 'avatar_08',
+  },
+}
 
 export default function MyPage() {
   const locale = useLocale()
@@ -152,38 +256,71 @@ export default function MyPage() {
     return getLocalizedCountryName(code, currentLocale)
   }
 
-  useEffect(() => {
-    setMounted(true)
-    const storedLvl = getStoredTierLevel()
-    setCurrentLevel(storedLvl)
+  // 🌟 사용자별 고유 프로필 및 국가별 전화번호 동기화 로더
+  const loadUserProfile = useCallback((userToLoad: AuthUser | null) => {
+    const rawId = userToLoad?.id || (typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_id') : null) || 'admin'
+    const presetKey = Object.keys(MEMBER_PRESETS).find((k) => k.toLowerCase() === rawId.toLowerCase())
+    const preset = presetKey ? MEMBER_PRESETS[presetKey] : null
 
-    // 사용자가 직접 입력하여 저장한 프로필 및 계정 정보 확인
-    const savedAffiliation = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_affiliation') : null
-    const savedName = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_name') : null
-    const savedNameEn = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_name_en') : null
-    const savedPhone = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_phone') : null
-    const savedAvatar = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_avatar') : null
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_id') : null
+    // 사용자별 격리 저장소 우선 확인 (없으면 프리셋 또는 기본값)
+    const savedName = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_name_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_name') : null)) : null
+    const savedNameEn = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_name_en_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_name_en') : null)) : null
+    const savedAffiliation = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_affiliation_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_affiliation') : null)) : null
+    const savedCountry = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_country_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_country') : null)) : null
+    const savedPhone = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_phone_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_phone') : null)) : null
+    const savedAvatar = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_avatar_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_avatar') : null)) : null
     const savedPw = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_password') : null
 
-    let curId = savedId || 'admin'
-    let curPw = savedPw || ''
-    let curName = savedName || '이승호'
-    let curNameEn = savedNameEn || 'Seungho Lee'
-    let curEmail = 'leeshkr@gmail.com'
-    let curCountry = 'KR'
-    let curAffiliation = savedAffiliation || '누리오 (개발자)'
-    let curPhone = savedPhone || '+82 10-2345-6789'
-    let curAvatar = savedAvatar || 'avatar_01'
-    if (!curAvatar.startsWith('avatar_')) {
-      curAvatar = 'avatar_01'
+    const resolvedName = savedName || cleanName(userToLoad?.name || '') || preset?.name || '성도'
+    const resolvedNameEn = savedNameEn || preset?.nameEn || resolvedName
+    const resolvedEmail = userToLoad?.email || (preset ? `${presetKey?.toLowerCase()}@aamen.net` : 'member@aamen.net')
+    const resolvedCountry = savedCountry || userToLoad?.country_code || preset?.country || 'KR'
+    const resolvedAffiliation = savedAffiliation || (userToLoad?.role === 'developer' ? '누리오 (개발자)' : userToLoad?.role === 'super_admin' ? 'AAMEN 총괄 본부' : preset?.affiliation || '')
+
+    // 🔒 전화번호 보안: admin(개발자)이 아닌 다른 일반 회원에게 4069 번호가 절대 유입되지 않도록 원천 차단!
+    let resolvedPhone = savedPhone
+    if (!resolvedPhone || (rawId.toLowerCase() !== 'admin' && (resolvedPhone.includes('4069') || resolvedPhone.includes('2345')))) {
+      resolvedPhone = userToLoad?.phone || preset?.phone || getDefaultPhoneForCountry(resolvedCountry)
+    }
+
+    let resolvedAvatar = savedAvatar || preset?.avatarId || 'avatar_01'
+    if (!resolvedAvatar.startsWith('avatar_')) {
+      resolvedAvatar = 'avatar_01'
     }
 
     if (savedPw) {
       setProfilePassword(savedPw)
     }
 
-    // 텔레그램 알림 설정 불러오기 (저장된 ID가 없으면 기본 5618137472 적용)
+    setProfileId(rawId)
+    setProfileName(resolvedName)
+    setProfileNameEn(resolvedNameEn)
+    setProfileEmail(resolvedEmail)
+    setProfileCountry(resolvedCountry)
+    setProfileAffiliation(resolvedAffiliation)
+    setProfilePhone(resolvedPhone)
+    setProfileAvatarId(resolvedAvatar)
+
+    // WhatsApp 국가 코드 자동 동기화
+    setWhatsappCountryCode(getCallingCodeForCountry(resolvedCountry))
+
+    // 초기값 세팅 (프로필 변경 감지 기준)
+    setInitialProfile({
+      name: resolvedName,
+      nameEn: resolvedNameEn,
+      affiliation: resolvedAffiliation,
+      country: resolvedCountry,
+      phone: resolvedPhone,
+      avatarId: resolvedAvatar,
+    })
+  }, [])
+
+  useEffect(() => {
+    setMounted(true)
+    const storedLvl = getStoredTierLevel()
+    setCurrentLevel(storedLvl)
+
+    // 텔레그램 알림 설정 불러오기
     const savedTelegramChatId = typeof window !== 'undefined' ? localStorage.getItem('aamen_telegram_chat_id') : null
     const savedTelegramEnabled = typeof window !== 'undefined' ? localStorage.getItem('aamen_telegram_enabled') : null
     const savedTelegramEmergency = typeof window !== 'undefined' ? localStorage.getItem('aamen_telegram_emergency_only') : null
@@ -216,42 +353,7 @@ export default function MyPage() {
 
     const storedU = getStoredUser()
     setCurrentUser(storedU)
-    if (storedU) {
-      curId = savedId || storedU.id || 'admin'
-      if (!savedName) {
-        curName = cleanName(storedU.name) || '이승호'
-      }
-      curEmail = storedU.email || 'leeshkr@gmail.com'
-      if (storedU.country_code) {
-        curCountry = storedU.country_code
-      }
-      if (savedAffiliation) {
-        curAffiliation = savedAffiliation
-      } else if (storedU.role === 'developer') {
-        curAffiliation = '누리오 (개발자)'
-      } else if (storedU.role === 'super_admin') {
-        curAffiliation = 'AAMEN 총괄 본부 / 한국 메노나이트 교회 연합'
-      }
-    }
-
-    setProfileId(curId)
-    setProfileName(curName)
-    setProfileNameEn(curNameEn)
-    setProfileEmail(curEmail)
-    setProfileCountry(curCountry)
-    setProfileAffiliation(curAffiliation)
-    setProfilePhone(curPhone)
-    setProfileAvatarId(curAvatar)
-
-    // 초기값 세팅 (프로필 폼 변경 감지 기준)
-    setInitialProfile({
-      name: curName,
-      nameEn: curNameEn,
-      affiliation: curAffiliation,
-      country: curCountry,
-      phone: curPhone,
-      avatarId: curAvatar,
-    })
+    loadUserProfile(storedU)
 
     // 브라우저 Notification 권한 확인
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -268,8 +370,7 @@ export default function MyPage() {
       const u = getStoredUser()
       setCurrentUser(u)
       if (u) {
-        setProfileId(u.id || 'admin')
-        setProfileName(cleanName(u.name))
+        loadUserProfile(u)
       }
     }
 
@@ -281,9 +382,7 @@ export default function MyPage() {
       }
       setCurrentUser(u)
       setCurrentLevel(getStoredTierLevel())
-      setProfileId(u.id || 'admin')
-      setProfileName(cleanName(u.name))
-      setProfileEmail(u.email)
+      loadUserProfile(u)
     }
 
     window.addEventListener(TIER_EVENT_NAME, handleTierChange)
@@ -292,7 +391,7 @@ export default function MyPage() {
       window.removeEventListener(TIER_EVENT_NAME, handleTierChange)
       window.removeEventListener(AUTH_EVENT_NAME, handleAuthChange)
     }
-  }, [])
+  }, [loadUserProfile, currentLocale])
 
   const currentTier = defaultTierSettings[currentLevel]
   const isGuest = currentLevel === 0
@@ -433,11 +532,12 @@ export default function MyPage() {
     }
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem('aamen_profile_name', cleanLocalName)
-      localStorage.setItem('aamen_profile_name_en', cleanEnName)
-      localStorage.setItem('aamen_profile_affiliation', cleanAffiliation)
-      localStorage.setItem('aamen_profile_phone', cleanPhone)
-      localStorage.setItem('aamen_profile_avatar', profileAvatarId)
+      localStorage.setItem(`aamen_profile_name_${profileId}`, cleanLocalName)
+      localStorage.setItem(`aamen_profile_name_en_${profileId}`, cleanEnName)
+      localStorage.setItem(`aamen_profile_affiliation_${profileId}`, cleanAffiliation)
+      localStorage.setItem(`aamen_profile_country_${profileId}`, profileCountry)
+      localStorage.setItem(`aamen_profile_phone_${profileId}`, cleanPhone)
+      localStorage.setItem(`aamen_profile_avatar_${profileId}`, profileAvatarId)
 
       // AuthUser 동기화 (헤더와 사이트 전역에 반영)
       if (currentUser) {
@@ -445,9 +545,19 @@ export default function MyPage() {
           ...currentUser,
           name: cleanLocalName,
           country_code: profileCountry,
+          phone: cleanPhone,
         }
         saveAuthUser(updated)
         setCurrentUser(updated)
+      }
+
+      if (profileId.toLowerCase() === 'admin') {
+        localStorage.setItem('aamen_profile_name', cleanLocalName)
+        localStorage.setItem('aamen_profile_name_en', cleanEnName)
+        localStorage.setItem('aamen_profile_affiliation', cleanAffiliation)
+        localStorage.setItem('aamen_profile_country', profileCountry)
+        localStorage.setItem('aamen_profile_phone', cleanPhone)
+        localStorage.setItem('aamen_profile_avatar', profileAvatarId)
       }
     }
 
@@ -922,7 +1032,20 @@ export default function MyPage() {
                     <label className="block text-[11px] font-bold text-gray-500">{t('profile.country')}</label>
                     <select
                       value={profileCountry}
-                      onChange={(e) => setProfileCountry(e.target.value)}
+                      onChange={(e) => {
+                        const newCountry = e.target.value
+                        setProfileCountry(newCountry)
+                        // 회원 소속 국가 번호 자동 연동 및 0으로 채워진 전화번호 동기화
+                        if (
+                          !profilePhone ||
+                          profilePhone.includes('000') ||
+                          profilePhone.includes('2345') ||
+                          (profileId.toLowerCase() !== 'admin' && profilePhone.includes('4069'))
+                        ) {
+                          setProfilePhone(getDefaultPhoneForCountry(newCountry))
+                        }
+                        setWhatsappCountryCode(getCallingCodeForCountry(newCountry))
+                      }}
                       className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-gray-300 text-xs sm:text-sm font-bold text-gray-900 focus:outline-emerald-600 shadow-2xs"
                     >
                       {localizedCountries.map((c) => (
@@ -940,7 +1063,7 @@ export default function MyPage() {
                       type="text"
                       value={profilePhone}
                       onChange={(e) => setProfilePhone(e.target.value)}
-                      placeholder="+82 10-2345-6789"
+                      placeholder={getDefaultPhoneForCountry(profileCountry)}
                       className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-gray-300 text-xs sm:text-sm font-mono font-bold text-gray-900 focus:outline-emerald-600 shadow-2xs"
                     />
                   </div>
