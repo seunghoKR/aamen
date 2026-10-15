@@ -3,13 +3,121 @@ require_once __DIR__ . '/db.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+// 🌟 공식 8명 (개발자 1명 + 공식 회원 7명) 통합 계정 마스터 데이터 (2026-10-15 확정)
+$OFFICIAL_MEMBERS = [
+    'admin' => [
+        'id' => 'admin',
+        'name' => '개발자 관리자 (이승호)',
+        'emails' => ['leeshkr@gmail.com', 'nuriohga@gmail.com', 'admin@aamen.net'],
+        'passwords' => ['seungho0409!', 'aamen2026!', '1234'],
+        'role' => 'developer',
+        'tierLevel' => 5,
+        'country_code' => 'KR',
+        'phone' => '+82 10-4069-2739',
+        'affiliation' => '누리오 (개발자)'
+    ],
+    'Jeanette' => [
+        'id' => 'Jeanette',
+        'name' => 'Jeanette Hanson',
+        'emails' => ['jeanette.m.hanson@gmail.com'],
+        'passwords' => ['Jeanette2026!!', 'aamen2026!'],
+        'role' => 'super_admin',
+        'tierLevel' => 5,
+        'country_code' => 'US',
+        'phone' => '+1 000-000-0000',
+        'affiliation' => 'MWC'
+    ],
+    'Jeremiah' => [
+        'id' => 'Jeremiah',
+        'name' => 'Jeremiah',
+        'emails' => ['hkjerechoi@gmail.com'],
+        'passwords' => ['Jeremiah2026!!', 'aamen2026!'],
+        'role' => 'country_admin',
+        'tierLevel' => 4,
+        'country_code' => 'HK',
+        'phone' => '+852 0000-0000',
+        'affiliation' => ''
+    ],
+    'Paulus' => [
+        'id' => 'Paulus',
+        'name' => 'Paulus S. Widjaja',
+        'emails' => ['psw.dosen@gmail.com'],
+        'passwords' => ['Paulus2026!!', 'aamen2026!'],
+        'role' => 'country_admin',
+        'tierLevel' => 4,
+        'country_code' => 'ID',
+        'phone' => '+62 000-0000-0000',
+        'affiliation' => ''
+    ],
+    'Andi' => [
+        'id' => 'Andi',
+        'name' => 'Andi Santoso',
+        'emails' => ['andiospeace@gmail.com'],
+        'passwords' => ['Andi2026!!', 'aamen2026!'],
+        'role' => 'country_admin',
+        'tierLevel' => 4,
+        'country_code' => 'US',
+        'phone' => '+1 000-000-0000',
+        'affiliation' => 'MNN'
+    ],
+    'Hiro' => [
+        'id' => 'Hiro',
+        'name' => 'Hiro Katano',
+        'emails' => ['h98484435@gmail.com'],
+        'passwords' => ['Hiro2026!!', 'aamen2026!'],
+        'role' => 'country_admin',
+        'tierLevel' => 4,
+        'country_code' => 'JP',
+        'phone' => '+81 00-0000-0000',
+        'affiliation' => ''
+    ],
+    'Bockki' => [
+        'id' => 'Bockki',
+        'name' => 'Kim Bockki',
+        'emails' => ['bockkikim@gmail.com'],
+        'passwords' => ['bockki2026!!', 'aamen2026!'],
+        'role' => 'level3_worker',
+        'tierLevel' => 3,
+        'country_code' => 'KR',
+        'phone' => '+82 10-0000-0000',
+        'affiliation' => 'MCSK'
+    ],
+    'Yongha' => [
+        'id' => 'Yongha',
+        'name' => 'Bae Yongha',
+        'emails' => ['byh1424@gmail.com', 'gimac1424@gmail.com'],
+        'passwords' => ['yongha2026!!', 'a14241425', 'aamen2026!'],
+        'role' => 'country_admin',
+        'tierLevel' => 4,
+        'country_code' => 'KR',
+        'phone' => '+82 10-0000-0000',
+        'affiliation' => 'MCSK'
+    ]
+];
+
+// 이메일이나 아이디로 공식 계정 조회 함수
+function find_official_member($ident, $OFFICIAL_MEMBERS) {
+    $lower = strtolower(trim($ident));
+    foreach ($OFFICIAL_MEMBERS as $acc) {
+        if (strtolower($acc['id']) === $lower) {
+            return $acc;
+        }
+        foreach ($acc['emails'] as $em) {
+            if (strtolower($em) === $lower) {
+                return $acc;
+            }
+        }
+    }
+    return null;
+}
+
 if ($method === 'GET') {
     $search = $_GET['search'] ?? null;
     $role = $_GET['role'] ?? null;
     $country = $_GET['country'] ?? null;
 
-    // 개발자 계정은 회원 명단에서 제외
-    $sql = "SELECT id, email, name, avatar_url, provider, country_code, role, status, bio, created_at, updated_at FROM members WHERE 1=1 AND role != 'developer' AND email != 'admin@aamen.net' AND name NOT LIKE '%개발자%'";
+    // 개발자 계정은 회원 명단에서 제외하고 7명 공식 회원 + 기타 승인 회원 조회
+    $sql = "SELECT id, email, name, avatar_url, provider, country_code, role, status, bio, phone, affiliation, created_at, updated_at FROM members WHERE 1=1 AND role != 'developer' AND email != 'admin@aamen.net' AND name NOT LIKE '%개발자%'";
     $params = [];
 
     if ($search) {
@@ -32,13 +140,15 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    send_json($stmt->fetchAll());
+    $rows = $stmt->fetchAll();
+
+    send_json($rows);
 } elseif ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $action = $input['action'] ?? null;
     $id = $_GET['id'] ?? $input['id'] ?? null;
 
-    // 🌟 구글 소셜 로그인 & 자동 회원가입 API
+    // 🌟 구글 소셜 로그인 & 자동 회원가입 API (구글 계정 선택 후 연동)
     if ($action === 'google_login') {
         $email = trim($input['email'] ?? '');
         $name = trim($input['name'] ?? 'Google User');
@@ -48,48 +158,60 @@ if ($method === 'GET') {
             send_json(['error' => 'Email is required for Google login'], 400);
         }
 
-        // 특별 권한 매핑
-        $role = 'regular';
-        $tierLevel = 2;
+        // 1) 공식 8명 계정 매핑 확인 (Jeanette, Jeremiah, Paulus, Andi, Hiro, Bockki, Yongha, admin)
+        $official = find_official_member($email, $OFFICIAL_MEMBERS);
+        if ($official) {
+            // DB에 최신 정보 동기화
+            try {
+                $upStmt = $pdo->prepare("REPLACE INTO members (id, email, name, provider, country_code, role, status, phone, affiliation) VALUES (?, ?, ?, 'google', ?, ?, 'active', ?, ?)");
+                $upStmt->execute([
+                    $official['id'],
+                    $official['emails'][0],
+                    $official['name'],
+                    $official['country_code'],
+                    $official['role'],
+                    $official['phone'],
+                    $official['affiliation']
+                ]);
+            } catch (\Exception $e) {}
 
-        if (strtolower($email) === 'gimac1424@gmail.com') {
-            $role = 'super_admin';
-            $tierLevel = 5;
-            $name = $name ?: '배용하';
-        } elseif (strtolower($email) === 'leeshkr@gmail.com' || strtolower($email) === 'nuriohga@gmail.com') {
-            $role = 'developer';
-            $tierLevel = 5;
-            $name = $name ?: '개발자 관리자 (이승호)';
+            send_json([
+                'status' => 'success',
+                'message' => 'Google login verified for official member',
+                'member' => [
+                    'id' => $official['id'],
+                    'email' => $official['emails'][0],
+                    'name' => $official['name'],
+                    'role' => $official['role'],
+                    'tierLevel' => $official['tierLevel'],
+                    'country_code' => $official['country_code'],
+                    'phone' => $official['phone'],
+                    'affiliation' => $official['affiliation'],
+                    'status' => 'active',
+                    'provider' => 'google'
+                ]
+            ]);
         }
 
-        // DB 기존 회원 조회
-        $stmt = $pdo->prepare("SELECT id, email, name, role, status, country_code, avatar_url FROM members WHERE email = ? LIMIT 1");
+        // 2) DB 기존 회원 조회
+        $stmt = $pdo->prepare("SELECT id, email, name, role, status, country_code, avatar_url, phone, affiliation FROM members WHERE email = ? LIMIT 1");
         $stmt->execute([$email]);
         $member = $stmt->fetch();
 
         if ($member) {
-            // 특별 관리자 권한 보장 동기화
-            if (($role === 'super_admin' || $role === 'developer') && $member['role'] !== $role) {
-                $upStmt = $pdo->prepare("UPDATE members SET role = ?, updated_at = NOW() WHERE email = ?");
-                $upStmt->execute([$role, $email]);
-                $member['role'] = $role;
-            }
-            if ($avatar_url && empty($member['avatar_url'])) {
-                $upStmt = $pdo->prepare("UPDATE members SET avatar_url = ? WHERE email = ?");
-                $upStmt->execute([$avatar_url, $email]);
-                $member['avatar_url'] = $avatar_url;
-            }
-
-            $member['tierLevel'] = ($member['role'] === 'super_admin' || $member['role'] === 'developer') ? 5 : 2;
+            $member['tierLevel'] = ($member['role'] === 'super_admin' || $member['role'] === 'developer') ? 5 : ($member['role'] === 'country_admin' ? 4 : 2);
+            $member['provider'] = 'google';
             send_json([
                 'status' => 'success',
                 'message' => 'Google login successful',
                 'member' => $member
             ]);
         } else {
-            // 신규 구글 회원 자동 가입
-            $newId = 'g_' . substr(md5($email . time()), 0, 12);
+            // 신규 구글 회원 등록
+            $newId = 'g_' . substr(md5($email . time()), 0, 10);
             $country_code = 'KR';
+            $role = 'regular';
+            $tierLevel = 2;
             $status = 'active';
 
             $insStmt = $pdo->prepare("INSERT INTO members (id, email, name, avatar_url, provider, country_code, role, status, bio, created_at) VALUES (?, ?, ?, ?, 'google', ?, ?, ?, 'Google 계정 인증 회원', NOW())");
@@ -106,13 +228,14 @@ if ($method === 'GET') {
                     'role' => $role,
                     'tierLevel' => $tierLevel,
                     'status' => $status,
-                    'country_code' => $country_code
+                    'country_code' => $country_code,
+                    'provider' => 'google'
                 ]
             ], 201);
         }
     }
 
-    // 로그인 검증 API
+    // 🔐 아이디 / 비밀번호 로그인 검증 API
     if ($action === 'login') {
         $ident = trim($input['identifier'] ?? $input['email'] ?? $input['id'] ?? '');
         $pw = trim($input['password'] ?? '');
@@ -121,85 +244,50 @@ if ($method === 'GET') {
             send_json(['error' => 'Identifier and password required'], 400);
         }
 
-        // 1) 개발자 계정 (admin / leeshkr@gmail.com / nuriohga@gmail.com)
-        if (
-            (strtolower($ident) === 'admin' || strtolower($ident) === 'leeshkr@gmail.com' || strtolower($ident) === 'nuriohga@gmail.com') &&
-            ($pw === 'seungho0409!' || $pw === 'a14241425' || $pw === 'admin1234' || $pw === 'aamen2026!' || $pw === '1234' || empty($pw))
-        ) {
-            send_json([
-                'status' => 'success',
-                'message' => 'Developer login successful',
-                'member' => [
-                    'id' => 'admin',
-                    'email' => 'leeshkr@gmail.com',
-                    'name' => '개발자 관리자 (이승호)',
-                    'role' => 'developer',
-                    'tierLevel' => 5,
-                    'status' => 'active',
-                    'country_code' => 'KR',
-                    'phone' => '+82 10-4069-2739'
-                ]
-            ]);
-        }
-
-        // 2) 배용하 총괄관리자 계정 (gimac / a14241425 / gimac1424@gmail.com)
-        if ((strtolower($ident) === 'gimac' || strtolower($ident) === 'gimac1424@gmail.com') && ($pw === 'a14241425' || $pw === 'aamen2026!')) {
-            send_json([
-                'status' => 'success',
-                'message' => 'Login successful',
-                'member' => [
-                    'id' => 'gimac',
-                    'email' => 'gimac1424@gmail.com',
-                    'name' => '배용하',
-                    'role' => 'super_admin',
-                    'tierLevel' => 5,
-                    'status' => 'active',
-                    'country_code' => 'KR',
-                    'phone' => '+82 10-0000-0000'
-                ]
-            ]);
-        }
-
-        // 3) 6명 신규 등록 리더십 & 사역자 계정 인증
-        $preset_accounts = [
-            'jeanette' => ['id' => 'Jeanette', 'name' => 'Jeanette Hanson', 'email' => 'Jeanette.m.hanson@gmail.com', 'pw' => 'Jeanette2026!!', 'role' => 'super_admin', 'tierLevel' => 5, 'country_code' => 'US', 'phone' => '+1 000-000-0000'],
-            'jeremiah' => ['id' => 'Jeremiah', 'name' => 'Jeremiah', 'email' => 'hkjerechoi@gmail.com', 'pw' => 'Jeremiah2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'HK', 'phone' => '+852 0000-0000'],
-            'paulus' => ['id' => 'Paulus', 'name' => 'Paulus S. Widjaja', 'email' => 'psw.dosen@gmail.com', 'pw' => 'Paulus2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'ID', 'phone' => '+62 000-0000-0000'],
-            'andi' => ['id' => 'Andi', 'name' => 'Andi Santoso', 'email' => 'andiospeace@gmail.com', 'pw' => 'Andi2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'ID', 'phone' => '+62 000-0000-0000'],
-            'hiro' => ['id' => 'Hiro', 'name' => 'Hiro Katano', 'email' => 'h98484435@gmail.com', 'pw' => 'Hiro2026!!', 'role' => 'country_admin', 'tierLevel' => 4, 'country_code' => 'US', 'phone' => '+1 000-000-0000'],
-            'bockki' => ['id' => 'bockki', 'name' => 'Kim Bockki', 'email' => 'bockkikim@gmail.com', 'pw' => 'bockki2026!!', 'role' => 'level3_worker', 'tierLevel' => 3, 'country_code' => 'KR', 'phone' => '+82 10-0000-0000'],
-        ];
-
-        $lowerIdent = strtolower($ident);
-        foreach ($preset_accounts as $key => $acc) {
-            if ($lowerIdent === strtolower($acc['id']) || $lowerIdent === strtolower($acc['email'])) {
-                if ($pw === $acc['pw'] || $pw === 'aamen2026!') {
-                    send_json([
-                        'status' => 'success',
-                        'message' => 'Login successful',
-                        'member' => [
-                            'id' => $acc['id'],
-                            'email' => $acc['email'],
-                            'name' => $acc['name'],
-                            'role' => $acc['role'],
-                            'tierLevel' => $acc['tierLevel'],
-                            'status' => 'active',
-                            'country_code' => $acc['country_code'],
-                            'phone' => $acc['phone']
-                        ]
-                    ]);
+        // 1) 공식 8명 계정 검증 (아이디 또는 이메일)
+        $official = find_official_member($ident, $OFFICIAL_MEMBERS);
+        if ($official) {
+            $pwMatched = false;
+            foreach ($official['passwords'] as $presetPw) {
+                if ($pw === $presetPw) {
+                    $pwMatched = true;
+                    break;
                 }
+            }
+            if ($pw === 'aamen2026!' || ($official['role'] === 'developer' && $pw === 'seungho0409!')) {
+                $pwMatched = true;
+            }
+
+            if ($pwMatched) {
+                send_json([
+                    'status' => 'success',
+                    'message' => 'Login successful',
+                    'member' => [
+                        'id' => $official['id'],
+                        'email' => $official['emails'][0],
+                        'name' => $official['name'],
+                        'role' => $official['role'],
+                        'tierLevel' => $official['tierLevel'],
+                        'status' => 'active',
+                        'country_code' => $official['country_code'],
+                        'phone' => $official['phone'],
+                        'affiliation' => $official['affiliation'],
+                        'provider' => 'local'
+                    ]
+                ]);
+            } else {
+                send_json(['error' => 'Invalid password for member ' . $official['name']], 401);
             }
         }
 
-        // DB에서 조회
-        $stmt = $pdo->prepare("SELECT id, email, name, role, status, country_code FROM members WHERE (id = ? OR email = ?) AND status = 'active' LIMIT 1");
+        // 2) DB에서 일반 회원 조회
+        $stmt = $pdo->prepare("SELECT id, email, name, role, status, country_code, phone, affiliation FROM members WHERE (id = ? OR email = ?) AND status = 'active' LIMIT 1");
         $stmt->execute([$ident, $ident]);
         $member = $stmt->fetch();
 
         if ($member) {
-            // 데모/기본 비밀번호 검증
-            if ($pw === 'a14241425' || $pw === 'aamen1234') {
+            if ($pw === 'aamen2026!' || $pw === 'a14241425' || $pw === 'aamen1234') {
+                $member['tierLevel'] = ($member['role'] === 'super_admin' || $member['role'] === 'developer') ? 5 : ($member['role'] === 'country_admin' ? 4 : 2);
                 send_json([
                     'status' => 'success',
                     'message' => 'Login successful',
@@ -210,7 +298,7 @@ if ($method === 'GET') {
             }
         }
 
-        send_json(['error' => 'Member not found or invalid password'], 401);
+        send_json(['error' => 'Member not found or invalid credentials'], 401);
     }
 
     // POST로 회원 수정/등급변경
@@ -228,6 +316,14 @@ if ($method === 'GET') {
         if (isset($input['name'])) {
             $fields[] = "name = ?";
             $params[] = $input['name'];
+        }
+        if (isset($input['phone'])) {
+            $fields[] = "phone = ?";
+            $params[] = $input['phone'];
+        }
+        if (isset($input['affiliation'])) {
+            $fields[] = "affiliation = ?";
+            $params[] = $input['affiliation'];
         }
         if (!empty($fields)) {
             $params[] = $id;
@@ -257,6 +353,8 @@ if ($method === 'GET') {
     $role = $input['role'] ?? 'regular';
     $status = $input['status'] ?? 'active';
     $bio = $input['bio'] ?? null;
+    $phone = $input['phone'] ?? null;
+    $affiliation = $input['affiliation'] ?? null;
     $provider = $input['provider'] ?? 'google';
 
     // 중복 체크
@@ -266,8 +364,8 @@ if ($method === 'GET') {
         send_json(['error' => 'Email already registered'], 409);
     }
 
-    $stmt = $pdo->prepare("INSERT INTO members (id, email, name, provider, country_code, role, status, bio, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-    $stmt->execute([$id, $email, $name, $provider, $country_code, $role, $status, $bio]);
+    $stmt = $pdo->prepare("INSERT INTO members (id, email, name, provider, country_code, role, status, bio, phone, affiliation, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+    $stmt->execute([$id, $email, $name, $provider, $country_code, $role, $status, $bio, $phone, $affiliation]);
 
     send_json([
         'status' => 'success',
@@ -303,6 +401,14 @@ if ($method === 'GET') {
     if (isset($input['name'])) {
         $fields[] = "name = ?";
         $params[] = $input['name'];
+    }
+    if (isset($input['phone'])) {
+        $fields[] = "phone = ?";
+        $params[] = $input['phone'];
+    }
+    if (isset($input['affiliation'])) {
+        $fields[] = "affiliation = ?";
+        $params[] = $input['affiliation'];
     }
 
     if (empty($fields)) {

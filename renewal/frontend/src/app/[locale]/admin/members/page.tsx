@@ -229,6 +229,7 @@ export default function AdminMembersPage() {
             LA: { name: '라오스', flag: '🇱🇦' },
             MN: { name: '몽골', flag: '🇲🇳' },
             TW: { name: '대만', flag: '🇹🇼' },
+            HK: { name: '홍콩', flag: '🇭🇰' },
           }
 
           // 개발자 계정 철저히 필터링

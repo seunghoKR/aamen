@@ -41,7 +41,7 @@ export const ADMIN_TEXTS = {
     },
     home: {
       welcomeBadge: 'AAMEN Administration',
-      versionBadge: 'v1.4.0',
+      versionBadge: 'v1.5.0',
       welcomeTitle: '관리자님, 환영합니다! 👑',
       welcomeSubtitle:
         '13개국 아시아 아나밥티스트 메노나이트 교육 네트워크의 회원 등급, 상단 배너, 공지 팝업 및 다국어 교안을 실시간으로 총괄 제어할 수 있는 관리자 화면입니다.',
@@ -321,7 +321,7 @@ export const ADMIN_TEXTS = {
     },
     home: {
       welcomeBadge: 'AAMEN Administration',
-      versionBadge: 'v1.4.0',
+      versionBadge: 'v1.5.0',
       welcomeTitle: 'Welcome, Administrator! 👑',
       welcomeSubtitle:
         'Centralized real-time administration portal for member tier permissions, hero banners, notice popups, and multilingual curricula across 13 Asian Anabaptist Mennonite nations.',
