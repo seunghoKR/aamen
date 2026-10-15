@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import Script from 'next/script'
 import { useRouter, useParams } from 'next/navigation'
+
+const GOOGLE_CLIENT_ID = '441083250158-826ur2svuqf55d5ad3u621fongnvbs6r.apps.googleusercontent.com'
 import { useTranslations } from 'next-intl'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -242,23 +245,88 @@ export default function LoginPage() {
     })
   }
 
-  // 🌟 구글 로그인 버튼 클릭 시 계정 선택 모달 열기
+  // 🌟 Google Identity Services (GSI) 토큰 클라이언트 상태
+  const [googleTokenClient, setGoogleTokenClient] = useState<any>(null)
+  const [isGoogleSdkReady, setIsGoogleSdkReady] = useState(false)
+
+  const initGoogleAuth = () => {
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2) {
+      try {
+        const client = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'email profile openid',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              setIsLoading(true)
+              try {
+                // 구글 공식 userinfo 엔드포인트에서 실제 계정 정보 조회
+                const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: {
+                    Authorization: `Bearer ${tokenResponse.access_token}`,
+                  },
+                })
+                if (userRes.ok) {
+                  const googleUser = await userRes.json()
+                  await executeGoogleLogin(
+                    {
+                      id: googleUser.sub,
+                      name: googleUser.name || 'Google User',
+                      email: googleUser.email,
+                    },
+                    googleUser.picture
+                  )
+                  return
+                }
+              } catch (err) {
+                console.error('Google userinfo fetch error:', err)
+                alert(isKo ? '구글 사용자 정보를 불러오지 못했습니다.' : 'Failed to retrieve Google profile.')
+              } finally {
+                setIsLoading(false)
+              }
+            } else if (tokenResponse?.error) {
+              console.warn('Google Auth response error:', tokenResponse.error)
+            }
+          },
+        })
+        setGoogleTokenClient(client)
+        setIsGoogleSdkReady(true)
+      } catch (err) {
+        console.error('Failed to init Google Token Client:', err)
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2) {
+      initGoogleAuth()
+    }
+  }, [])
+
+  // 🌟 구글 로그인 버튼 클릭 시: 공식 Google 팝업 또는 계정 선택 모달 열기
   const handleGoogleLogin = () => {
     setErrorMessage('')
-    setIsGoogleModalOpen(true)
+    if (googleTokenClient) {
+      // 🚀 구글 공식 팝업 실행! prompt: 'select_account'를 통해 브라우저 내 구글 계정 선택창이 항상 팝업됨!
+      googleTokenClient.requestAccessToken({ prompt: 'select_account' })
+    } else {
+      setIsGoogleModalOpen(true)
+    }
   }
 
   // 🌟 구글 계정 선택 후 로그인 실행
-  const executeGoogleLogin = async (acc: {
-    id?: string
-    name: string
-    email: string
-    role?: AuthUser['role']
-    tierLevel?: MemberLevel
-    country_code?: string
-    phone?: string
-    affiliation?: string
-  }) => {
+  const executeGoogleLogin = async (
+    acc: {
+      id?: string
+      name: string
+      email: string
+      role?: AuthUser['role']
+      tierLevel?: MemberLevel
+      country_code?: string
+      phone?: string
+      affiliation?: string
+    },
+    avatarUrl?: string
+  ) => {
     if (!hasAgreedConsent) {
       alert(isKo ? 'Google 계정 연동 및 개인정보 제공 동의가 필요합니다.' : 'Please agree to terms and Google account sync.')
       return
@@ -276,6 +344,7 @@ export default function LoginPage() {
           action: 'google_login',
           email: acc.email,
           name: acc.name,
+          avatar_url: avatarUrl,
         }),
       })
 
@@ -319,13 +388,16 @@ export default function LoginPage() {
       }
 
       saveAuthUser(authUser)
-      saveAccountToBrowser({ name: finalMember.name, email: finalMember.email })
+      saveAccountToBrowser({ name: finalMember.name, email: finalMember.email, avatar: avatarUrl })
 
       if (typeof window !== 'undefined') {
         localStorage.setItem('aamen_profile_id', authUser.id)
         localStorage.setItem('aamen_profile_name', authUser.name)
         localStorage.setItem('aamen_profile_name_en', authUser.name)
         localStorage.setItem('aamen_profile_country', authUser.country_code || 'KR')
+        if (avatarUrl) {
+          localStorage.setItem('aamen_profile_avatar', avatarUrl)
+        }
         if (authUser.phone) {
           localStorage.setItem('aamen_profile_phone', authUser.phone)
           localStorage.setItem(`aamen_profile_phone_${authUser.id}`, authUser.phone)
@@ -599,6 +671,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={initGoogleAuth}
+      />
       <Header />
 
       <main className="flex-1 flex items-center justify-center p-4 py-12">
@@ -839,6 +916,47 @@ export default function LoginPage() {
                   : 'to continue to AAMEN Asian Network'}
               </p>
             </div>
+
+            {/* Google 공식 팝업 직접 호출 버튼 */}
+            <button
+              type="button"
+              onClick={() => {
+                if (googleTokenClient) {
+                  googleTokenClient.requestAccessToken({ prompt: 'select_account' })
+                  setIsGoogleModalOpen(false)
+                } else {
+                  alert(
+                    isKo
+                      ? 'Google 보안 SDK를 연결 중입니다. 아래 목록에서 계정을 선택해주세요.'
+                      : 'Connecting Google SDK. Please choose from list below.'
+                  )
+                }
+              }}
+              className="w-full p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-white hover:from-emerald-100 hover:to-teal-100 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3 text-left transition-all shadow-2xs group cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-white border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="font-extrabold text-sm text-emerald-950 flex items-center gap-1.5 flex-wrap">
+                    <span>{isKo ? 'Google 공식 팝업으로 계정 선택' : 'Sign in via Google Popup'}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black">
+                      OAuth 2.0
+                    </span>
+                  </div>
+                  <div className="text-xs text-emerald-800 truncate">
+                    {isKo ? '클릭 시 Google 공식 계정 선택창이 직접 팝업됩니다' : 'Opens official Google accounts dialog'}
+                  </div>
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-emerald-700 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </button>
 
             {/* 사용자 본인의 브라우저 구글 계정 목록 */}
             <div className="space-y-1 divide-y divide-gray-100">
