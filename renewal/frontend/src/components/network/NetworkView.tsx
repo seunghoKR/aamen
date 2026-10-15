@@ -42,14 +42,26 @@ export default function NetworkView() {
   // 관리자 대시보드에서 등록/수정한 협력단체 및 코디네이터 데이터 불러오기
   useEffect(() => {
     try {
-      // 1. 협력단체 데이터 로드
-      const savedPartners = localStorage.getItem('aamen_partner_orgs')
-      if (savedPartners) {
-        const parsed = JSON.parse(savedPartners)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setPartners(parsed)
-        }
-      }
+      // 1. 협력단체 데이터 로드 (서버 API 우선, 로컬 캐시 폴백)
+      fetch('/api/partners')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json && json.success && Array.isArray(json.data)) {
+            setPartners(json.data)
+            localStorage.setItem('aamen_partner_orgs', JSON.stringify(json.data))
+          }
+        })
+        .catch(() => {
+          const savedPartners = localStorage.getItem('aamen_partner_orgs')
+          if (savedPartners !== null) {
+            try {
+              const parsed = JSON.parse(savedPartners)
+              if (Array.isArray(parsed)) {
+                setPartners(parsed)
+              }
+            } catch (e) {}
+          }
+        })
 
       // 2. 13개국 코디네이터 데이터 로드 및 최신 영문/현지어 데이터 병합
       const savedCoords = localStorage.getItem('aamen_coordinators_data')

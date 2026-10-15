@@ -18,13 +18,13 @@ export default function Footer() {
         {/* 로고 + 설명 */}
         <div className="flex flex-col md:flex-row justify-between gap-8 mb-10">
           <div>
-            <div className="inline-flex items-center gap-2 mb-4 bg-white/95 backdrop-blur-xs px-3 py-1.5 rounded-xl shadow-xs">
+            <div className="inline-flex items-center gap-2 mb-4 bg-white/95 backdrop-blur-xs px-3.5 py-2 rounded-2xl shadow-xs">
               <Image
                 src="/logo.png"
                 alt="AAMEN"
-                width={120}
+                width={130}
                 height={39}
-                className="h-7 w-auto object-contain"
+                className="h-8 w-auto object-contain"
               />
             </div>
             <p className="text-gray-400 text-sm max-w-xs leading-relaxed">

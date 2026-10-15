@@ -37,7 +37,8 @@ export default function AdminPartnersPage() {
   const t = getAdminTexts(currentLocale).partners
   const localePath = (p: string) => `/${currentLocale}${p.startsWith('/') ? p : `/${p}`}`
 
-  const [partners, setPartners] = useState<PartnerOrgItem[]>(initialPartnerOrgs)
+  const [partners, setPartners] = useState<PartnerOrgItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -64,19 +65,45 @@ export default function AdminPartnersPage() {
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  // 로컬 스토리지 데이터 로드
-  useEffect(() => {
+  // 서버 API 및 로컬 스토리지 데이터 로드
+  const fetchPartners = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/partners')
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && Array.isArray(json.data)) {
+          setPartners(json.data)
+          localStorage.setItem('aamen_partner_orgs', JSON.stringify(json.data))
+          setLoading(false)
+          return
+        }
+      }
+    } catch (err) {
+      console.warn('API fetch failed, falling back to localStorage:', err)
+    }
+
+    // 로컬 스토리지 캐시 로드
     try {
       const saved = localStorage.getItem('aamen_partner_orgs')
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setPartners(parsed)
+          setLoading(false)
+          return
         }
       }
     } catch (e) {
       console.error(e)
     }
+
+    setPartners([])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchPartners()
   }, [])
 
   // 등록 모달 열기
@@ -116,7 +143,7 @@ export default function AdminPartnersPage() {
   }
 
   // 폼 저장 핸들러 (등록/수정)
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!formState.nameKo.trim() && !formState.nameEn.trim()) {
@@ -124,10 +151,10 @@ export default function AdminPartnersPage() {
       return
     }
 
-    let updatedList: PartnerOrgItem[] = []
+    let payload: PartnerOrgItem
 
     if (modalMode === 'create') {
-      const newPartner: PartnerOrgItem = {
+      payload = {
         id: `pt_${Date.now()}`,
         nameKo: formState.nameKo.trim() || formState.nameEn.trim(),
         nameEn: formState.nameEn.trim() || formState.nameKo.trim(),
@@ -140,26 +167,40 @@ export default function AdminPartnersPage() {
         descKo: formState.descKo.trim(),
         descEn: formState.descEn.trim() || formState.descKo.trim(),
       }
-      updatedList = [newPartner, ...partners]
-      showToast(isEn ? '✨ New global partner organization registered!' : '✨ 새로운 글로벌 협력단체가 등록되었습니다!')
     } else if (modalMode === 'edit' && selectedPartner) {
-      updatedList = partners.map((p) =>
-        p.id === selectedPartner.id
-          ? {
-              ...p,
-              nameKo: formState.nameKo.trim() || formState.nameEn.trim(),
-              nameEn: formState.nameEn.trim() || formState.nameKo.trim(),
-              category: formState.category,
-              websiteUrl: formState.websiteUrl.trim(),
-              headquarters: formState.headquarters.trim(),
-              established: formState.established.trim(),
-              contactEmail: formState.contactEmail.trim(),
-              phone: formState.phone?.trim() || '',
-              descKo: formState.descKo.trim(),
-              descEn: formState.descEn.trim() || formState.descKo.trim(),
-            }
-          : p
-      )
+      payload = {
+        ...selectedPartner,
+        nameKo: formState.nameKo.trim() || formState.nameEn.trim(),
+        nameEn: formState.nameEn.trim() || formState.nameKo.trim(),
+        category: formState.category,
+        websiteUrl: formState.websiteUrl.trim(),
+        headquarters: formState.headquarters.trim(),
+        established: formState.established.trim(),
+        contactEmail: formState.contactEmail.trim(),
+        phone: formState.phone?.trim() || '',
+        descKo: formState.descKo.trim(),
+        descEn: formState.descEn.trim() || formState.descKo.trim(),
+      }
+    } else {
+      return
+    }
+
+    try {
+      await fetch('/api/partners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+    } catch (e) {
+      console.error(e)
+    }
+
+    let updatedList: PartnerOrgItem[]
+    if (modalMode === 'create') {
+      updatedList = [payload, ...partners]
+      showToast(isEn ? '✨ New global partner organization registered!' : '✨ 새로운 글로벌 협력단체가 등록되었습니다!')
+    } else {
+      updatedList = partners.map((p) => (p.id === payload.id ? payload : p))
       const displayName = isEn ? (formState.nameEn || formState.nameKo) : (formState.nameKo || formState.nameEn)
       showToast(isEn ? `💾 [${displayName}] organization profile updated!` : `💾 [${displayName}] 단체 정보가 수정되었습니다!`)
     }
@@ -170,23 +211,43 @@ export default function AdminPartnersPage() {
   }
 
   // 삭제 핸들러
-  const handleDelete = (id: string, name: string) => {
-    const confirmMsg = isEn ? `Are you sure you want to delete [${name}]?` : `정말로 [${name}] 단체를 목록에서 삭제하시겠습니까?`
+  const handleDelete = async (id: string, name: string) => {
+    const confirmMsg = isEn ? `Are you sure you want to delete [${name}]?` : `정말로 [${name}] 단체를 목록에서 영구 삭제하시겠습니까?`
     if (!confirm(confirmMsg)) return
+
+    try {
+      await fetch(`/api/partners?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      })
+    } catch (e) {
+      console.error(e)
+    }
+
     const updated = partners.filter((p) => p.id !== id)
     setPartners(updated)
     localStorage.setItem('aamen_partner_orgs', JSON.stringify(updated))
-    showToast(isEn ? `🗑️ [${name}] was deleted.` : `🗑️ [${name}] 단체가 삭제되었습니다.`)
+    showToast(isEn ? `🗑️ [${name}] was deleted.` : `🗑️ [${name}] 단체가 성공적으로 삭제되었습니다.`)
   }
 
   // 기본값 복원 핸들러
-  const handleResetDefaults = () => {
+  const handleResetDefaults = async () => {
     const confirmMsg = isEn
       ? 'Reset to initial 6 global partner organizations?'
       : '초기 6개 글로벌 협력단체 기본 데이터로 복원하시겠습니까?'
     if (!confirm(confirmMsg)) return
-    setPartners(initialPartnerOrgs)
-    localStorage.setItem('aamen_partner_orgs', JSON.stringify(initialPartnerOrgs))
+
+    try {
+      await fetch('/api/partners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset' }),
+      })
+      await fetchPartners()
+    } catch (e) {
+      setPartners(initialPartnerOrgs)
+      localStorage.setItem('aamen_partner_orgs', JSON.stringify(initialPartnerOrgs))
+    }
+
     showToast(isEn ? '🔄 Restored partner organizations to defaults!' : '🔄 협력단체 기본 목록으로 복원되었습니다!')
   }
 
@@ -293,103 +354,126 @@ export default function AdminPartnersPage() {
         </div>
       </div>
 
-      {/* 협력단체 목록 (PC 2열 그리드) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {filteredPartners.map((item) => {
-          const displayCategory = isEn ? (categoryMapEn[item.category] || item.category) : item.category
-          const primaryName = isEn ? (item.nameEn || item.nameKo) : item.nameKo
-          const secondaryName = isEn ? item.nameKo : item.nameEn
-          const establishedDisplay = isEn ? `Est: ${item.established.replace('년', '')}` : `설립: ${item.established}`
+      {/* 협력단체 목록 (PC 2열 그리드 또는 비어있을 때 안내) */}
+      {filteredPartners.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-gray-200 p-12 text-center shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 text-gray-400 mx-auto flex items-center justify-center text-3xl mb-4">
+            🏛️
+          </div>
+          <h4 className="text-base font-black text-gray-800 mb-1">
+            {isEn ? 'No partner organizations registered' : '등록된 협력단체가 없습니다'}
+          </h4>
+          <p className="text-xs text-gray-500 max-w-md mx-auto mb-5">
+            {isEn
+              ? 'Click "+ Register New Partner" above to add partner organizations, or click "Restore Defaults".'
+              : '상단의 "+ 신규 협력단체 등록" 버튼을 눌러 새 협력단체를 추가하거나, 필요 시 상단의 "기본값 복원"을 실행하세요.'}
+          </p>
+          <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>{isEn ? 'Register First Partner' : '새 협력단체 등록하기'}</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {filteredPartners.map((item) => {
+            const displayCategory = isEn ? (categoryMapEn[item.category] || item.category) : item.category
+            const primaryName = isEn ? (item.nameEn || item.nameKo) : item.nameKo
+            const secondaryName = isEn ? item.nameKo : item.nameEn
+            const establishedDisplay = isEn ? `Est: ${item.established.replace('년', '')}` : `설립: ${item.established}`
 
-          return (
-            <div
-              key={item.id}
-              className="bg-white rounded-2xl border border-gray-200/90 hover:border-blue-300 hover:shadow-md transition-all p-6 flex flex-col justify-between"
-            >
-              <div>
-                {/* 상단 뱃지 & 액션 버튼 */}
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 rounded-full font-black text-[10px]">
-                      {displayCategory}
-                    </span>
-                    <span className="text-[11px] text-gray-400 font-medium">{establishedDisplay}</span>
+            return (
+              <div
+                key={item.id}
+                className="bg-white rounded-2xl border border-gray-200/90 hover:border-blue-300 hover:shadow-md transition-all p-6 flex flex-col justify-between"
+              >
+                <div>
+                  {/* 상단 뱃지 & 액션 버튼 */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 rounded-full font-black text-[10px]">
+                        {displayCategory}
+                      </span>
+                      <span className="text-[11px] text-gray-400 font-medium">{establishedDisplay}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors cursor-pointer"
+                        title={isEn ? 'Edit' : '수정하기'}
+                      >
+                        <Edit3 size={15} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id, primaryName)}
+                        className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition-colors cursor-pointer"
+                        title={isEn ? 'Delete' : '삭제하기'}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleOpenEdit(item)}
-                      className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors cursor-pointer"
-                      title={isEn ? 'Edit' : '수정하기'}
-                    >
-                      <Edit3 size={15} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id, primaryName)}
-                      className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition-colors cursor-pointer"
-                      title={isEn ? 'Delete' : '삭제하기'}
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                  {/* 단체명 (한/영) */}
+                  <h3 className="text-lg font-black text-gray-900 leading-snug mb-0.5">
+                    {primaryName}
+                  </h3>
+                  <p className="text-xs font-semibold text-gray-500 font-mono mb-3">
+                    {secondaryName}
+                  </p>
+
+                  {/* 소개글 미리보기 */}
+                  <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 mb-3 space-y-1.5">
+                    <p className="text-xs text-gray-700 leading-relaxed">
+                      <strong className="text-gray-900">{isEn ? '🇺🇸 EN: ' : '🇰🇷 KO: '}</strong>
+                      {isEn ? (item.descEn || '(English description not set)') : (item.descKo || '(한국어 소개 미입력)')}
+                    </p>
+                    <p className="text-xs text-gray-500 leading-relaxed italic">
+                      <strong className="text-gray-700 not-italic">{isEn ? '🇰🇷 KO: ' : '🇺🇸 EN: '}</strong>
+                      {isEn ? (item.descKo || '(Korean description not set)') : (item.descEn || '(English description not set)')}
+                    </p>
+                  </div>
+
+                  {/* 메타 정보 */}
+                  <div className="text-[11px] text-gray-500 space-y-1 mb-4">
+                    <div>📍 <strong>{isEn ? 'Headquarters:' : '본부:'}</strong> {item.headquarters}</div>
+                    {item.contactEmail && (
+                      <div>✉️ <strong>{isEn ? 'Email:' : '이메일:'}</strong> {item.contactEmail}</div>
+                    )}
+                    {item.phone && (
+                      <div>📞 <strong>{isEn ? 'Contact:' : '연락처:'}</strong> {item.phone}</div>
+                    )}
                   </div>
                 </div>
 
-                {/* 단체명 (한/영) */}
-                <h3 className="text-lg font-black text-gray-900 leading-snug mb-0.5">
-                  {primaryName}
-                </h3>
-                <p className="text-xs font-semibold text-gray-500 font-mono mb-3">
-                  {secondaryName}
-                </p>
+                {/* 하단 웹사이트 링크 및 수정 바로가기 */}
+                <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                  <a
+                    href={item.websiteUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <span>{isEn ? 'Official Website' : '공식 사이트'}</span>
+                    <ExternalLink size={12} />
+                  </a>
 
-                {/* 소개글 미리보기 */}
-                <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 mb-3 space-y-1.5">
-                  <p className="text-xs text-gray-700 leading-relaxed">
-                    <strong className="text-gray-900">{isEn ? '🇺🇸 EN: ' : '🇰🇷 KO: '}</strong>
-                    {isEn ? (item.descEn || '(English description not set)') : (item.descKo || '(한국어 소개 미입력)')}
-                  </p>
-                  <p className="text-xs text-gray-500 leading-relaxed italic">
-                    <strong className="text-gray-700 not-italic">{isEn ? '🇰🇷 KO: ' : '🇺🇸 EN: '}</strong>
-                    {isEn ? (item.descKo || '(Korean description not set)') : (item.descEn || '(English description not set)')}
-                  </p>
-                </div>
-
-                {/* 메타 정보 */}
-                <div className="text-[11px] text-gray-500 space-y-1 mb-4">
-                  <div>📍 <strong>{isEn ? 'Headquarters:' : '본부:'}</strong> {item.headquarters}</div>
-                  {item.contactEmail && (
-                    <div>✉️ <strong>{isEn ? 'Email:' : '이메일:'}</strong> {item.contactEmail}</div>
-                  )}
-                  {item.phone && (
-                    <div>📞 <strong>{isEn ? 'Contact:' : '연락처:'}</strong> {item.phone}</div>
-                  )}
+                  <button
+                    onClick={() => handleOpenEdit(item)}
+                    className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Edit3 size={12} />
+                    <span>{isEn ? 'Edit Info' : '정보 수정'}</span>
+                  </button>
                 </div>
               </div>
-
-              {/* 하단 웹사이트 링크 및 수정 바로가기 */}
-              <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                <a
-                  href={item.websiteUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex-1 py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <span>{isEn ? 'Official Website' : '공식 사이트'}</span>
-                  <ExternalLink size={12} />
-                </a>
-
-                <button
-                  onClick={() => handleOpenEdit(item)}
-                  className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Edit3 size={12} />
-                  <span>{isEn ? 'Edit Info' : '정보 수정'}</span>
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* 등록 및 수정 모달 */}
       {modalMode && (

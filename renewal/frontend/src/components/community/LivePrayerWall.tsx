@@ -167,7 +167,7 @@ export default function LivePrayerWall() {
   const t = useTranslations('community')
   const locale = useLocale()
 
-  const [prayers, setPrayers] = useState<PrayerItem[]>(initial6Prayers)
+  const [prayers, setPrayers] = useState<PrayerItem[]>([])
   const [prayedSet, setPrayedSet] = useState<Record<string, boolean>>({})
   const [translatedSet, setTranslatedSet] = useState<Record<string, boolean>>({})
   const [shareModalItem, setShareModalItem] = useState<PrayerItem | null>(null)
@@ -177,6 +177,40 @@ export default function LivePrayerWall() {
   const [currentLevel, setCurrentLevel] = useState<MemberLevel>(4)
   const [mounted, setMounted] = useState(false)
   const [noticeToast, setNoticeToast] = useState<string | null>(null)
+
+  const fetchPrayers = async () => {
+    try {
+      const res = await fetch('/api/prayers')
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          const mapped: PrayerItem[] = data.map((d: any) => ({
+            id: d.id,
+            author: d.author_name || '성도',
+            countryCode: d.country_code || 'KR',
+            countryName: d.country_code || 'KR',
+            isLeader: false,
+            date: (d.created_at || '').substring(0, 10),
+            originalLang: d.country_code === 'KR' ? 'ko' : 'en',
+            originalText: d.content || d.title,
+            translations: {
+              ko: d.content || d.title,
+              en: d.content || d.title,
+            },
+            prayCount: d.amen_count || 0,
+          }))
+          setPrayers(mapped)
+          return
+        }
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  useEffect(() => {
+    fetchPrayers()
+  }, [])
 
   useEffect(() => {
     setMounted(true)
@@ -256,12 +290,15 @@ export default function LivePrayerWall() {
     setTranslatedSet((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
-  // 관리자용 모의 삭제 핸들러 (4~5단계)
-  const handleDeletePrayer = (id: string, country: string) => {
+  // 관리자용 삭제 핸들러 (4~5단계)
+  const handleDeletePrayer = async (id: string, country: string) => {
     if (!isLeaderOrAdmin) return
     if (confirm(`[관리자 권한] ${country}의 기도제목을 삭제하시겠습니까?`)) {
+      try {
+        await fetch(`/api/prayers?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+      } catch (e) {}
       setPrayers((prev) => prev.filter((p) => p.id !== id))
-      showToast('게시물이 성공적으로 삭제되었습니다. (관리자 권한)')
+      showToast('기도제목이 성공적으로 삭제되었습니다.')
     }
   }
 
@@ -377,8 +414,22 @@ export default function LivePrayerWall() {
         </div>
       </div>
 
-      {/* 6개 기도 카드 그리드 (2열 / 3열 반응형) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* 기도 카드 그리드 또는 비어있을 때 안내 */}
+      {prayers.length === 0 ? (
+        <div className="text-center py-16 bg-gray-50/60 rounded-3xl border border-gray-100">
+          <Heart className="w-10 h-10 text-emerald-300 mx-auto mb-2" />
+          <h4 className="text-sm font-bold text-gray-700 mb-1">등록된 중보 기도제목이 없습니다.</h4>
+          <p className="text-xs text-gray-500 mb-4">첫 번째 기도제목을 작성하여 아시아 13개국 성도들과 함께 기도해 보세요.</p>
+          <Link
+            href={locale === 'ko' ? '/community/prayer' : `/${locale}/community/prayer`}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
+          >
+            <PenSquare size={13} />
+            <span>첫 기도제목 등록하기</span>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {prayers.map((item) => {
           const isTranslated = !!translatedSet[item.id]
           const isPrayed = !!prayedSet[item.id]
@@ -543,6 +594,7 @@ export default function LivePrayerWall() {
           )
         })}
       </div>
+      )}
 
       {/* 공유 모달 */}
       {shareModalItem && (

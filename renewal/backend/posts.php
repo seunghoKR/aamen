@@ -15,12 +15,18 @@ function mask_author_name($name, $role) {
     return mb_substr($name, 0, 1, 'UTF-8') . '** (성도)';
 }
 
-// LONGTEXT 컬럼 및 category 컬럼 지원
+// LONGTEXT 컬럼 및 category, image_url, extra_json 컬럼 지원
 try {
     $pdo->exec("ALTER TABLE posts MODIFY content LONGTEXT NOT NULL");
 } catch (\Exception $e) {}
 try {
     $pdo->exec("ALTER TABLE posts ADD COLUMN category VARCHAR(50) DEFAULT NULL");
+} catch (\Exception $e) {}
+try {
+    $pdo->exec("ALTER TABLE posts ADD COLUMN image_url VARCHAR(500) DEFAULT NULL");
+} catch (\Exception $e) {}
+try {
+    $pdo->exec("ALTER TABLE posts ADD COLUMN extra_json LONGTEXT DEFAULT NULL");
 } catch (\Exception $e) {}
 try {
     $pdo->exec("CREATE INDEX idx_posts_category ON posts (category)");
@@ -181,10 +187,11 @@ if ($method === 'GET') {
     $author_country = $input['author_country'] ?? 'KR';
     $author_role = $input['author_role'] ?? 'regular';
     $category = $input['category'] ?? null;
-    $is_pinned = !empty($input['is_pinned']) ? 1 : 0;
+    $image_url = $input['image_url'] ?? $input['imageUrl'] ?? null;
+    $extra_json = isset($input['extra_json']) ? (is_array($input['extra_json']) ? json_encode($input['extra_json'], JSON_UNESCAPED_UNICODE) : $input['extra_json']) : (isset($input['extra']) ? json_encode($input['extra'], JSON_UNESCAPED_UNICODE) : null);
 
-    $stmt = $pdo->prepare("INSERT INTO posts (id, board_type, category, title, content, author_id, author_name, author_country, author_role, views, likes, is_pinned, amen_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 0, NOW())");
-    $stmt->execute([$id, $board_type, $category, $title, $content, $author_id, $author_name, $author_country, $author_role, $is_pinned]);
+    $stmt = $pdo->prepare("INSERT INTO posts (id, board_type, category, title, content, author_id, author_name, author_country, author_role, views, likes, is_pinned, amen_count, image_url, extra_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 0, ?, ?, NOW())");
+    $stmt->execute([$id, $board_type, $category, $title, $content, $author_id, $author_name, $author_country, $author_role, $is_pinned, $image_url, $extra_json]);
 
     send_json(['success' => true, 'data' => ['id' => $id], 'message' => 'Post created successfully'], 201);
 } elseif ($method === 'PATCH') {

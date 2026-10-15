@@ -62,6 +62,8 @@ RewriteRule ^api/comments/?$ api/comments.php [L,QSA]
 RewriteRule ^api/prayers/?$ api/prayers.php [L,QSA]
 RewriteRule ^api/members/?$ api/members.php [L,QSA]
 RewriteRule ^api/banners/?$ api/banners.php [L,QSA]
+RewriteRule ^api/partners/?$ api/partners.php [L,QSA]
+RewriteRule ^api/calendar/?$ api/calendar.php [L,QSA]
 
 # 3. 정적 파일 및 디렉터리 존재 시 바로 서빙
 RewriteCond %{REQUEST_FILENAME} -f [OR]

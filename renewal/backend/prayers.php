@@ -75,4 +75,12 @@ if ($method === 'GET') {
     $amen_count = (int)$stmt->fetchColumn();
 
     send_json(['status' => 'success', 'amen_count' => $amen_count]);
+} elseif ($method === 'DELETE') {
+    $id = $_GET['id'] ?? null;
+    if (!$id) {
+        send_json(['error' => 'Prayer ID required'], 400);
+    }
+    $stmt = $pdo->prepare("DELETE FROM prayer_cards WHERE id = ?");
+    $stmt->execute([$id]);
+    send_json(['status' => 'success', 'message' => 'Prayer deleted']);
 }

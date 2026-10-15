@@ -244,9 +244,9 @@ export default function Header() {
           <Image
             src="/logo.png"
             alt="AAMEN"
-            width={130}
-            height={42}
-            className="h-9 sm:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+            width={150}
+            height={45}
+            className="h-10 sm:h-11 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
             priority
           />
         </Link>

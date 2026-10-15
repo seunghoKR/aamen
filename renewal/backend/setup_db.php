@@ -95,6 +95,25 @@ $queries = [
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_banners_active_order (is_active, display_order ASC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
+    // 6. partners 테이블
+    "CREATE TABLE IF NOT EXISTS partners (
+        id VARCHAR(64) PRIMARY KEY,
+        name_ko VARCHAR(200) NOT NULL,
+        name_en VARCHAR(200) NOT NULL,
+        category VARCHAR(100) DEFAULT '국제기구',
+        website_url VARCHAR(500) DEFAULT 'https://aamen.net',
+        headquarters VARCHAR(200) DEFAULT 'Asia',
+        established VARCHAR(50) DEFAULT '2026',
+        contact_email VARCHAR(200) DEFAULT NULL,
+        phone VARCHAR(50) DEFAULT NULL,
+        desc_ko TEXT,
+        desc_en TEXT,
+        display_order INT DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_partners_order (display_order ASC, created_at ASC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 ];
 
@@ -103,7 +122,9 @@ $alter_queries = [
     "ALTER TABLE members ADD COLUMN phone VARCHAR(50) DEFAULT NULL",
     "ALTER TABLE members ADD COLUMN affiliation VARCHAR(100) DEFAULT NULL",
     "ALTER TABLE posts MODIFY content LONGTEXT NOT NULL",
-    "ALTER TABLE posts ADD COLUMN category VARCHAR(50) DEFAULT NULL"
+    "ALTER TABLE posts ADD COLUMN category VARCHAR(50) DEFAULT NULL",
+    "ALTER TABLE posts ADD COLUMN image_url VARCHAR(500) DEFAULT NULL",
+    "ALTER TABLE posts ADD COLUMN extra_json LONGTEXT DEFAULT NULL"
 ];
 
 // 🌟 공식 7명 회원 + 1명 개발자 계정 데이터셋 (2026-10-15 확정본)

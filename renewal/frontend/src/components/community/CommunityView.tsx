@@ -35,6 +35,8 @@ import {
   Calendar,
   MapPin,
   Users,
+  Plus,
+  Upload,
 } from 'lucide-react'
 import {
   MemberLevel,
@@ -43,6 +45,7 @@ import {
   MemberTierInfo,
 } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
+import { getStoredUser } from '@/lib/auth'
 
 interface Comment {
   id: string
@@ -58,6 +61,8 @@ interface Post {
   board_type: 'board' | 'share' | 'announce' | 'prayer' | 'resources' | 'photos'
   title: string
   content: string
+  category?: string
+  author_id?: string
   author_name: string
   author_country: string
   author_role: string
@@ -65,8 +70,10 @@ interface Post {
   likes: number
   is_pinned: boolean
   amen_count: number
+  image_url?: string
+  extra_json?: string
   created_at: string
-  updated_at: string
+  updated_at?: string
   comments: Comment[]
 }
 
@@ -86,208 +93,13 @@ const countryFlags: Record<string, string> = {
   US: '🇺🇸 미국',
 }
 
-// 📸 사진첩 사역 데이터
-interface PhotoItem {
-  id: string
-  title: string
-  desc: string
-  date: string
-  location: string
-  flag: string
-  attendees: string
-  imageUrl: string
-  tags: string[]
-}
-
-const samplePhotos: PhotoItem[] = [
-  {
-    id: 'ph_1',
-    title: '미얀마 양곤 평화 신학 세미나 & 청년 워크숍',
-    desc: '시국의 어려움 속에서도 현지 15개 교회 청년 리더들이 함께 모여 그리스도의 비폭력 평화와 화해의 제자도를 공부하며 연대를 다졌습니다.',
-    date: '2026-09-18',
-    location: 'Yangon, Myanmar',
-    flag: '🇲🇲',
-    attendees: '42명 참석',
-    imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
-    tags: ['평화제자도', '청년리더', '미얀마'],
-  },
-  {
-    id: 'ph_2',
-    title: '태국 치앙마이 아시아 청소년 다문화 평화 캠프',
-    desc: '태국, 라오스, 미얀마 접경 지역의 다문화 청소년들이 3박 4일간 함께 생활하며 언어와 문화의 장벽을 넘어 화해의 노래를 불렀습니다.',
-    date: '2026-08-12',
-    location: 'Chiang Mai, Thailand',
-    flag: '🇹🇭',
-    attendees: '85명 참석',
-    imageUrl: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
-    tags: ['청소년캠프', '찬양과나눔', '태국'],
-  },
-  {
-    id: 'ph_3',
-    title: '베트남 호치민 주일학교 교사 AAMEN 교재 연수회',
-    desc: '베트남어로 완역된 7대 레슨 플랜을 바탕으로 주일학교 공과 교수법을 실습하고 모의 수업을 진행하며 큰 은혜를 나누었습니다.',
-    date: '2026-07-25',
-    location: 'Ho Chi Minh, Vietnam',
-    flag: '🇻🇳',
-    attendees: '38명 참석',
-    imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80',
-    tags: ['교사연수', '7대레슨', '베트남'],
-  },
-  {
-    id: 'ph_4',
-    title: '인도네시아 자바섬 평화교회 연합 찬양과 기도의 밤',
-    desc: '자카르타와 족자카르타 메노나이트 교회 성도들이 모여 아시아 각국의 평화와 화해를 위한 뜨거운 연합 중보기도회를 가졌습니다.',
-    date: '2026-06-30',
-    location: 'Java, Indonesia',
-    flag: '🇮🇩',
-    attendees: '120명 참석',
-    imageUrl: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=80',
-    tags: ['연합예배', '찬양의밤', '인도네시아'],
-  },
-  {
-    id: 'ph_5',
-    title: '네팔 카트만두 지진 취약지역 평화 긴급 구호 사역',
-    desc: '네팔 현지 교회 자원봉사자들과 함께 식량과 긴급 의약품을 전달하고, 고통받는 이웃들에게 그리스도의 위로와 평화를 전했습니다.',
-    date: '2026-05-14',
-    location: 'Kathmandu, Nepal',
-    flag: '🇳🇵',
-    attendees: '60가정 지원',
-    imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1200&q=80',
-    tags: ['긴급구호', '네팔사역', '나눔'],
-  },
-  {
-    id: 'ph_6',
-    title: '한국 메노나이트 연합 여름 평화 아카데미',
-    desc: '아시아 7개국 유학생 및 선교사들이 한국에서 모여 갈등 전환(Conflict Transformation) 실무와 회복적 정의를 훈련했습니다.',
-    date: '2026-08-05',
-    location: 'Seoul, Korea',
-    flag: '🇰🇷',
-    attendees: '50명 참석',
-    imageUrl: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80',
-    tags: ['평화아카데미', '갈등전환', '한국'],
-  },
-]
-
-// 📚 자료방 카테고리 및 데이터
-interface ResourceItem {
-  id: string
-  category: 'curriculum' | 'education' | 'worship' | 'books' | 'praise'
-  categoryName: string
-  title: string
-  lang: string
-  langName: string
-  fileSize: string
-  fileType: string
-  downloads: number
-  desc: string
-  date: string
-}
-
-const sampleResources: ResourceItem[] = [
-  {
-    id: 'res_1',
-    category: 'curriculum',
-    categoryName: '커리큘럼',
-    title: 'AAMEN 7대 신념 표준 주일학교 교안 (전체 통합본)',
-    lang: 'KR',
-    langName: '대한민국 (KR)',
-    fileSize: '4.8 MB',
-    fileType: 'DOCX / PDF',
-    downloads: 342,
-    desc: 'MWC 7대 확신을 12주 과정으로 체계적으로 배울 수 있도록 구성된 표준 공과 교재 교사용 지침서입니다.',
-    date: '2026-09-10',
-  },
-  {
-    id: 'res_2',
-    category: 'education',
-    categoryName: '교육자료',
-    title: 'AAMEN Standard Peace Lesson Plans (International Edition)',
-    lang: 'US',
-    langName: '미국 (US)',
-    fileSize: '3.9 MB',
-    fileType: 'PDF',
-    downloads: 512,
-    desc: 'Complete 7 theme lesson plans for Asian peace educators, youth pastors, and seminar facilitators.',
-    date: '2026-09-12',
-  },
-  {
-    id: 'res_3',
-    category: 'worship',
-    categoryName: '예배자료',
-    title: '13개국 평화 주일 연합 예배 순서지 및 기도문 모음',
-    lang: 'ALL',
-    langName: '13개국 통합 (ALL)',
-    fileSize: '2.1 MB',
-    fileType: 'PDF',
-    downloads: 210,
-    desc: '아시아 평화 주일(Peace Sunday)을 기념하여 각국 교회에서 사용할 수 있는 설교문 및 대표 기도문입니다.',
-    date: '2026-08-20',
-  },
-  {
-    id: 'res_4',
-    category: 'praise',
-    categoryName: '찬양자료',
-    title: '아시아 아나밥티스트 찬양집 악보 및 가사집 (50곡)',
-    lang: 'US',
-    langName: '미국 (US)',
-    fileSize: '8.4 MB',
-    fileType: 'PDF',
-    downloads: 560,
-    desc: '영어 및 현지어 가사가 수록된 4부 화음 평화 찬양집과 기타 코드 악보 세트입니다.',
-    date: '2026-07-15',
-  },
-  {
-    id: 'res_5',
-    category: 'books',
-    categoryName: '서적/팜플렛',
-    title: '아나밥티스트 역사와 신앙 에센스 (소책자)',
-    lang: 'KR',
-    langName: '대한민국 (KR)',
-    fileSize: '1.5 MB',
-    fileType: 'PDF',
-    downloads: 285,
-    desc: '메노나이트 역사의 기원과 16세기 재세례파의 비폭력 평화 운동을 알기 쉽게 정리한 입문서입니다.',
-    date: '2026-06-05',
-  },
-  {
-    id: 'res_6',
-    category: 'education',
-    categoryName: '교육자료',
-    title: 'Rencana Pelajaran AAMEN (Edisi Bahasa Indonesia)',
-    lang: 'ID',
-    langName: '인도네시아 (ID)',
-    fileSize: '3.6 MB',
-    fileType: 'PDF',
-    downloads: 320,
-    desc: 'Panduan kurikulum pendidikan damai AAMEN yang diterjemahkan lengkap ke dalam bahasa Indonesia.',
-    date: '2026-08-01',
-  },
-  {
-    id: 'res_7',
-    category: 'curriculum',
-    categoryName: '커리큘럼',
-    title: 'AAMEN บทเรียนสันติภาพภาษาไทย (Thai Peace Curriculum)',
-    lang: 'TH',
-    langName: '태국 (TH)',
-    fileSize: '4.1 MB',
-    fileType: 'PDF',
-    downloads: 295,
-    desc: 'หลักสูตรการศึกษาเพื่อสันติภาพและบทเรียนสำหรับคริสตจักรท้องถิ่นในประเทศไทย',
-    date: '2026-08-15',
-  },
-  {
-    id: 'res_8',
-    category: 'education',
-    categoryName: '교육자료',
-    title: 'Tài liệu Giáo dục Hòa bình AAMEN (Bản tiếng Việt)',
-    lang: 'VN',
-    langName: '베트남 (VN)',
-    fileSize: '3.8 MB',
-    fileType: 'PDF',
-    downloads: 260,
-    desc: 'Tài liệu hướng dẫn bài học giáo lý và hòa bình dành cho thanh thiếu niên tại Việt Nam.',
-    date: '2026-07-20',
-  },
+const resourceCategories: { id: string; label: string }[] = [
+  { id: 'ALL', label: '전체' },
+  { id: 'curriculum', label: '커리큘럼' },
+  { id: 'education', label: '교육자료' },
+  { id: 'worship', label: '예배자료' },
+  { id: 'praise', label: '찬양자료' },
+  { id: 'books', label: '서적/팜플렛' },
 ]
 
 type CommunityTab = 'announce' | 'resources' | 'prayer' | 'photos'
@@ -309,7 +121,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
-  // 공지사항 한/영 2개 국어 필터 ('ALL' | 'KO' | 'EN')
+  // 공지사항 한/영 필터 ('ALL' | 'KO' | 'EN')
   const [noticeLangFilter, setNoticeLangFilter] = useState<'ALL' | 'KO' | 'EN'>('ALL')
 
   // 자료방 5대 카테고리 및 13개국 언어 필터
@@ -317,26 +129,47 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [resourceLang, setResourceLang] = useState<string>('ALL')
 
   // 사진첩 라이트박스 모달 상태
-  const [activeLightbox, setActiveLightbox] = useState<PhotoItem | null>(null)
+  const [activeLightbox, setActiveLightbox] = useState<Post | null>(null)
 
   // 5단계 회원 등급 시뮬레이션
   const [currentLevel, setCurrentLevel] = useState<MemberLevel>(4)
   const [tierPermissions, setTierPermissions] = useState<Record<MemberLevel, MemberTierInfo>>(defaultTierSettings)
 
-  // 상세 모달 & 글쓰기 모달
+  // 상세 모달 & 글쓰기 모달들
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
-  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false)
-  const [commentText, setCommentText] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 새 글 작성 폼 상태
-  const [newBoardType, setNewBoardType] = useState<string>('announce')
-  const [newTitle, setNewTitle] = useState('')
-  const [newContent, setNewContent] = useState('')
-  const [newAuthor, setNewAuthor] = useState('이은혜 사역자')
-  const [newCountry, setNewCountry] = useState('KR')
+  // 📢 공지사항 등록 모달 상태
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false)
+  const [noticeTitle, setNoticeTitle] = useState('')
+  const [noticeContent, setNoticeContent] = useState('')
+  const [noticeCountry, setNoticeCountry] = useState('KR')
+  const [noticeIsPinned, setNoticeIsPinned] = useState(false)
+
+  // 📚 자료 등록 모달 상태
+  const [isResourceModalOpen, setIsResourceModalOpen] = useState(false)
+  const [resTitle, setResTitle] = useState('')
+  const [resCategory, setResCategory] = useState('curriculum')
+  const [resLang, setResLang] = useState('KR')
+  const [resFileUrl, setResFileUrl] = useState('')
+  const [resFileType, setResFileType] = useState('PDF')
+  const [resFileSize, setResFileSize] = useState('2.5 MB')
+  const [resDesc, setResDesc] = useState('')
+
+  // 📸 사진 등록 모달 상태
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false)
+  const [photoTitle, setPhotoTitle] = useState('')
+  const [photoDesc, setPhotoDesc] = useState('')
+  const [photoCountry, setPhotoCountry] = useState('KR')
+  const [photoLocation, setPhotoLocation] = useState('Seoul, Korea')
+  const [photoDate, setPhotoDate] = useState(new Date().toISOString().substring(0, 10))
+  const [photoAttendees, setPhotoAttendees] = useState('')
+  const [photoTags, setPhotoTags] = useState('')
+  const [photoImageUrl, setPhotoImageUrl] = useState('')
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 권한 설정 로드
   useEffect(() => {
@@ -364,9 +197,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   }, [])
 
   const currentTierInfo = tierPermissions[currentLevel] || defaultTierSettings[currentLevel]
-  const canWritePost = Boolean(currentTierInfo?.permissions?.canWritePost)
-  const canManageBoard = Boolean(currentTierInfo?.permissions?.canManageBoard)
-  const canWriteComment = Boolean(currentTierInfo?.permissions?.canWriteComment)
+  const canWriteNotice = currentLevel >= 4
+  const canWriteResource = currentLevel >= 3
+  const canWritePhoto = currentLevel >= 3
+  const isLeaderOrAdmin = currentLevel >= 4
 
   const showToast = (msg: string) => {
     setToastMessage(msg)
@@ -381,9 +215,9 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     window.open(waUrl, '_blank')
   }
 
-  // DB API에서 게시물 목록 패치 (공지사항 등)
+  // DB API에서 게시물 목록 패치 (공지사항, 자료방, 사진첩)
   const fetchPosts = useCallback(async () => {
-    if (activeTab === 'prayer' || activeTab === 'photos' || activeTab === 'resources') {
+    if (activeTab === 'prayer') {
       setLoading(false)
       return
     }
@@ -394,12 +228,17 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
       const res = await fetch(`/api/posts?type=${activeTab}&search=${encodeURIComponent(searchTerm)}&role=${roleParam}`)
       if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
         const data = await res.json()
-        if (data.success) {
+        if (data.success && Array.isArray(data.data)) {
           setPosts(data.data)
+        } else {
+          setPosts([])
         }
+      } else {
+        setPosts([])
       }
     } catch (error) {
-      // API 오류 시 기본 상태 유지
+      console.error(error)
+      setPosts([])
     } finally {
       setLoading(false)
     }
@@ -409,6 +248,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     fetchPosts()
   }, [fetchPosts])
 
+  // 공지 단일 상세 조회
   const handleOpenDetail = async (postId: string) => {
     setIsDetailLoading(true)
     try {
@@ -421,13 +261,233 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         }
       }
     } catch (error) {
-      // API 오류 시 안전하게 무시
+      console.error(error)
     } finally {
       setIsDetailLoading(false)
     }
   }
 
-  // 공지사항 언어 필터링
+  // 게시물 삭제 핸들러 (관리자/작성자)
+  const handleDeletePost = async (postId: string, postTitle: string) => {
+    if (!confirm(`정말로 [${postTitle}] 게시물을 삭제하시겠습니까?`)) return
+
+    try {
+      const res = await fetch(`/api/posts?id=${encodeURIComponent(postId)}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        showToast('게시물이 성공적으로 삭제되었습니다.')
+        setPosts((prev) => prev.filter((p) => p.id !== postId))
+        if (selectedPost?.id === postId) setSelectedPost(null)
+        if (activeLightbox?.id === postId) setActiveLightbox(null)
+      } else {
+        showToast('게시물 삭제 중 오류가 발생했습니다.')
+      }
+    } catch (e) {
+      console.error(e)
+      showToast('네트워크 오류가 발생했습니다.')
+    }
+  }
+
+  // 📢 공지사항 등록
+  const handleCreateNotice = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!noticeTitle.trim() || !noticeContent.trim()) {
+      alert('제목과 내용을 모두 입력해 주세요.')
+      return
+    }
+
+    setIsSubmitting(true)
+    const user = getStoredUser()
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board_type: 'announce',
+          title: noticeTitle.trim(),
+          content: noticeContent.trim(),
+          author_id: user?.id || 'admin',
+          author_name: user?.name || 'AAMEN 운영본부',
+          author_country: noticeCountry,
+          author_role: 'country_admin',
+          is_pinned: noticeIsPinned ? 1 : 0,
+        }),
+      })
+
+      if (res.ok) {
+        showToast('✨ 새 공지사항이 등록되었습니다.')
+        setNoticeTitle('')
+        setNoticeContent('')
+        setIsNoticeModalOpen(false)
+        fetchPosts()
+      } else {
+        alert('공지사항 등록에 실패했습니다.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('서버 통신 오류가 발생했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // 📚 자료 등록
+  const handleCreateResource = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resTitle.trim() || !resDesc.trim()) {
+      alert('자료 제목과 설명을 모두 입력해 주세요.')
+      return
+    }
+
+    setIsSubmitting(true)
+    const user = getStoredUser()
+    const extraData = {
+      lang: resLang,
+      fileUrl: resFileUrl.trim() || '#',
+      fileType: resFileType,
+      fileSize: resFileSize,
+      date: new Date().toISOString().substring(0, 10),
+    }
+
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board_type: 'resources',
+          category: resCategory,
+          title: resTitle.trim(),
+          content: resDesc.trim(),
+          author_id: user?.id || 'worker',
+          author_name: user?.name || '교육사역팀',
+          author_country: resLang === 'ALL' ? 'KR' : resLang,
+          author_role: 'level3_worker',
+          image_url: resFileUrl.trim(),
+          extra_json: JSON.stringify(extraData),
+        }),
+      })
+
+      if (res.ok) {
+        showToast('✨ 새 교육/예배 자료가 등록되었습니다.')
+        setResTitle('')
+        setResDesc('')
+        setResFileUrl('')
+        setIsResourceModalOpen(false)
+        fetchPosts()
+      } else {
+        alert('자료 등록에 실패했습니다.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('서버 통신 오류가 발생했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // 📸 이미지 파일 업로드 헬퍼
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('image', file)
+
+    setIsUploadingImage(true)
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        body: formData,
+      })
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && json.image_url) {
+          setPhotoImageUrl(json.image_url)
+          showToast('📸 사진이 성공적으로 업로드되었습니다.')
+        } else {
+          alert(json.error || '사진 업로드 실패')
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      alert('사진 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  // 📸 사진 등록
+  const handleCreatePhoto = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!photoTitle.trim() || !photoDesc.trim()) {
+      alert('사진 제목과 사역 스토리를 모두 입력해 주세요.')
+      return
+    }
+
+    setIsSubmitting(true)
+    const user = getStoredUser()
+    const parsedTags = photoTags
+      .split(',')
+      .map((t) => t.trim().replace(/^#/, ''))
+      .filter(Boolean)
+
+    const extraData = {
+      location: photoLocation.trim() || 'Asia',
+      date: photoDate,
+      attendees: photoAttendees.trim() || '참석',
+      tags: parsedTags,
+      flag: countryFlags[photoCountry]?.split(' ')[0] || '🌐',
+    }
+
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board_type: 'photos',
+          title: photoTitle.trim(),
+          content: photoDesc.trim(),
+          author_id: user?.id || 'worker',
+          author_name: user?.name || '현장사역자',
+          author_country: photoCountry,
+          author_role: 'level3_worker',
+          image_url: photoImageUrl.trim() || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
+          extra_json: JSON.stringify(extraData),
+        }),
+      })
+
+      if (res.ok) {
+        showToast('✨ 새 사역 현장 사진이 등록되었습니다.')
+        setPhotoTitle('')
+        setPhotoDesc('')
+        setPhotoImageUrl('')
+        setPhotoTags('')
+        setPhotoAttendees('')
+        setIsPhotoModalOpen(false)
+        fetchPosts()
+      } else {
+        alert('사진 등록에 실패했습니다.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('서버 통신 오류가 발생했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // 헬퍼: extra_json 파싱
+  const parseExtra = (post: Post) => {
+    if (!post.extra_json) return {}
+    try {
+      return JSON.parse(post.extra_json)
+    } catch (e) {
+      return {}
+    }
+  }
+
+  // 공지사항 필터링
   const filteredNoticePosts = posts.filter((p) => {
     if (noticeLangFilter === 'ALL') return true
     if (noticeLangFilter === 'KO') return p.author_country === 'KR' || p.title.match(/[\uAC00-\uD7AF]/)
@@ -436,23 +496,27 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   })
 
   // 자료방 필터링
-  const filteredResources = sampleResources.filter((r) => {
-    const matchCat = resourceCategory === 'ALL' || r.category === resourceCategory
-    const matchLang = resourceLang === 'ALL' || r.lang === resourceLang || r.lang === 'ALL'
+  const filteredResources = posts.filter((p) => {
+    const extra = parseExtra(p)
+    const matchCat = resourceCategory === 'ALL' || (p.category || 'education') === resourceCategory
+    const matchLang = resourceLang === 'ALL' || (extra.lang || p.author_country) === resourceLang || extra.lang === 'ALL'
     const matchSearch =
       !searchTerm ||
-      r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.desc.toLowerCase().includes(searchTerm.toLowerCase())
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.content.toLowerCase().includes(searchTerm.toLowerCase())
     return matchCat && matchLang && matchSearch
   })
 
   // 사진첩 필터링
-  const filteredPhotos = samplePhotos.filter((ph) => {
+  const filteredPhotos = posts.filter((p) => {
+    const extra = parseExtra(p)
+    const tagsStr = (extra.tags || []).join(' ')
     return (
       !searchTerm ||
-      ph.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ph.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ph.desc.toLowerCase().includes(searchTerm.toLowerCase())
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (extra.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tagsStr.toLowerCase().includes(searchTerm.toLowerCase())
     )
   })
 
@@ -492,7 +556,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as CommunityTab)}
+                  onClick={() => {
+                    setActiveTab(tab.id as CommunityTab)
+                    setSearchTerm('')
+                  }}
                   className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
                     activeTab === tab.id
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25'
@@ -504,6 +571,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               ))}
             </div>
 
+            {/* 탭별 신규 등록 액션 버튼 */}
             {activeTab === 'announce' && (
               <button
                 onClick={() => {
@@ -511,17 +579,56 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     showToast('🚫 비회원은 글을 작성할 수 없습니다. 로그인 후 이용해 주세요.')
                     return
                   }
-                  if (currentLevel < 4) {
+                  if (!canWriteNotice) {
                     showToast('🔒 공지사항 작성은 리더 및 관리자(4단계 이상) 권한이 필요합니다.')
                     return
                   }
-                  setNewBoardType('announce')
-                  setIsWriteModalOpen(true)
+                  setIsNoticeModalOpen(true)
                 }}
                 className="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-sm transition-all bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>공지사항 등록</span>
+              </button>
+            )}
+
+            {activeTab === 'resources' && (
+              <button
+                onClick={() => {
+                  if (currentLevel === 0) {
+                    showToast('🚫 비회원은 자료를 등록할 수 없습니다. 로그인 후 이용해 주세요.')
+                    return
+                  }
+                  if (!canWriteResource) {
+                    showToast('🔒 자료 등록은 3단계 사역자/선교사 이상 권한이 필요합니다.')
+                    return
+                  }
+                  setIsResourceModalOpen(true)
+                }}
+                className="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-sm transition-all bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>새 자료 등록</span>
+              </button>
+            )}
+
+            {activeTab === 'photos' && (
+              <button
+                onClick={() => {
+                  if (currentLevel === 0) {
+                    showToast('🚫 비회원은 사진을 등록할 수 없습니다. 로그인 후 이용해 주세요.')
+                    return
+                  }
+                  if (!canWritePhoto) {
+                    showToast('🔒 사진첩 등록은 3단계 사역자/선교사 이상 승인이 필요합니다.')
+                    return
+                  }
+                  setIsPhotoModalOpen(true)
+                }}
+                className="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-sm transition-all bg-purple-600 hover:bg-purple-700 text-white cursor-pointer"
+              >
+                <Camera className="w-4 h-4" />
+                <span>현장 사진 등록</span>
               </button>
             )}
           </div>
@@ -600,9 +707,19 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   <p className="text-sm text-gray-500">공지사항을 불러오는 중입니다...</p>
                 </div>
               ) : filteredNoticePosts.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
+                <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-2xs">
                   <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 font-semibold text-sm">등록된 공지사항이 없습니다.</p>
+                  <p className="text-gray-700 font-bold text-sm mb-1">등록된 공지사항이 없습니다.</p>
+                  <p className="text-xs text-gray-400 mb-4">공지사항 등록 버튼을 눌러 첫 번째 소식을 전해 보세요.</p>
+                  {canWriteNotice && (
+                    <button
+                      onClick={() => setIsNoticeModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 shadow-xs cursor-pointer"
+                    >
+                      <PlusCircle size={14} />
+                      <span>공지사항 등록</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -615,11 +732,16 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 rounded-full font-black text-[10px]">
-                            📢 공지
+                            {post.is_pinned ? '📌 고정 공지' : '📢 공지'}
                           </span>
                           <span className="text-xs text-gray-500 font-medium">
                             {post.author_country === 'KR' ? '🇰🇷 KO' : '🇺🇸 EN'} · {post.created_at.substring(0, 10)}
                           </span>
+                          {post.author_name && (
+                            <span className="text-xs text-gray-400 font-medium">
+                              by {post.author_name}
+                            </span>
+                          )}
                         </div>
                         <h4 className="font-bold text-base text-gray-900 mb-1">{post.title}</h4>
                         <p className="text-xs text-gray-500 line-clamp-1">{post.content.replace(/<[^>]*>?/gm, '')}</p>
@@ -635,8 +757,21 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                           className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-colors"
                         >
                           <Share2 size={13} />
-                          <span>WhatsApp 공유</span>
+                          <span>WhatsApp</span>
                         </button>
+                        {isLeaderOrAdmin && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeletePost(post.id, post.title)
+                            }}
+                            className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            title="삭제"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -660,7 +795,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     <h3 className="font-extrabold text-sm text-sky-950 flex items-center gap-2">
                       <span>교육 및 예배 자료 나눔방 (AAMEN Resource Library)</span>
                       <span className="px-2 py-0.5 rounded-full bg-sky-200 text-sky-900 text-[10px] font-black">
-                        13개국 완역
+                        13개국 자료실
                       </span>
                     </h3>
                     <p className="text-xs text-sky-700 mt-0.5">
@@ -671,14 +806,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
                 {/* 5대 카테고리 필터 */}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {[
-                    { id: 'ALL', label: '전체' },
-                    { id: 'curriculum', label: '커리큘럼' },
-                    { id: 'education', label: '교육자료' },
-                    { id: 'worship', label: '예배자료' },
-                    { id: 'praise', label: '찬양자료' },
-                    { id: 'books', label: '서적/팜플렛' },
-                  ].map((cat) => (
+                  {resourceCategories.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => setResourceCategory(cat.id)}
@@ -694,7 +822,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </div>
               </div>
 
-              {/* 13개 참여국 필터 칩 바 (국가 이니셜 알파벳 순 정렬) */}
+              {/* 13개 참여국 필터 칩 바 */}
               <div className="bg-white p-3.5 rounded-2xl border border-gray-200 mb-6 flex items-center gap-2 overflow-x-auto text-xs">
                 <span className="font-black text-gray-700 shrink-0 ml-1">국가 선택:</span>
                 {[
@@ -707,7 +835,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   { id: 'LA', label: '🇱🇦 라오스 (LA)' },
                   { id: 'MM', label: '🇲🇲 미얀마 (MM)' },
                   { id: 'MN', label: '🇲🇳 몽골 (MN)' },
-                  { id: 'NE', label: '🇳🇵 네팔 (NP)' },
+                  { id: 'NP', label: '🇳🇵 네팔 (NP)' },
                   { id: 'TH', label: '🇹🇭 태국 (TH)' },
                   { id: 'TW', label: '🇹🇼 대만 (TW)' },
                   { id: 'US', label: '🇺🇸 미국 (US)' },
@@ -728,67 +856,119 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
 
               {/* 검색 바 */}
-              <div className="relative mb-6">
-                <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="교안 제목, 설명, 언어로 자료 검색..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs"
-                />
+              <div className="flex gap-3 mb-6">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="교안 제목, 설명, 언어로 자료 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs"
+                  />
+                </div>
+                <button
+                  onClick={fetchPosts}
+                  className="px-4 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">새로고침</span>
+                </button>
               </div>
 
               {/* 자료 리스트 카드 그리드 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredResources.map((res) => (
-                  <div
-                    key={res.id}
-                    className="p-5 rounded-2xl bg-white border border-gray-200 hover:border-sky-300 hover:shadow-md transition-all flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[10px] font-extrabold">
-                          {res.categoryName}
-                        </span>
-                        <span className="text-[11px] font-mono font-bold text-gray-400">
-                          {res.langName} · {res.fileType}
-                        </span>
-                      </div>
-                      <h4 className="font-bold text-base text-gray-900 mb-1.5 leading-snug">{res.title}</h4>
-                      <p className="text-xs text-gray-600 leading-relaxed mb-4 line-clamp-2">{res.desc}</p>
-                    </div>
+              {loading ? (
+                <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
+                  <RefreshCw className="w-8 h-8 text-sky-600 animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">자료를 불러오는 중입니다...</p>
+                </div>
+              ) : filteredResources.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-2xs">
+                  <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-700 font-bold text-sm mb-1">등록된 교육 및 예배 자료가 없습니다.</p>
+                  <p className="text-xs text-gray-400 mb-4">새 자료 등록 버튼을 눌러 교재와 예배 자료를 공유해 보세요.</p>
+                  {canWriteResource && (
+                    <button
+                      onClick={() => setIsResourceModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 shadow-xs cursor-pointer"
+                    >
+                      <PlusCircle size={14} />
+                      <span>새 자료 등록</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredResources.map((res) => {
+                    const extra = parseExtra(res)
+                    const catLabel = resourceCategories.find((c) => c.id === res.category)?.label || res.category || '자료'
+                    const langLabel = countryFlags[extra.lang || res.author_country] || extra.lang || res.author_country || '통합'
 
-                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                      <span className="text-[11px] text-gray-400 font-mono">
-                        용량: {res.fileSize} (다운로드 {res.downloads}회)
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => shareViaWhatsApp(res.title, `[AAMEN 자료실] ${res.desc}`)}
-                          className="p-2 rounded-xl bg-gray-50 hover:bg-emerald-50 text-gray-500 hover:text-emerald-700 transition-colors"
-                          title="WhatsApp으로 공유"
-                        >
-                          <Share2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (currentLevel < 2) {
-                              alert('🔒 교재 다운로드는 2단계 정회원 이상 승인 회원만 가능합니다.')
-                              return
-                            }
-                            alert(`[${res.title}] 다운로드를 시작합니다.`)
-                          }}
-                          className="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <Download size={13} />
-                          <span>다운로드</span>
-                        </button>
+                    return (
+                      <div
+                        key={res.id}
+                        className="p-5 rounded-2xl bg-white border border-gray-200 hover:border-sky-300 hover:shadow-md transition-all flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[10px] font-extrabold">
+                              {catLabel}
+                            </span>
+                            <span className="text-[11px] font-mono font-bold text-gray-400">
+                              {langLabel} · {extra.fileType || 'PDF'}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-base text-gray-900 mb-1.5 leading-snug">{res.title}</h4>
+                          <p className="text-xs text-gray-600 leading-relaxed mb-4 line-clamp-2">{res.content}</p>
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                          <span className="text-[11px] text-gray-400 font-mono">
+                            {extra.fileSize ? `용량: ${extra.fileSize}` : res.created_at.substring(0, 10)}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => shareViaWhatsApp(res.title, `[AAMEN 자료실] ${res.content}`)}
+                              className="p-2 rounded-xl bg-gray-50 hover:bg-emerald-50 text-gray-500 hover:text-emerald-700 transition-colors"
+                              title="WhatsApp으로 공유"
+                            >
+                              <Share2 size={14} />
+                            </button>
+                            {extra.fileUrl && extra.fileUrl !== '#' ? (
+                              <a
+                                href={extra.fileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <Download size={13} />
+                                <span>다운로드</span>
+                              </a>
+                            ) : (
+                              <button
+                                onClick={() => alert(`[${res.title}] 자료 상세 준비 중입니다.`)}
+                                className="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <Download size={13} />
+                                <span>다운로드</span>
+                              </button>
+                            )}
+                            {isLeaderOrAdmin && (
+                              <button
+                                onClick={() => handleDeletePost(res.id, res.title)}
+                                className="p-1.5 rounded-xl text-gray-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                title="삭제"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -823,11 +1003,15 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
                 <button
                   onClick={() => {
-                    if (currentLevel < 3) {
+                    if (currentLevel === 0) {
+                      showToast('🚫 비회원은 사진을 등록할 수 없습니다. 로그인 후 이용해 주세요.')
+                      return
+                    }
+                    if (!canWritePhoto) {
                       showToast('🔒 사진첩 등록은 3단계 사역자/선교사 이상 승인이 필요합니다.')
                       return
                     }
-                    alert('사진 등록 모달을 준비 중입니다.')
+                    setIsPhotoModalOpen(true)
                   }}
                   className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                 >
@@ -837,175 +1021,260 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
 
               {/* 검색 바 */}
-              <div className="relative mb-6">
-                <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="사역 사진 제목, 국가, 내용으로 검색..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
-                />
+              <div className="flex gap-3 mb-6">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="사역 사진 제목, 국가, 내용으로 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
+                  />
+                </div>
+                <button
+                  onClick={fetchPosts}
+                  className="px-4 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">새로고침</span>
+                </button>
               </div>
 
-              {/* 사진첩 카드 리스트 (이미지 + 내용이 함께 표시되는 정갈한 매거진 스타일) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredPhotos.map((photo) => (
-                  <div
-                    key={photo.id}
-                    onClick={() => setActiveLightbox(photo)}
-                    className="group rounded-3xl overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between"
-                  >
-                    <div>
-                      {/* 고해상도 썸네일 이미지 */}
-                      <div className="relative h-52 overflow-hidden bg-gray-100">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo.imageUrl}
-                          alt={photo.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-white text-[11px] font-bold flex items-center gap-1.5">
-                          <span>{photo.flag}</span>
-                          <span>{photo.location}</span>
-                        </div>
-                        <div className="absolute bottom-3 right-3 px-2.5 py-0.5 bg-purple-600/90 text-white text-[10px] font-black rounded-lg backdrop-blur-sm">
-                          {photo.attendees}
-                        </div>
-                      </div>
+              {/* 사진첩 카드 리스트 */}
+              {loading ? (
+                <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
+                  <RefreshCw className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">사진첩을 불러오는 중입니다...</p>
+                </div>
+              ) : filteredPhotos.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-2xs">
+                  <Camera className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-700 font-bold text-sm mb-1">등록된 사역 현장 사진이 없습니다.</p>
+                  <p className="text-xs text-gray-400 mb-4">현장 사진 등록 버튼을 눌러 은혜로운 사역 현장을 공유해 보세요.</p>
+                  {canWritePhoto && (
+                    <button
+                      onClick={() => setIsPhotoModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 shadow-xs cursor-pointer"
+                    >
+                      <Camera size={14} />
+                      <span>현장 사진 등록</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredPhotos.map((photo) => {
+                    const extra = parseExtra(photo)
+                    const imgUrl = photo.image_url || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80'
+                    const flagText = extra.flag || countryFlags[photo.author_country]?.split(' ')[0] || '🌐'
+                    const locationText = extra.location || photo.author_country || 'Asia'
+                    const dateText = extra.date || photo.created_at.substring(0, 10)
+                    const attendeesText = extra.attendees || ''
+                    const tagsList: string[] = Array.isArray(extra.tags) ? extra.tags : []
 
-                      {/* 본문 내용 */}
-                      <div className="p-5">
-                        <div className="text-[11px] font-mono text-purple-700 font-bold mb-1.5 flex items-center gap-1">
-                          <Calendar size={12} />
-                          <span>{photo.date}</span>
-                        </div>
-                        <h4 className="font-black text-base text-gray-900 group-hover:text-purple-700 transition-colors mb-2 leading-snug">
-                          {photo.title}
-                        </h4>
-                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 mb-4">
-                          {photo.desc}
-                        </p>
-
-                        {/* 사역 태그 */}
-                        <div className="flex flex-wrap gap-1.5">
-                          {photo.tags.map((t, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[10px] font-bold"
-                            >
-                              #{t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 카드 하단 액션 바 */}
-                    <div className="p-4 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between text-xs">
-                      <span className="text-[11px] font-bold text-purple-700 group-hover:underline">
-                        크게 보기 & 스토리 →
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          shareViaWhatsApp(photo.title, `${photo.location} · ${photo.desc}`)
-                        }}
-                        className="p-1.5 rounded-lg bg-white border border-gray-200 hover:bg-emerald-50 hover:text-emerald-700 text-gray-500 transition-colors"
-                        title="WhatsApp으로 사진 소식 전송"
+                    return (
+                      <div
+                        key={photo.id}
+                        onClick={() => setActiveLightbox(photo)}
+                        className="group rounded-3xl overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between"
                       >
-                        <Share2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        <div>
+                          {/* 썸네일 이미지 */}
+                          <div className="relative h-52 overflow-hidden bg-gray-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={imgUrl}
+                              alt={photo.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                            <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-white text-[11px] font-bold flex items-center gap-1.5">
+                              <span>{flagText}</span>
+                              <span>{locationText}</span>
+                            </div>
+                            {attendeesText && (
+                              <div className="absolute bottom-3 right-3 px-2.5 py-0.5 bg-purple-600/90 text-white text-[10px] font-black rounded-lg backdrop-blur-sm">
+                                {attendeesText}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 본문 내용 */}
+                          <div className="p-5">
+                            <div className="text-[11px] font-mono text-purple-700 font-bold mb-1.5 flex items-center gap-1">
+                              <Calendar size={12} />
+                              <span>{dateText}</span>
+                            </div>
+                            <h4 className="font-black text-base text-gray-900 group-hover:text-purple-700 transition-colors mb-2 leading-snug">
+                              {photo.title}
+                            </h4>
+                            <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 mb-4">
+                              {photo.content}
+                            </p>
+
+                            {/* 사역 태그 */}
+                            {tagsList.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {tagsList.map((t, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[10px] font-bold"
+                                  >
+                                    #{t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 카드 하단 액션 바 */}
+                        <div className="p-4 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between text-xs">
+                          <span className="text-[11px] font-bold text-purple-700 group-hover:underline">
+                            크게 보기 & 스토리 →
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                shareViaWhatsApp(photo.title, `${locationText} · ${photo.content}`)
+                              }}
+                              className="p-1.5 rounded-lg bg-white border border-gray-200 hover:bg-emerald-50 hover:text-emerald-700 text-gray-500 transition-colors"
+                              title="WhatsApp으로 사진 소식 전송"
+                            >
+                              <Share2 size={13} />
+                            </button>
+                            {isLeaderOrAdmin && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeletePost(photo.id, photo.title)
+                                }}
+                                className="p-1.5 rounded-lg bg-white border border-gray-200 hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition-colors"
+                                title="사진 삭제"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
       </main>
 
       {/* 📸 사진첩 라이트박스 팝업 */}
-      {activeLightbox && (
-        <div
-          onClick={() => setActiveLightbox(null)}
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
-        >
+      {activeLightbox && (() => {
+        const extra = parseExtra(activeLightbox)
+        const imgUrl = activeLightbox.image_url || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80'
+        const flagText = extra.flag || countryFlags[activeLightbox.author_country]?.split(' ')[0] || '🌐'
+        const locationText = extra.location || activeLightbox.author_country || 'Asia'
+        const dateText = extra.date || activeLightbox.created_at.substring(0, 10)
+        const attendeesText = extra.attendees || ''
+        const tagsList: string[] = Array.isArray(extra.tags) ? extra.tags : []
+
+        return (
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col md:flex-row max-h-[90vh]"
+            onClick={() => setActiveLightbox(null)}
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
           >
-            {/* 고해상도 이미지 */}
-            <div className="md:w-3/5 bg-black flex items-center justify-center relative min-h-[300px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={activeLightbox.imageUrl}
-                alt={activeLightbox.title}
-                className="w-full h-full object-contain max-h-[60vh] md:max-h-none"
-              />
-              <button
-                onClick={() => setActiveLightbox(null)}
-                className="absolute top-4 right-4 md:hidden w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* 사진 상세 정보 */}
-            <div className="md:w-2/5 p-6 flex flex-col justify-between overflow-y-auto">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-black">
-                    {activeLightbox.flag} {activeLightbox.location}
-                  </span>
-                  <button
-                    onClick={() => setActiveLightbox(null)}
-                    className="hidden md:block text-gray-400 hover:text-gray-700"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <div className="text-xs font-mono text-gray-400 mb-1 flex items-center gap-1">
-                  <Calendar size={13} />
-                  <span>{activeLightbox.date}</span>
-                  <span>·</span>
-                  <span>{activeLightbox.attendees}</span>
-                </div>
-
-                <h3 className="text-lg font-black text-gray-900 mb-3 leading-snug">
-                  {activeLightbox.title}
-                </h3>
-
-                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-6 whitespace-pre-line">
-                  {activeLightbox.desc}
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 mb-6">
-                  {activeLightbox.tags.map((t, idx) => (
-                    <span key={idx} className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold">
-                      #{t}
-                    </span>
-                  ))}
-                </div>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col md:flex-row max-h-[90vh]"
+            >
+              {/* 이미지 */}
+              <div className="md:w-3/5 bg-black flex items-center justify-center relative min-h-[300px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imgUrl}
+                  alt={activeLightbox.title}
+                  className="w-full h-full object-contain max-h-[60vh] md:max-h-none"
+                />
+                <button
+                  onClick={() => setActiveLightbox(null)}
+                  className="absolute top-4 right-4 md:hidden w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex items-center gap-2">
-                <button
-                  onClick={() => shareViaWhatsApp(activeLightbox.title, activeLightbox.desc)}
-                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Share2 size={14} />
-                  <span>WhatsApp으로 소식 전송</span>
-                </button>
+              {/* 사진 상세 정보 */}
+              <div className="md:w-2/5 p-6 flex flex-col justify-between overflow-y-auto">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-black">
+                      {flagText} {locationText}
+                    </span>
+                    <button
+                      onClick={() => setActiveLightbox(null)}
+                      className="hidden md:block text-gray-400 hover:text-gray-700 cursor-pointer"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  <div className="text-xs font-mono text-gray-400 mb-1 flex items-center gap-1">
+                    <Calendar size={13} />
+                    <span>{dateText}</span>
+                    {attendeesText && (
+                      <>
+                        <span>·</span>
+                        <span>{attendeesText}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <h3 className="text-lg font-black text-gray-900 mb-3 leading-snug">
+                    {activeLightbox.title}
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-6 whitespace-pre-line">
+                    {activeLightbox.content}
+                  </p>
+
+                  {tagsList.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-6">
+                      {tagsList.map((t, idx) => (
+                        <span key={idx} className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-gray-100 flex items-center gap-2">
+                  <button
+                    onClick={() => shareViaWhatsApp(activeLightbox.title, activeLightbox.content)}
+                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <Share2 size={14} />
+                    <span>WhatsApp으로 소식 전송</span>
+                  </button>
+                  {isLeaderOrAdmin && (
+                    <button
+                      onClick={() => handleDeletePost(activeLightbox.id, activeLightbox.title)}
+                      className="p-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors cursor-pointer"
+                      title="사진 삭제"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
-      {/* 공지 상세 모달 */}
+      {/* 📢 공지사항 상세 모달 */}
       {selectedPost && (
         <div
           onClick={() => setSelectedPost(null)}
@@ -1025,7 +1294,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   {selectedPost.author_name} · {selectedPost.created_at.substring(0, 10)}
                 </div>
               </div>
-              <button onClick={() => setSelectedPost(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSelectedPost(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
                 <X size={20} />
               </button>
             </div>
@@ -1034,21 +1303,448 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               {selectedPost.content}
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-between items-center gap-2">
+              <div>
+                {isLeaderOrAdmin && (
+                  <button
+                    onClick={() => handleDeletePost(selectedPost.id, selectedPost.title)}
+                    className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    삭제하기
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => shareViaWhatsApp(selectedPost.title, selectedPost.content.substring(0, 80))}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Share2 size={13} />
+                  <span>WhatsApp 공유</span>
+                </button>
+                <button
+                  onClick={() => setSelectedPost(null)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📢 공지사항 등록 모달 */}
+      {isNoticeModalOpen && (
+        <div
+          onClick={() => setIsNoticeModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+              <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                <PlusCircle className="text-emerald-600" size={18} />
+                <span>새 공지사항 작성</span>
+              </h3>
               <button
-                onClick={() => shareViaWhatsApp(selectedPost.title, selectedPost.content.substring(0, 80))}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                onClick={() => setIsNoticeModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
               >
-                <Share2 size={13} />
-                <span>WhatsApp으로 공유하기</span>
-              </button>
-              <button
-                onClick={() => setSelectedPost(null)}
-                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
-              >
-                닫기
+                <X size={20} />
               </button>
             </div>
+
+            <form onSubmit={handleCreateNotice} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">공지 제목 *</label>
+                <input
+                  type="text"
+                  required
+                  value={noticeTitle}
+                  onChange={(e) => setNoticeTitle(e.target.value)}
+                  placeholder="공지사항 제목을 입력하세요"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">대상 국가/언어</label>
+                  <select
+                    value={noticeCountry}
+                    onChange={(e) => setNoticeCountry(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="KR">🇰🇷 한국어 (KR)</option>
+                    <option value="US">🇺🇸 English (US/International)</option>
+                    <option value="MM">🇲🇲 미얀마 (MM)</option>
+                    <option value="VN">🇻🇳 베트남 (VN)</option>
+                    <option value="TH">🇹🇭 태국 (TH)</option>
+                    <option value="ID">🇮🇩 인도네시아 (ID)</option>
+                    <option value="JP">🇯🇵 일본 (JP)</option>
+                  </select>
+                </div>
+                <div className="flex items-end pb-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={noticeIsPinned}
+                      onChange={(e) => setNoticeIsPinned(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span>상단 고정 공지로 등록</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">공지 본문 내용 *</label>
+                <textarea
+                  required
+                  rows={6}
+                  value={noticeContent}
+                  onChange={(e) => setNoticeContent(e.target.value)}
+                  placeholder="공지 내용을 상세히 작성해 주세요..."
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsNoticeModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? '등록 중...' : '공지 등록하기'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 📚 자료 등록 모달 */}
+      {isResourceModalOpen && (
+        <div
+          onClick={() => setIsResourceModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+              <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                <FolderOpen className="text-sky-600" size={18} />
+                <span>새 교육 및 예배 자료 등록</span>
+              </h3>
+              <button
+                onClick={() => setIsResourceModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateResource} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">자료 제목 *</label>
+                <input
+                  type="text"
+                  required
+                  value={resTitle}
+                  onChange={(e) => setResTitle(e.target.value)}
+                  placeholder="예: AAMEN 7대 신념 표준 주일학교 교안"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">자료 분류</label>
+                  <select
+                    value={resCategory}
+                    onChange={(e) => setResCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    <option value="curriculum">커리큘럼</option>
+                    <option value="education">교육자료</option>
+                    <option value="worship">예배자료</option>
+                    <option value="praise">찬양자료</option>
+                    <option value="books">서적/팜플렛</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">해당 국가/언어</label>
+                  <select
+                    value={resLang}
+                    onChange={(e) => setResLang(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    <option value="ALL">🌐 13개국 통합 (ALL)</option>
+                    <option value="KR">🇰🇷 대한민국 (KR)</option>
+                    <option value="US">🇺🇸 미국/영어 (US)</option>
+                    <option value="MM">🇲🇲 미얀마 (MM)</option>
+                    <option value="VN">🇻🇳 베트남 (VN)</option>
+                    <option value="TH">🇹🇭 태국 (TH)</option>
+                    <option value="ID">🇮🇩 인도네시아 (ID)</option>
+                    <option value="JP">🇯🇵 일본 (JP)</option>
+                    <option value="NP">🇳🇵 네팔 (NP)</option>
+                    <option value="KH">🇰🇭 캄보디아 (KH)</option>
+                    <option value="LA">🇱🇦 라오스 (LA)</option>
+                    <option value="MN">🇲🇳 몽골 (MN)</option>
+                    <option value="TW">🇹🇼 대만 (TW)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">파일 형식</label>
+                  <input
+                    type="text"
+                    value={resFileType}
+                    onChange={(e) => setResFileType(e.target.value)}
+                    placeholder="예: PDF, DOCX, PPTX"
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">파일 용량 (선택)</label>
+                  <input
+                    type="text"
+                    value={resFileSize}
+                    onChange={(e) => setResFileSize(e.target.value)}
+                    placeholder="예: 3.5 MB"
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">다운로드 링크 (구글 드라이브 / 웹 링크)</label>
+                <input
+                  type="url"
+                  value={resFileUrl}
+                  onChange={(e) => setResFileUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">자료 설명 *</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={resDesc}
+                  onChange={(e) => setResDesc(e.target.value)}
+                  placeholder="자료에 대한 주요 내용 및 활용법을 설명해 주세요..."
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsResourceModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? '등록 중...' : '자료 등록하기'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 📸 사진 등록 모달 */}
+      {isPhotoModalOpen && (
+        <div
+          onClick={() => setIsPhotoModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+              <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                <Camera className="text-purple-600" size={18} />
+                <span>현장 사역 사진 등록</span>
+              </h3>
+              <button
+                onClick={() => setIsPhotoModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePhoto} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">사진 제목 *</label>
+                <input
+                  type="text"
+                  required
+                  value={photoTitle}
+                  onChange={(e) => setPhotoTitle(e.target.value)}
+                  placeholder="예: 미얀마 양곤 평화 신학 세미나 & 워크숍"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">사역 국가</label>
+                  <select
+                    value={photoCountry}
+                    onChange={(e) => setPhotoCountry(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="KR">🇰🇷 대한민국 (KR)</option>
+                    <option value="MM">🇲🇲 미얀마 (MM)</option>
+                    <option value="TH">🇹🇭 태국 (TH)</option>
+                    <option value="VN">🇻🇳 베트남 (VN)</option>
+                    <option value="ID">🇮🇩 인도네시아 (ID)</option>
+                    <option value="JP">🇯🇵 일본 (JP)</option>
+                    <option value="NP">🇳🇵 네팔 (NP)</option>
+                    <option value="IN">🇮🇳 인도 (IN)</option>
+                    <option value="KH">🇰🇭 캄보디아 (KH)</option>
+                    <option value="LA">🇱🇦 라오스 (LA)</option>
+                    <option value="MN">🇲🇳 몽골 (MN)</option>
+                    <option value="TW">🇹🇼 대만 (TW)</option>
+                    <option value="US">🇺🇸 미국 (US)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">지역 / 도시명</label>
+                  <input
+                    type="text"
+                    value={photoLocation}
+                    onChange={(e) => setPhotoLocation(e.target.value)}
+                    placeholder="예: Yangon, Myanmar"
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">사역 일자</label>
+                  <input
+                    type="date"
+                    value={photoDate}
+                    onChange={(e) => setPhotoDate(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">참석 인원 (선택)</label>
+                  <input
+                    type="text"
+                    value={photoAttendees}
+                    onChange={(e) => setPhotoAttendees(e.target.value)}
+                    placeholder="예: 42명 참석"
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* 사진 첨부 / URL */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">사진 이미지 (파일 업로드 또는 이미지 URL)</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={photoImageUrl}
+                    onChange={(e) => setPhotoImageUrl(e.target.value)}
+                    placeholder="https://... 또는 우측 파일 업로드"
+                    className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                    className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Upload size={13} />
+                    <span>{isUploadingImage ? '업로드중...' : '파일 선택'}</span>
+                  </button>
+                </div>
+
+                {photoImageUrl && (
+                  <div className="relative h-28 w-full rounded-xl overflow-hidden bg-gray-100 border border-purple-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photoImageUrl} alt="미리보기" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">태그 (쉼표로 구분)</label>
+                <input
+                  type="text"
+                  value={photoTags}
+                  onChange={(e) => setPhotoTags(e.target.value)}
+                  placeholder="평화제자도, 청년리더, 워크숍"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">사역 스토리 / 설명 *</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={photoDesc}
+                  onChange={(e) => setPhotoDesc(e.target.value)}
+                  placeholder="현장에서 있었던 은혜로운 사역 이야기와 기도 제목을 적어주세요..."
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? '등록 중...' : '사진 등록하기'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

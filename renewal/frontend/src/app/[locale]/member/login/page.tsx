@@ -461,33 +461,6 @@ export default function LoginPage() {
     }
   }
 
-  // 🌐 아시아 13개국 맞춤형 3대 SNS 간편 로그인 핸들러
-  const handleSnsLogin = (provider: 'whatsapp' | 'facebook' | 'telegram') => {
-    setIsLoading(true)
-    setErrorMessage('')
-
-    setTimeout(() => {
-      const providerNames = {
-        whatsapp: 'WhatsApp',
-        facebook: 'Facebook',
-        telegram: 'Telegram',
-      }
-      const user: AuthUser = {
-        id: `${provider}_user_${Date.now()}`,
-        name: `${providerNames[provider]} 인증 성도`,
-        email: `${provider}@aamen.net`,
-        provider: provider,
-        role: 'regular',
-        tierLevel: 2,
-        country_code: provider === 'whatsapp' ? 'ID' : provider === 'facebook' ? 'MM' : 'KR',
-        status: 'active',
-      }
-      saveAuthUser(user)
-      setIsLoading(false)
-      alert(`🎉 ${providerNames[provider]} ${t('login_success_member', { name: providerNames[provider] })}`)
-      router.push(getLocalizedPath('/'))
-    }, 600)
-  }
 
   // 🔐 실제 API 기반 로그인 핸들러 (아이디 또는 이메일과 비밀번호)
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -751,46 +724,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* 🌐 아시아 13개국 맞춤형 3대 SNS 간편 로그인 */}
-          <div className="space-y-2 pt-1">
-            <div className="text-[11px] font-bold text-gray-500 text-center">
-              {t('sns_title')}
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {/* WhatsApp */}
-              <button
-                type="button"
-                onClick={() => handleSnsLogin('whatsapp')}
-                disabled={isLoading}
-                className="py-2.5 px-1.5 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 rounded-2xl font-extrabold text-[11px] text-emerald-800 flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
-              >
-                <MessageSquare size={13} className="text-emerald-600" />
-                <span>WhatsApp</span>
-              </button>
 
-              {/* Facebook */}
-              <button
-                type="button"
-                onClick={() => handleSnsLogin('facebook')}
-                disabled={isLoading}
-                className="py-2.5 px-1.5 bg-blue-50 hover:bg-blue-100/80 border border-blue-200 rounded-2xl font-extrabold text-[11px] text-blue-800 flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
-              >
-                <span className="font-black text-blue-600 text-xs">f</span>
-                <span>Facebook</span>
-              </button>
-
-              {/* Telegram */}
-              <button
-                type="button"
-                onClick={() => handleSnsLogin('telegram')}
-                disabled={isLoading}
-                className="py-2.5 px-1.5 bg-sky-50 hover:bg-sky-100/80 border border-sky-200 rounded-2xl font-extrabold text-[11px] text-sky-800 flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
-              >
-                <Send size={12} className="text-sky-600" />
-                <span>Telegram</span>
-              </button>
-            </div>
-          </div>
 
           {/* 구분선 */}
           <div className="relative my-4">
