@@ -19,7 +19,7 @@ New-Item -ItemType Directory -Path $deployDir | Out-Null
 
 # 1. Frontend out copy
 Write-Host ">>> [2/7] Copying frontend static files..." -ForegroundColor Cyan
-Copy-Item -Path "$outDir\*" -Destination $deployDir -Recurse -Force
+robocopy $outDir $deployDir /E /NFL /NDL /NJH /NJS | Out-Null
 
 # 1-1. Copy ko/ contents to root for non-prefixed URLs
 $koDir = "$deployDir\ko"
