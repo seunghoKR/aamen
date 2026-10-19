@@ -18,9 +18,13 @@ import {
   PenSquare,
   Shield,
   Trash2,
+  X,
+  RefreshCw,
 } from 'lucide-react'
 import { MemberLevel, defaultTierSettings } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
+import { getStoredUser } from '@/lib/auth'
+import { NATIONS_15 } from './communityI18n'
 
 export interface PrayerItem {
   id: string
@@ -173,6 +177,15 @@ export default function LivePrayerWall() {
   const [shareModalItem, setShareModalItem] = useState<PrayerItem | null>(null)
   const [copyFeedback, setCopyFeedback] = useState(false)
 
+  // 기도제목 등록 모달 상태
+  const [isPrayerModalOpen, setIsPrayerModalOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [authorName, setAuthorName] = useState('')
+  const [countryCode, setCountryCode] = useState('KR')
+  const [isUrgent, setIsUrgent] = useState(false)
+
   // 전역 회원 등급 (1~5단계) 구독
   const [currentLevel, setCurrentLevel] = useState<MemberLevel>(4)
   const [mounted, setMounted] = useState(false)
@@ -180,25 +193,32 @@ export default function LivePrayerWall() {
 
   const fetchPrayers = async () => {
     try {
-      const res = await fetch('/api/prayers')
+      const res = await fetch('/api/prayers.php')
       if (res.ok) {
         const data = await res.json()
-        if (Array.isArray(data)) {
-          const mapped: PrayerItem[] = data.map((d: any) => ({
-            id: d.id,
-            author: d.author_name || '성도',
-            countryCode: d.country_code || 'KR',
-            countryName: d.country_code || 'KR',
-            isLeader: false,
-            date: (d.created_at || '').substring(0, 10),
-            originalLang: d.country_code === 'KR' ? 'ko' : 'en',
-            originalText: d.content || d.title,
-            translations: {
-              ko: d.content || d.title,
-              en: d.content || d.title,
-            },
-            prayCount: d.amen_count || 0,
-          }))
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped: PrayerItem[] = data.map((d: any) => {
+            const nation = NATIONS_15.find((n) => n.code === d.country_code)
+            const countryLabel = nation
+              ? `${nation.flag} ${nation.name[locale as 'ko' | 'en'] || nation.name.ko}`
+              : d.country_code || 'KR'
+            const fullText = d.content ? (d.title ? `[${d.title}]\n${d.content}` : d.content) : d.title
+            return {
+              id: d.id,
+              author: d.author_name || '성도',
+              countryCode: d.country_code || 'KR',
+              countryName: countryLabel,
+              isLeader: Boolean(d.is_urgent),
+              date: (d.created_at || '').substring(0, 10),
+              originalLang: d.country_code === 'KR' ? 'ko' : 'en',
+              originalText: fullText,
+              translations: {
+                ko: fullText,
+                en: fullText,
+              },
+              prayCount: d.amen_count || 0,
+            }
+          })
           setPrayers(mapped)
           return
         }
@@ -206,6 +226,8 @@ export default function LivePrayerWall() {
     } catch (e) {
       console.error(e)
     }
+    // DB 데이터가 비어있거나 오류 시 기본 샘플 기도제목 표시
+    setPrayers(initial6Prayers)
   }
 
   useEffect(() => {
@@ -251,6 +273,77 @@ export default function LivePrayerWall() {
     setTimeout(() => setNoticeToast(null), 3000)
   }
 
+  // 기도제목 등록 모달 열기 핸들러
+  const handleOpenPrayerModal = () => {
+    if (isGuest) {
+      showToast('🚫 ' + (t('toast_guest') || '비회원은 로그인 후 기도제목을 작성하실 수 있습니다.'))
+      return
+    }
+    if (isAssociate) {
+      showToast('🔒 ' + (t('toast_associate') || '준회원은 열람만 가능하며, 2단계(정회원) 승인 후 작성이 가능합니다.'))
+      return
+    }
+    const user = getStoredUser()
+    if (user?.name) {
+      setAuthorName(user.name)
+    } else if (currentLevel >= 4) {
+      setAuthorName('총괄관리자')
+    } else {
+      setAuthorName('AAMEN 사역자')
+    }
+    if (user?.country_code) {
+      setCountryCode(user.country_code)
+    } else {
+      setCountryCode('KR')
+    }
+    setTitle('')
+    setContent('')
+    setIsUrgent(false)
+    setIsPrayerModalOpen(true)
+  }
+
+  // 신규 기도제목 등록 처리
+  const handleCreatePrayer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !content.trim()) {
+      showToast('⚠️ 기도제목과 기도 내용을 모두 입력해 주세요.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const user = getStoredUser()
+      const res = await fetch('/api/prayers.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          author_name: authorName.trim() || user?.name || 'AAMEN 성도',
+          author_id: user?.id || null,
+          country_code: countryCode,
+          is_urgent: isUrgent ? 1 : 0,
+        }),
+      })
+
+      if (res.ok) {
+        showToast('🙏 중보 기도제목이 은혜 가운데 등록되었습니다. 함께 기도합니다!')
+        setTitle('')
+        setContent('')
+        setIsUrgent(false)
+        setIsPrayerModalOpen(false)
+        await fetchPrayers()
+      } else {
+        showToast('❌ 기도제목 등록 중 오류가 발생했습니다. 다시 시도해 주세요.')
+      }
+    } catch (err) {
+      console.error(err)
+      showToast('❌ 서버 연결 실패. 잠시 후 다시 시도해 주세요.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   // 원터치 "함께 기도합니다" 핸들러 (실시간 DB 연동)
   const handlePray = async (id: string) => {
     if (isGuest) {
@@ -267,7 +360,7 @@ export default function LivePrayerWall() {
     )
 
     try {
-      await fetch('/api/prayers', {
+      await fetch('/api/prayers.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, action: 'amen' }),
@@ -295,7 +388,7 @@ export default function LivePrayerWall() {
     if (!isLeaderOrAdmin) return
     if (confirm(`[관리자 권한] ${country}의 기도제목을 삭제하시겠습니까?`)) {
       try {
-        await fetch(`/api/prayers?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+        await fetch(`/api/prayers.php?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
       } catch (e) {}
       setPrayers((prev) => prev.filter((p) => p.id !== id))
       showToast('기도제목이 성공적으로 삭제되었습니다.')
@@ -383,26 +476,18 @@ export default function LivePrayerWall() {
 
         {/* 우측 도구: 기도제목 작성 & 더보기 링크 */}
         <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-          <Link
-            href={isGuest ? '/member/login' : locale === 'ko' ? '/community/prayer' : `/${locale}/community/prayer`}
-            onClick={(e) => {
-              if (isGuest) {
-                e.preventDefault()
-                showToast(t('toast_guest'))
-              } else if (isAssociate) {
-                e.preventDefault()
-                showToast(t('toast_associate'))
-              }
-            }}
-            className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${
+          <button
+            type="button"
+            onClick={handleOpenPrayerModal}
+            className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
               isGuest || isAssociate
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
             }`}
           >
             <PenSquare size={13} />
-            <span>{t('submit_prayer')}</span>
-          </Link>
+            <span>{t('submit_prayer') || '기도제목 나누기'}</span>
+          </button>
 
           <Link
             href={locale === 'ko' ? '/community/prayer' : `/${locale}/community/prayer`}
@@ -419,14 +504,15 @@ export default function LivePrayerWall() {
         <div className="text-center py-16 bg-gray-50/60 rounded-3xl border border-gray-100">
           <Heart className="w-10 h-10 text-emerald-300 mx-auto mb-2" />
           <h4 className="text-sm font-bold text-gray-700 mb-1">등록된 중보 기도제목이 없습니다.</h4>
-          <p className="text-xs text-gray-500 mb-4">첫 번째 기도제목을 작성하여 아시아 13개국 성도들과 함께 기도해 보세요.</p>
-          <Link
-            href={locale === 'ko' ? '/community/prayer' : `/${locale}/community/prayer`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
+          <p className="text-xs text-gray-500 mb-4">첫 번째 기도제목을 작성하여 아시아 15개국 성도들과 함께 기도해 보세요.</p>
+          <button
+            type="button"
+            onClick={handleOpenPrayerModal}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
             <PenSquare size={13} />
             <span>첫 기도제목 등록하기</span>
-          </Link>
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -594,6 +680,159 @@ export default function LivePrayerWall() {
           )
         })}
       </div>
+      )}
+
+      {/* 중보 기도제목 작성 모달 (Prayer Request Modal) */}
+      {isPrayerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            {/* 모달 헤더 */}
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <Heart className="w-5 h-5 fill-emerald-600 text-emerald-600" />
+                </div>
+                <div>
+                  <h4 className="font-black text-base sm:text-lg text-gray-900">
+                    {locale === 'ko' ? '중보 기도제목 나누기' : 'Share Prayer Request'}
+                  </h4>
+                  <p className="text-[11px] text-gray-400">
+                    {locale === 'ko'
+                      ? '아시아 15개국 메노나이트 지체들과 함께 기도로 동역합니다'
+                      : 'Partner in prayer with Mennonites across 15 Asian nations'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPrayerModalOpen(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* 입력 폼 */}
+            <form onSubmit={handleCreatePrayer} className="space-y-4">
+              {/* 작성자 & 국가 선택 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    {locale === 'ko' ? '작성자 (이름 / 사역명)' : 'Author Name'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={authorName}
+                    onChange={(e) => setAuthorName(e.target.value)}
+                    placeholder={locale === 'ko' ? '이름을 입력하세요' : 'Enter your name'}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    {locale === 'ko' ? '소속 국가 (15개국)' : 'Country (15 Nations)'}
+                  </label>
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium cursor-pointer"
+                  >
+                    {NATIONS_15.map((nation) => (
+                      <option key={nation.code} value={nation.code}>
+                        {nation.flag} {nation.name[locale as 'ko' | 'en'] || nation.name.ko} ({nation.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* 기도제목 */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  {locale === 'ko' ? '기도제목 (핵심 요약)' : 'Prayer Title'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={
+                    locale === 'ko'
+                      ? '예: 미얀마 신학 교육 및 평화 워크숍을 위한 기도'
+                      : 'e.g., Pray for peace workshops and theological education'
+                  }
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                />
+              </div>
+
+              {/* 기도 상세 내용 */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  {locale === 'ko' ? '기도 상세 내용' : 'Prayer Details'}
+                </label>
+                <textarea
+                  required
+                  rows={5}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder={
+                    locale === 'ko'
+                      ? '함께 기도하고 싶은 상황과 구체적인 중보 기도제목을 나눠주세요.\n(등록된 기도제목은 실시간 기도의 벽에 게시되며 전 아시아 성도들이 함께 기도합니다)'
+                      : 'Share specific prayer requests and situations you want us to uphold in prayer.'
+                  }
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed font-normal"
+                />
+              </div>
+
+              {/* 긴급 중보기도 체크박스 */}
+              <div className="flex items-center gap-2 p-3 bg-rose-50/70 border border-rose-100 rounded-xl">
+                <input
+                  type="checkbox"
+                  id="is_urgent_checkbox"
+                  checked={isUrgent}
+                  onChange={(e) => setIsUrgent(e.target.checked)}
+                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-gray-300 cursor-pointer"
+                />
+                <label
+                  htmlFor="is_urgent_checkbox"
+                  className="text-xs font-bold text-rose-900 cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>🚨 긴급 중보기도 요청</span>
+                  <span className="text-[10px] font-normal text-rose-600">(상단 우선 노출 및 긴급 뱃지 표시)</span>
+                </label>
+              </div>
+
+              {/* 모달 하단 버튼 */}
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsPrayerModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  {locale === 'ko' ? '취소' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-extrabold flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                >
+                  {submitting ? (
+                    <>
+                      <RefreshCw size={13} className="animate-spin" />
+                      <span>{locale === 'ko' ? '등록 중...' : 'Submitting...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <PenSquare size={13} />
+                      <span>{locale === 'ko' ? '기도제목 등록하기' : 'Submit Prayer'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* 공유 모달 */}

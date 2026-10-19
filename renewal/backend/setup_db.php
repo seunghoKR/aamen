@@ -294,6 +294,26 @@ try {
     }
     $results['members_preserved'] = true;
 
+    // 🔒 기도제목 카드 초기 시드 (prayer_cards 테이블이 비어있을 때만 6개 기본 시드 주입)
+    try {
+        $pCount = (int)$pdo->query("SELECT COUNT(*) FROM prayer_cards")->fetchColumn();
+        if ($pCount === 0) {
+            $stmtP = $pdo->prepare("INSERT INTO prayer_cards (id, author_id, author_name, country_code, title, content, amen_count, is_urgent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $initialPrayersSeed = [
+                ['pr_1', 'ZawMin', 'Pastor Zaw Min', 'MM', '미얀마 신학 교육 및 평화 훈련 워크숍을 위한 기도', '올해 시작되는 신학 교육 프로그램과 평화 훈련 워크숍이 은혜 가운데 열릴 수 있도록 기도 부탁드립니다.\n정치적 불안과 어려운 시국 속에서도 신학생들과 청년들이 흔들리지 않고 그리스도의 평화 복음을 굳건히 배울 수 있도록 중보를 부탁드립니다.', 58, 1, '2026-09-28 10:00:00'],
+                ['pr_2', 'SarahNguyen', 'Sarah Nguyen', 'VN', '베트남 청년 세대와 평화와 화해의 증인을 위한 기도', '교회의 다음 세대 청년들이 주님의 말씀을 사랑하고 지역 사회를 섬기며 평화와 화해의 증인이 되도록 기도합니다.\n4개 현지 가정교회가 연합하여 주일학교 교사 훈련을 잘 마칠 수 있도록 지혜를 더해 주소서.', 46, 0, '2026-09-27 11:30:00'],
+                ['pr_3', 'Somchai', 'Somchai Prasert', 'TH', '태국어 AAMEN 교안 번역 감사 및 청소년 평화 캠프를 위한 기도', 'AAMEN 레슨이 태국어로 번역된 것에 감사드립니다. 이 교육 자료들이 현지 교회들을 든든히 세우는 데 귀하게 쓰이길 기도합니다.\n다음 달 태국 북부에서 열리는 청소년 평화 캠프 가운데도 주님의 풍성한 은혜를 구합니다.', 63, 0, '2026-09-26 14:15:00'],
+                ['pr_4', 'Rajesh', 'Rajesh Kumar', 'IN', '인도 차티스가르 농촌 지역 구호 사역자들의 안전을 위한 기도', '인도 차티스가르 농촌 지역에서 가뭄과 경제적 빈곤으로 고통받는 이웃들을 위해 기도해 주세요.\n식량과 구호 약품을 나누며 그리스도의 사랑을 전하는 자원봉사자들의 안전과 물질 공급을 위해 손 모아 주시기 바랍니다.', 51, 1, '2026-09-25 09:20:00'],
+                ['pr_5', 'Sunita', 'Sunita Shrestha', 'NP', '히말라야 산간 외딴 마을 목회자들과 평화 세미나를 위한 기도', '히말라야 산간 외딴 마을에서 묵묵히 복음을 전하는 현지 목회자들에게 건강과 사역의 지혜를 더하여 주시기를 기도합니다.\n서로 다른 부족 청년들이 주 안에서 용서와 화해를 배우는 평화 세미나가 큰 결실을 맺게 하소서.', 39, 0, '2026-09-24 16:45:00'],
+                ['pr_6', 'Bounmy', 'Bounmy Keomany', 'LA', '메콩강 유역 평화 사역자들의 안전과 이웃 사랑을 위한 기도', '메콩강 유역에서 종교적 제약 속에서도 이웃 사랑과 섬김을 실천하는 평화 사역자들의 안전을 위해 기도합니다.\n지역 사회 주민들이 성도들의 희생과 돌봄을 통해 그리스도의 참된 평화를 발견하게 하소서.', 44, 0, '2026-09-23 08:50:00']
+            ];
+            foreach ($initialPrayersSeed as $row) {
+                $stmtP->execute($row);
+            }
+            $results['prayers_seeded'] = true;
+        }
+    } catch (\Exception $e) {}
+
     send_json([
         'status' => 'success',
         'version' => 'v1.5.0-prod',
