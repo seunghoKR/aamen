@@ -37,6 +37,10 @@ import {
   Users,
   Plus,
   Upload,
+  ChevronLeft,
+  ChevronRight,
+  Paperclip,
+  ArrowRight,
 } from 'lucide-react'
 import {
   MemberLevel,
@@ -46,6 +50,12 @@ import {
 } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import { getStoredUser } from '@/lib/auth'
+import {
+  optimizeImage,
+  optimizeMultipleImages,
+  formatBytes,
+  OptimizedResult,
+} from '@/lib/imageOptimizer'
 
 interface Comment {
   id: string
@@ -141,14 +151,17 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 📢 공지사항 등록 모달 상태
+  // 📢 공지사항 등록 모달 상태 (이미지 첨부 지원)
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false)
   const [noticeTitle, setNoticeTitle] = useState('')
   const [noticeContent, setNoticeContent] = useState('')
   const [noticeCountry, setNoticeCountry] = useState('KR')
   const [noticeIsPinned, setNoticeIsPinned] = useState(false)
+  const [noticeImageUrl, setNoticeImageUrl] = useState('')
+  const [isUploadingNoticeImage, setIsUploadingNoticeImage] = useState(false)
+  const noticeFileInputRef = useRef<HTMLInputElement>(null)
 
-  // 📚 자료 등록 모달 상태
+  // 📚 자료 등록 모달 상태 (실제 파일 업로드 연동)
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false)
   const [resTitle, setResTitle] = useState('')
   const [resCategory, setResCategory] = useState('curriculum')
@@ -156,9 +169,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [resFileUrl, setResFileUrl] = useState('')
   const [resFileType, setResFileType] = useState('PDF')
   const [resFileSize, setResFileSize] = useState('2.5 MB')
+  const [resFileName, setResFileName] = useState('')
+  const [isUploadingResourceFile, setIsUploadingResourceFile] = useState(false)
   const [resDesc, setResDesc] = useState('')
+  const resFileInputRef = useRef<HTMLInputElement>(null)
 
-  // 📸 사진 등록 모달 상태
+  // 📸 사진 등록 모달 상태 (다중 업로드 + 자동 리사이즈)
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false)
   const [photoTitle, setPhotoTitle] = useState('')
   const [photoDesc, setPhotoDesc] = useState('')
@@ -168,8 +184,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [photoAttendees, setPhotoAttendees] = useState('')
   const [photoTags, setPhotoTags] = useState('')
   const [photoImageUrl, setPhotoImageUrl] = useState('')
+  const [photoImageUrls, setPhotoImageUrls] = useState<string[]>([])
+  const [optimizedPreviews, setOptimizedPreviews] = useState<OptimizedResult[]>([])
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [optimizationSummary, setOptimizationSummary] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 사진첩 라이트박스 다중 이미지 인덱스 상태
+  const [lightboxImageIndex, setLightboxImageIndex] = useState(0)
 
   // 권한 설정 로드
   useEffect(() => {
@@ -272,8 +294,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     if (!confirm(`정말로 [${postTitle}] 게시물을 삭제하시겠습니까?`)) return
 
     try {
-      const res = await fetch(`/api/posts?id=${encodeURIComponent(postId)}`, {
-        method: 'DELETE',
+      // POST 액션 디스패치로 서버 메소드 제한 없이 100% 확실하게 삭제
+      const res = await fetch('/api/posts.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          id: postId,
+        }),
       })
       if (res.ok) {
         showToast('게시물이 성공적으로 삭제되었습니다.')
@@ -299,8 +327,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
     setIsSubmitting(true)
     const user = getStoredUser()
+    const extraData = {
+      image_url: noticeImageUrl.trim() || undefined,
+    }
+
     try {
-      const res = await fetch('/api/posts', {
+      const res = await fetch('/api/posts.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -312,6 +344,8 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
           author_country: noticeCountry,
           author_role: 'country_admin',
           is_pinned: noticeIsPinned ? 1 : 0,
+          image_url: noticeImageUrl.trim() || undefined,
+          extra_json: JSON.stringify(extraData),
         }),
       })
 
@@ -319,6 +353,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         showToast('✨ 새 공지사항이 등록되었습니다.')
         setNoticeTitle('')
         setNoticeContent('')
+        setNoticeImageUrl('')
         setIsNoticeModalOpen(false)
         fetchPosts()
       } else {
@@ -329,6 +364,47 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
       alert('서버 통신 오류가 발생했습니다.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // 📢 공지사항 이미지 업로드 핸들러
+  const handleNoticeImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingNoticeImage(true)
+    try {
+      const optimized = await optimizeImage(file, { maxWidth: 1600, quality: 0.85 })
+      const formData = new FormData()
+      formData.append('type', 'notices')
+      formData.append('image', optimized.file)
+
+      const res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && json.image_url) {
+          setNoticeImageUrl(json.image_url)
+          showToast('📸 공지 포스터 이미지가 등록되었습니다.')
+        } else {
+          alert(json.error || '이미지 업로드 실패')
+        }
+      } else {
+        // posts.php fallback
+        const fbRes = await fetch('/api/posts.php', { method: 'POST', body: formData })
+        if (fbRes.ok) {
+          const json = await fbRes.json()
+          if (json.success && json.image_url) {
+            setNoticeImageUrl(json.image_url)
+            showToast('📸 공지 포스터 이미지가 등록되었습니다.')
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      alert('공지 이미지 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setIsUploadingNoticeImage(false)
+      if (noticeFileInputRef.current) noticeFileInputRef.current.value = ''
     }
   }
 
@@ -347,11 +423,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
       fileUrl: resFileUrl.trim() || '#',
       fileType: resFileType,
       fileSize: resFileSize,
+      fileName: resFileName || resTitle.trim(),
       date: new Date().toISOString().substring(0, 10),
     }
 
     try {
-      const res = await fetch('/api/posts', {
+      const res = await fetch('/api/posts.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -373,6 +450,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         setResTitle('')
         setResDesc('')
         setResFileUrl('')
+        setResFileName('')
         setIsResourceModalOpen(false)
         fetchPosts()
       } else {
@@ -386,38 +464,133 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     }
   }
 
-  // 📸 이미지 파일 업로드 헬퍼
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 📚 자료실 실제 파일(PDF, HWP, ZIP 등) 업로드 핸들러
+  const handleResourceFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const formData = new FormData()
-    formData.append('image', file)
-
-    setIsUploadingImage(true)
+    setIsUploadingResourceFile(true)
     try {
-      const res = await fetch('/api/posts', {
-        method: 'POST',
-        body: formData,
-      })
+      const formData = new FormData()
+      formData.append('type', 'resources')
+      formData.append('file', file)
+
+      const res = await fetch('/api/upload.php', { method: 'POST', body: formData })
       if (res.ok) {
         const json = await res.json()
-        if (json.success && json.image_url) {
-          setPhotoImageUrl(json.image_url)
-          showToast('📸 사진이 성공적으로 업로드되었습니다.')
+        if (json.success) {
+          setResFileUrl(json.file_url)
+          setResFileName(json.file_name || file.name)
+          if (json.file_size) setResFileSize(json.file_size)
+          if (json.file_type) setResFileType(json.file_type)
+          if (!resTitle.trim()) {
+            setResTitle(file.name.substring(0, file.name.lastIndexOf('.')) || file.name)
+          }
+          showToast(`📁 [${file.name}] 자료 파일이 업로드되었습니다.`)
         } else {
-          alert(json.error || '사진 업로드 실패')
+          alert(json.error || '자료 파일 업로드 실패')
         }
+      } else {
+        alert('자료 파일 서버 업로드에 실패했습니다.')
       }
     } catch (err) {
       console.error(err)
-      alert('사진 업로드 중 오류가 발생했습니다.')
+      alert('자료 파일 업로드 중 오류가 발생했습니다.')
     } finally {
-      setIsUploadingImage(false)
+      setIsUploadingResourceFile(false)
+      if (resFileInputRef.current) resFileInputRef.current.value = ''
     }
   }
 
-  // 📸 사진 등록
+  // 📸 이미지 파일 다중 업로드 및 브라우저 자동 리사이즈 핸들러
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setIsUploadingImage(true)
+    setOptimizationSummary('사진 해상도 및 용량 자동 최적화 중...')
+
+    try {
+      // 1. 브라우저 Canvas로 스마트폰 4K 고화질 원본 자동 리사이징 & 고품질 압축
+      const optimized = await optimizeMultipleImages(files, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
+      })
+
+      const totalOrig = optimized.reduce((s, it) => s + it.originalSize, 0)
+      const totalComp = optimized.reduce((s, it) => s + it.compressedSize, 0)
+      const ratio = totalOrig > 0 ? Math.round((1 - totalComp / totalOrig) * 100) : 0
+      setOptimizationSummary(
+        `✨ ${optimized.length}장 최적화 완료: ${formatBytes(totalOrig)} ➡️ ${formatBytes(totalComp)} (${ratio}% 경량화)`
+      )
+
+      // 2. FormData에 다중 이미지 탑재 (다중 전용 모드로 전송)
+      const formData = new FormData()
+      formData.append('type', 'posts')
+      optimized.forEach((opt) => {
+        formData.append('images[]', opt.file)
+      })
+
+      // 3. 서버 업로드 전송 (upload.php 우선, fallback posts.php)
+      let res = await fetch('/api/upload.php', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        res = await fetch('/api/posts.php', {
+          method: 'POST',
+          body: formData,
+        })
+      }
+
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success) {
+          const uploadedUrls: string[] = json.image_urls || (json.image_url ? [json.image_url] : [])
+          if (uploadedUrls.length > 0) {
+            setPhotoImageUrls((prev) => [...prev, ...uploadedUrls])
+            if (!photoImageUrl) {
+              setPhotoImageUrl(uploadedUrls[0])
+            }
+            setOptimizedPreviews((prev) => [...prev, ...optimized])
+            showToast(`📸 ${uploadedUrls.length}장의 사진이 안전하게 등록되었습니다.`)
+          }
+        } else {
+          alert(json.error || '사진 업로드 실패')
+        }
+      } else {
+        alert('서버 업로드에 실패했습니다. (HTTP ' + res.status + ')')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('사진 최적화 및 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setIsUploadingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  // 업로드된 사진 목록에서 개별 삭제
+  const handleRemovePhotoItem = (index: number) => {
+    setPhotoImageUrls((prev) => {
+      const updated = prev.filter((_, i) => i !== index)
+      if (photoImageUrl === prev[index]) {
+        setPhotoImageUrl(updated[0] || '')
+      }
+      return updated
+    })
+    setOptimizedPreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // 대표 사진 설정
+  const handleSetPrimaryPhoto = (url: string) => {
+    setPhotoImageUrl(url)
+    showToast('★ 대표 썸네일로 설정되었습니다.')
+  }
+
+  // 📸 사진 등록 완료 처리
   const handleCreatePhoto = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!photoTitle.trim() || !photoDesc.trim()) {
@@ -432,16 +605,23 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
       .map((t) => t.trim().replace(/^#/, ''))
       .filter(Boolean)
 
+    const allImages = photoImageUrls.length > 0 
+      ? photoImageUrls 
+      : photoImageUrl ? [photoImageUrl] : []
+
+    const primaryImg = photoImageUrl || allImages[0] || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80'
+
     const extraData = {
       location: photoLocation.trim() || 'Asia',
       date: photoDate,
       attendees: photoAttendees.trim() || '참석',
       tags: parsedTags,
       flag: countryFlags[photoCountry]?.split(' ')[0] || '🌐',
+      images: allImages,
     }
 
     try {
-      const res = await fetch('/api/posts', {
+      const res = await fetch('/api/posts.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -452,7 +632,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
           author_name: user?.name || '현장사역자',
           author_country: photoCountry,
           author_role: 'level3_worker',
-          image_url: photoImageUrl.trim() || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
+          image_url: primaryImg,
           extra_json: JSON.stringify(extraData),
         }),
       })
@@ -462,6 +642,9 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         setPhotoTitle('')
         setPhotoDesc('')
         setPhotoImageUrl('')
+        setPhotoImageUrls([])
+        setOptimizedPreviews([])
+        setOptimizationSummary(null)
         setPhotoTags('')
         setPhotoAttendees('')
         setIsPhotoModalOpen(false)
@@ -485,6 +668,20 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     } catch (e) {
       return {}
     }
+  }
+
+  // 헬퍼: 게시물 대표 이미지 추출 (공지사항, 자료방, 사진첩 통일)
+  const getPostImageUrl = (post: Post | null | undefined): string | null => {
+    if (!post) return null
+    if (post.image_url && post.image_url.trim()) return post.image_url.trim()
+    const extra = parseExtra(post)
+    if (extra.image_url && typeof extra.image_url === 'string' && extra.image_url.trim()) {
+      return extra.image_url.trim()
+    }
+    if (Array.isArray(extra.images) && extra.images.length > 0) {
+      return extra.images[0]
+    }
+    return null
   }
 
   // 공지사항 필터링
@@ -722,59 +919,107 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   )}
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {filteredNoticePosts.map((post) => (
-                    <div
-                      key={post.id}
-                      onClick={() => handleOpenDetail(post.id)}
-                      className="bg-white rounded-2xl p-5 border border-gray-200/80 hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 rounded-full font-black text-[10px]">
-                            {post.is_pinned ? '📌 고정 공지' : '📢 공지'}
-                          </span>
-                          <span className="text-xs text-gray-500 font-medium">
-                            {post.author_country === 'KR' ? '🇰🇷 KO' : '🇺🇸 EN'} · {post.created_at.substring(0, 10)}
-                          </span>
-                          {post.author_name && (
-                            <span className="text-xs text-gray-400 font-medium">
-                              by {post.author_name}
+                <div className="grid grid-cols-1 gap-4">
+                  {filteredNoticePosts.map((post) => {
+                    const postImg = getPostImageUrl(post)
+                    return (
+                      <div
+                        key={post.id}
+                        onClick={() => handleOpenDetail(post.id)}
+                        className="group bg-white rounded-2xl border border-gray-200/90 hover:border-emerald-300 hover:shadow-lg transition-all cursor-pointer overflow-hidden flex flex-col sm:flex-row items-stretch gap-5 p-4 sm:p-5"
+                      >
+                        {/* 1. 이미지 (썸네일/포스터) */}
+                        <div className="w-full sm:w-56 sm:min-w-[224px] h-44 sm:h-auto rounded-xl overflow-hidden bg-slate-100 relative shrink-0">
+                          {postImg ? (
+                            <img
+                              src={postImg}
+                              alt={post.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full min-h-[140px] bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-900 flex flex-col items-center justify-center p-4 text-white text-center">
+                              <Bell className="w-8 h-8 text-emerald-200 mb-2 opacity-90 group-hover:scale-110 transition-transform" />
+                              <span className="text-[11px] font-black tracking-wider text-emerald-100 uppercase">
+                                AAMEN NOTICE
+                              </span>
+                              <span className="text-[10px] text-emerald-200/80 mt-0.5">공식 공지사항</span>
+                            </div>
+                          )}
+                          {post.is_pinned && (
+                            <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-xs flex items-center gap-1">
+                              <span>📌</span>
+                              <span>고정</span>
                             </span>
                           )}
                         </div>
-                        <h4 className="font-bold text-base text-gray-900 mb-1">{post.title}</h4>
-                        <p className="text-xs text-gray-500 line-clamp-1">{post.content.replace(/<[^>]*>?/gm, '')}</p>
-                      </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            shareViaWhatsApp(post.title, post.content.substring(0, 80))
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                        >
-                          <Share2 size={13} />
-                          <span>WhatsApp</span>
-                        </button>
-                        {isLeaderOrAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeletePost(post.id, post.title)
-                            }}
-                            className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                            title="삭제"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+                        {/* 2. 제목 + 내용 + 메타 정보 */}
+                        <div className="flex-1 flex flex-col justify-between min-w-0">
+                          <div>
+                            {/* 배지 & 일시 */}
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-black text-[10px]">
+                                {post.author_country === 'KR' ? '🇰🇷 KO 한국어' : '🇺🇸 EN English'}
+                              </span>
+                              <span className="text-xs text-gray-500 font-medium">
+                                {post.created_at.substring(0, 10)}
+                              </span>
+                              {post.author_name && (
+                                <span className="text-xs text-gray-500 font-medium">
+                                  · by {post.author_name}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* 제목 */}
+                            <h4 className="font-extrabold text-base sm:text-lg text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 mb-2 leading-snug">
+                              {post.title}
+                            </h4>
+
+                            {/* 내용 */}
+                            <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 leading-relaxed mb-4">
+                              {post.content.replace(/<[^>]*>?/gm, '')}
+                            </p>
+                          </div>
+
+                          {/* 하단 액션 바 */}
+                          <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 group-hover:text-emerald-800">
+                              <span>공지 전문 읽기</span>
+                              <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  shareViaWhatsApp(post.title, post.content.substring(0, 80))
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <Share2 size={13} />
+                                <span>WhatsApp</span>
+                              </button>
+                              {isLeaderOrAdmin && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeletePost(post.id, post.title)
+                                  }}
+                                  className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title="삭제"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -1073,10 +1318,15 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     const attendeesText = extra.attendees || ''
                     const tagsList: string[] = Array.isArray(extra.tags) ? extra.tags : []
 
+                    const imagesList: string[] = Array.isArray(extra.images) && extra.images.length > 0 ? extra.images : [imgUrl]
+
                     return (
                       <div
                         key={photo.id}
-                        onClick={() => setActiveLightbox(photo)}
+                        onClick={() => {
+                          setLightboxImageIndex(0)
+                          setActiveLightbox(photo)
+                        }}
                         className="group rounded-3xl overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between"
                       >
                         <div>
@@ -1092,6 +1342,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               <span>{flagText}</span>
                               <span>{locationText}</span>
                             </div>
+                            {imagesList.length > 1 && (
+                              <div className="absolute bottom-3 left-3 px-2 py-0.5 bg-black/70 text-white text-[10px] font-black rounded-lg backdrop-blur-sm flex items-center gap-1">
+                                <ImageIcon size={11} />
+                                <span>+{imagesList.length}장</span>
+                              </div>
+                            )}
                             {attendeesText && (
                               <div className="absolute bottom-3 right-3 px-2.5 py-0.5 bg-purple-600/90 text-white text-[10px] font-black rounded-lg backdrop-blur-sm">
                                 {attendeesText}
@@ -1170,10 +1426,16 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         </div>
       </main>
 
-      {/* 📸 사진첩 라이트박스 팝업 */}
+      {/* 📸 사진첩 라이트박스 팝업 (다중 이미지 갤러리 슬라이더 탑재) */}
       {activeLightbox && (() => {
         const extra = parseExtra(activeLightbox)
-        const imgUrl = activeLightbox.image_url || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80'
+        const allImages: string[] = Array.isArray(extra.images) && extra.images.length > 0 
+          ? extra.images 
+          : [activeLightbox.image_url || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80']
+        
+        const currentImgIndex = Math.min(Math.max(0, lightboxImageIndex), allImages.length - 1)
+        const currentImgUrl = allImages[currentImgIndex] || allImages[0]
+
         const flagText = extra.flag || countryFlags[activeLightbox.author_country]?.split(' ')[0] || '🌐'
         const locationText = extra.location || activeLightbox.author_country || 'Asia'
         const dateText = extra.date || activeLightbox.created_at.substring(0, 10)
@@ -1187,16 +1449,63 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col md:flex-row max-h-[90vh]"
+              className="bg-white rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col md:flex-row max-h-[90vh]"
             >
-              {/* 이미지 */}
-              <div className="md:w-3/5 bg-black flex items-center justify-center relative min-h-[300px]">
+              {/* 이미지 갤러리 영역 */}
+              <div className="md:w-3/5 bg-black flex flex-col items-center justify-center relative min-h-[340px] select-none">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={imgUrl}
-                  alt={activeLightbox.title}
-                  className="w-full h-full object-contain max-h-[60vh] md:max-h-none"
+                  src={currentImgUrl}
+                  alt={`${activeLightbox.title} (${currentImgIndex + 1}/${allImages.length})`}
+                  className="w-full h-full object-contain max-h-[55vh] md:max-h-[70vh] transition-all duration-300"
                 />
+
+                {/* 다중 사진 슬라이드 좌우 네비게이션 */}
+                {allImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setLightboxImageIndex((prev) => (prev > 0 ? prev - 1 : allImages.length - 1))}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md backdrop-blur-xs"
+                      title="이전 사진"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLightboxImageIndex((prev) => (prev < allImages.length - 1 ? prev + 1 : 0))}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md backdrop-blur-xs"
+                      title="다음 사진"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+
+                    {/* 페이지 인디케이터 */}
+                    <div className="absolute top-4 left-4 px-3 py-1 bg-black/70 backdrop-blur-md rounded-full text-white text-[11px] font-bold">
+                      📸 {currentImgIndex + 1} / {allImages.length}
+                    </div>
+
+                    {/* 하단 썸네일 스트립 바 */}
+                    <div className="absolute bottom-3 inset-x-4 flex justify-center gap-1.5 overflow-x-auto py-1">
+                      {allImages.map((u, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setLightboxImageIndex(i)}
+                          className={`w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                            i === currentImgIndex
+                              ? 'border-purple-400 scale-105 shadow-md ring-2 ring-purple-400/40'
+                              : 'border-white/40 opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={u} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 <button
                   onClick={() => setActiveLightbox(null)}
                   className="absolute top-4 right-4 md:hidden w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
@@ -1298,6 +1607,17 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 <X size={20} />
               </button>
             </div>
+
+            {/* 공지 포스터 / 첨부 이미지 */}
+            {getPostImageUrl(selectedPost) && (
+              <div className="mb-5 rounded-2xl overflow-hidden max-h-96 bg-slate-50 border border-emerald-100 flex items-center justify-center">
+                <img
+                  src={getPostImageUrl(selectedPost)!}
+                  alt={selectedPost.title}
+                  className="w-full max-h-96 object-contain"
+                />
+              </div>
+            )}
 
             <div className="py-4 border-t border-b border-gray-100 text-sm text-gray-700 leading-relaxed whitespace-pre-line mb-6">
               {selectedPost.content}
@@ -1410,6 +1730,49 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   placeholder="공지 내용을 상세히 작성해 주세요..."
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
                 />
+              </div>
+
+              {/* 📸 공지 포스터/이미지 첨부 */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">포스터 / 첨부 사진 (선택)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={noticeImageUrl}
+                    onChange={(e) => setNoticeImageUrl(e.target.value)}
+                    placeholder="https://... 또는 파일 선택"
+                    className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <input
+                    type="file"
+                    ref={noticeFileInputRef}
+                    onChange={handleNoticeImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => noticeFileInputRef.current?.click()}
+                    disabled={isUploadingNoticeImage}
+                    className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Upload size={13} />
+                    <span>{isUploadingNoticeImage ? '최적화 중...' : '사진 첨부'}</span>
+                  </button>
+                </div>
+                {noticeImageUrl && (
+                  <div className="relative mt-2 h-28 rounded-xl overflow-hidden bg-gray-100 border border-emerald-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={noticeImageUrl} alt="공지 이미지" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setNoticeImageUrl('')}
+                      className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
@@ -1532,14 +1895,45 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">다운로드 링크 (구글 드라이브 / 웹 링크)</label>
-                <input
-                  type="url"
-                  value={resFileUrl}
-                  onChange={(e) => setResFileUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  자료 파일 첨부 (PDF, HWP, DOCX, PPTX, ZIP 등) 또는 다운로드 링크
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={resFileUrl}
+                    onChange={(e) => setResFileUrl(e.target.value)}
+                    placeholder="https://... 또는 우측 파일 업로드"
+                    className="flex-1 px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
+                  />
+                  <input
+                    type="file"
+                    ref={resFileInputRef}
+                    onChange={handleResourceFileUpload}
+                    accept=".pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => resFileInputRef.current?.click()}
+                    disabled={isUploadingResourceFile}
+                    className="px-4 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Upload size={14} />
+                    <span>{isUploadingResourceFile ? '업로드중...' : '파일 선택'}</span>
+                  </button>
+                </div>
+                {resFileName && (
+                  <div className="p-2.5 bg-sky-50/60 rounded-xl border border-sky-100 flex items-center justify-between text-xs text-sky-800">
+                    <span className="font-bold flex items-center gap-1.5 truncate">
+                      <FileText size={14} className="shrink-0" />
+                      <span>{resFileName}</span>
+                    </span>
+                    <span className="text-[11px] font-mono text-sky-600 shrink-0 ml-2">
+                      {resFileType} · {resFileSize}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1668,39 +2062,123 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </div>
               </div>
 
-              {/* 사진 첨부 / URL */}
+              {/* 📸 사진 다중 첨부 & 자동 리사이징 업로더 */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">사진 이미지 (파일 업로드 또는 이미지 URL)</label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={photoImageUrl}
-                    onChange={(e) => setPhotoImageUrl(e.target.value)}
-                    placeholder="https://... 또는 우측 파일 업로드"
-                    className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-gray-700">
+                    사역 사진 첨부 (여러 장 선택 가능 · 크기 자동 최적화)
+                  </label>
+                  <span className="text-[11px] text-purple-700 font-bold">
+                    {photoImageUrls.length > 0 ? `${photoImageUrls.length}장 등록됨` : '최대 10장 권장'}
+                  </span>
+                </div>
+
+                {/* 다중 파일 선택 & 드롭 영역 */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+
+                <div className="flex flex-col sm:flex-row gap-2 mb-3">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploadingImage}
-                    className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    className="flex-1 py-3 px-4 bg-purple-50 hover:bg-purple-100 text-purple-700 border-2 border-dashed border-purple-200 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
                   >
-                    <Upload size={13} />
-                    <span>{isUploadingImage ? '업로드중...' : '파일 선택'}</span>
+                    <Upload size={16} />
+                    <span>
+                      {isUploadingImage
+                        ? '고화질 최적화 및 업로드 중...'
+                        : '📷 사진 여러 장 선택하기 (자동 리사이즈)'}
+                    </span>
                   </button>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={photoImageUrl}
+                      onChange={(e) => setPhotoImageUrl(e.target.value)}
+                      placeholder="https://... 이미지 URL 직접 입력"
+                      className="w-full sm:w-60 px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-[11px]"
+                    />
+                  </div>
                 </div>
 
-                {photoImageUrl && (
-                  <div className="relative h-28 w-full rounded-xl overflow-hidden bg-gray-100 border border-purple-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photoImageUrl} alt="미리보기" className="w-full h-full object-cover" />
+                {/* 최적화 요약 안내 */}
+                {optimizationSummary && (
+                  <div className="mb-3 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                    <Sparkles size={14} className="text-emerald-600 shrink-0" />
+                    <span>{optimizationSummary}</span>
+                  </div>
+                )}
+
+                {/* 다중 이미지 미리보기 그리드 */}
+                {photoImageUrls.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    <div className="text-[11px] font-bold text-gray-500 flex items-center justify-between">
+                      <span>미리보기 (첫 번째 사진이 목록 대표 썸네일로 사용됩니다)</span>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-purple-600 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                      >
+                        <Plus size={12} />
+                        <span>사진 더 추가하기</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-52 overflow-y-auto p-2 bg-gray-50/80 rounded-2xl border border-gray-200">
+                      {photoImageUrls.map((url, idx) => {
+                        const isPrimary = photoImageUrl === url || (!photoImageUrl && idx === 0)
+                        return (
+                          <div
+                            key={idx}
+                            className={`group relative h-24 rounded-xl overflow-hidden border-2 transition-all ${
+                              isPrimary
+                                ? 'border-purple-600 shadow-md ring-2 ring-purple-400/30'
+                                : 'border-gray-200 hover:border-purple-300'
+                            }`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt={`사진 ${idx + 1}`} className="w-full h-full object-cover" />
+
+                            {/* 뱃지: 대표 */}
+                            {isPrimary ? (
+                              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-purple-600 text-white rounded text-[9px] font-black shadow-xs">
+                                ★ 대표
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSetPrimaryPhoto(url)}
+                                className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 hover:bg-purple-600 text-white rounded text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              >
+                                대표로
+                              </button>
+                            )}
+
+                            {/* 삭제 버튼 */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhotoItem(idx)}
+                              className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-full transition-colors cursor-pointer"
+                              title="이 사진 삭제"
+                            >
+                              <X size={11} />
+                            </button>
+
+                            <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] text-center py-0.5 backdrop-blur-2xs">
+                              사진 {idx + 1}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

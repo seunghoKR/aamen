@@ -269,9 +269,14 @@ export default function MyPage() {
   // 🌐 Google 중심 4대 SNS 및 메신저 연동 상태
   const [connectedGoogle, setConnectedGoogle] = useState(true)
   const [connectedWhatsapp, setConnectedWhatsapp] = useState(false) // 🔒 실제 인증 완료 전에는 false!
-  const [connectedFacebook, setConnectedFacebook] = useState(true)
-  const [facebookProfileName, setFacebookProfileName] = useState('이승호 (Facebook)')
-  const [connectedTelegram, setConnectedTelegram] = useState(true)
+  const [connectedFacebook, setConnectedFacebook] = useState(false)
+  const [facebookProfileName, setFacebookProfileName] = useState('')
+  const [isFacebookModalOpen, setIsFacebookModalOpen] = useState(false)
+  const [inputFacebookAccount, setInputFacebookAccount] = useState('')
+
+  const [connectedTelegram, setConnectedTelegram] = useState(false)
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false)
+  const [inputTelegramId, setInputTelegramId] = useState('')
 
   // 탭 상태
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'activity' | 'security'>('profile')
@@ -310,8 +315,11 @@ export default function MyPage() {
     const savedAvatar = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_avatar_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_avatar') : null)) : null
     const savedPw = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_password') : null
 
-    const resolvedName = savedName || cleanName(userToLoad?.name || '') || preset?.name || '성도'
-    const resolvedNameEn = savedNameEn || preset?.nameEn || resolvedName
+    // 구글 로그인 회원이거나 더미 '신규 성도' 텍스트인 경우 실제 구글 사용자 이름을 최우선 반영
+    const googleUserName = cleanName(userToLoad?.name || '')
+    const isDummyName = savedName === '신규 성도' || savedName === '신규 성도 (Google)'
+    const resolvedName = (isDummyName && googleUserName) ? googleUserName : (savedName || googleUserName || preset?.name || '성도')
+    const resolvedNameEn = (isDummyName && googleUserName) ? googleUserName : (savedNameEn || preset?.nameEn || resolvedName)
     const resolvedEmail = userToLoad?.email || (preset ? `${presetKey?.toLowerCase()}@aamen.net` : 'member@aamen.net')
     const resolvedCountry = savedCountry || userToLoad?.country_code || preset?.country || 'KR'
     const resolvedAffiliation = savedAffiliation || (userToLoad?.role === 'developer' ? '누리오 (개발자)' : userToLoad?.role === 'super_admin' ? 'AAMEN 총괄 본부' : preset?.affiliation || '')
@@ -322,8 +330,8 @@ export default function MyPage() {
       resolvedPhone = userToLoad?.phone || preset?.phone || getDefaultPhoneForCountry(resolvedCountry)
     }
 
-    let resolvedAvatar = savedAvatar || preset?.avatarId || 'avatar_01'
-    if (!resolvedAvatar.startsWith('avatar_')) {
+    let resolvedAvatar = savedAvatar || (userToLoad as any)?.avatar || (userToLoad as any)?.avatar_url || preset?.avatarId || 'avatar_01'
+    if (!resolvedAvatar.startsWith('avatar_') && !resolvedAvatar.startsWith('http')) {
       resolvedAvatar = 'avatar_01'
     }
 
@@ -363,6 +371,90 @@ export default function MyPage() {
       phone: resolvedPhone,
       avatarId: resolvedAvatar,
     })
+
+    // 🌟 서버 DB 실시간 동기화 (운영 모드: DB가 단일 진실 공급원 - 데이터 보존 보장)
+    if (rawId) {
+      fetch(`/api/members.php?id=${encodeURIComponent(rawId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.status === 'success' && data.member) {
+            const m = data.member
+            if (m.name) {
+              setProfileName(m.name)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`aamen_profile_name_${rawId}`, m.name)
+                if (rawId === 'admin') localStorage.setItem('aamen_profile_name', m.name)
+              }
+            }
+            if (m.name_en) {
+              setProfileNameEn(m.name_en)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`aamen_profile_name_en_${rawId}`, m.name_en)
+                if (rawId === 'admin') localStorage.setItem('aamen_profile_name_en', m.name_en)
+              }
+            }
+            if (m.affiliation) {
+              setProfileAffiliation(m.affiliation)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`aamen_profile_affiliation_${rawId}`, m.affiliation)
+                if (rawId === 'admin') localStorage.setItem('aamen_profile_affiliation', m.affiliation)
+              }
+            }
+            if (m.phone) {
+              setProfilePhone(m.phone)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`aamen_profile_phone_${rawId}`, m.phone)
+                if (rawId === 'admin') localStorage.setItem('aamen_profile_phone', m.phone)
+              }
+            }
+            if (m.country_code) {
+              setProfileCountry(m.country_code)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`aamen_profile_country_${rawId}`, m.country_code)
+                if (rawId === 'admin') localStorage.setItem('aamen_profile_country', m.country_code)
+              }
+            }
+            if (m.avatar_url) {
+              setProfileAvatarId(m.avatar_url)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`aamen_profile_avatar_${rawId}`, m.avatar_url)
+                if (rawId === 'admin') localStorage.setItem('aamen_profile_avatar', m.avatar_url)
+              }
+            }
+            // 🌐 소셜 연동 상태 DB 동기화
+            if (m.facebook_account) {
+              setConnectedFacebook(true)
+              setFacebookProfileName(m.facebook_account)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`aamen_facebook_${rawId}`, m.facebook_account)
+              }
+            } else {
+              setConnectedFacebook(false)
+              setFacebookProfileName('')
+            }
+            if (m.telegram_chat_id) {
+              setConnectedTelegram(true)
+              setTelegramChatId(m.telegram_chat_id)
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`aamen_telegram_${rawId}`, m.telegram_chat_id)
+                localStorage.setItem('aamen_telegram_chat_id', m.telegram_chat_id)
+              }
+            } else {
+              setConnectedTelegram(false)
+            }
+            setInitialProfile((prev) => ({
+              ...prev,
+              name: m.name || prev.name,
+              nameEn: m.name_en || prev.nameEn,
+              affiliation: m.affiliation || prev.affiliation,
+              country: m.country_code || prev.country,
+              phone: m.phone || prev.phone,
+              avatarId: m.avatar_url || prev.avatarId,
+            }))
+          }
+        })
+        .catch((err) => console.warn('Could not sync profile from DB:', err))
+    }
   }, [])
 
   useEffect(() => {
@@ -536,6 +628,136 @@ export default function MyPage() {
     }
   }
 
+  // 🌐 Facebook 연동 실행 핸들러 (회원 직접 입력 및 DB 영구 저장)
+  const handleConnectFacebook = async () => {
+    const cleanAccount = inputFacebookAccount.trim()
+    if (!cleanAccount) {
+      alert(currentLocale === 'ko' ? '페이스북 프로필 URL 또는 계정명을 입력해 주세요.' : 'Please enter your Facebook profile URL or name.')
+      return
+    }
+
+    try {
+      const res = await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_social',
+          user_id: currentUser?.id || profileId,
+          platform: 'facebook',
+          account: cleanAccount,
+          connected: true,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok && data?.error) {
+        alert(data.error)
+        return
+      }
+    } catch (err) {
+      console.warn('Facebook connect API error:', err)
+    }
+
+    setConnectedFacebook(true)
+    setFacebookProfileName(cleanAccount)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`aamen_facebook_${profileId}`, cleanAccount)
+    }
+    setIsFacebookModalOpen(false)
+    setInputFacebookAccount('')
+    showToast(myTexts.toastFacebookConnected)
+  }
+
+  // 🌐 Facebook 연동 해제 핸들러
+  const handleDisconnectFacebook = async () => {
+    if (!confirm(currentLocale === 'ko' ? '정말 Facebook 계정 연동을 해제하시겠습니까?' : 'Are you sure you want to disconnect Facebook?')) {
+      return
+    }
+    try {
+      await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_social',
+          user_id: currentUser?.id || profileId,
+          platform: 'facebook',
+          connected: false,
+        }),
+      })
+    } catch (e) {}
+
+    setConnectedFacebook(false)
+    setFacebookProfileName('')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`aamen_facebook_${profileId}`)
+    }
+    showToast(myTexts.toastFacebookDisconnected)
+  }
+
+  // ✈️ Telegram 연동 실행 핸들러 (봇 연결 및 DB 영구 저장)
+  const handleConnectTelegram = async () => {
+    const cleanId = inputTelegramId.trim()
+    if (!cleanId) {
+      alert(currentLocale === 'ko' ? 'Telegram Chat ID 또는 @사용자명을 입력해 주세요.' : 'Please enter your Telegram Chat ID or @username.')
+      return
+    }
+
+    try {
+      const res = await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_social',
+          user_id: currentUser?.id || profileId,
+          platform: 'telegram',
+          account: cleanId,
+          connected: true,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok && data?.error) {
+        alert(data.error)
+        return
+      }
+    } catch (err) {
+      console.warn('Telegram connect API error:', err)
+    }
+
+    setConnectedTelegram(true)
+    setTelegramChatId(cleanId)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aamen_telegram_chat_id', cleanId)
+      localStorage.setItem(`aamen_telegram_${profileId}`, cleanId)
+    }
+    setIsTelegramModalOpen(false)
+    setInputTelegramId('')
+    showToast(myTexts.toastTelegramConnected)
+  }
+
+  // ✈️ Telegram 연동 해제 핸들러
+  const handleDisconnectTelegram = async () => {
+    if (!confirm(currentLocale === 'ko' ? '정말 Telegram 알림 연동을 해제하시겠습니까?' : 'Are you sure you want to disconnect Telegram?')) {
+      return
+    }
+    try {
+      await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_social',
+          user_id: currentUser?.id || profileId,
+          platform: 'telegram',
+          connected: false,
+        }),
+      })
+    } catch (e) {}
+
+    setConnectedTelegram(false)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`aamen_telegram_${profileId}`)
+    }
+    showToast(myTexts.toastTelegramDisconnected)
+  }
+
   // 💬 WhatsApp 설정 저장 핸들러
   const handleWhatsAppSave = () => {
     if (typeof window !== 'undefined') {
@@ -563,8 +785,8 @@ export default function MyPage() {
     }, 600)
   }
 
-  // 💾 기본 회원 프로필 (이름, 소속교회, 국가, 연락처) 직접 저장 핸들러
-  const handleProfileSave = (e?: React.FormEvent, onSuccess?: () => void) => {
+  // 💾 기본 회원 프로필 (이름, 소속교회, 국가, 연락처) 직접 저장 핸들러 (서버 DB 영구 보존)
+  const handleProfileSave = async (e?: React.FormEvent, onSuccess?: () => void) => {
     if (e) e.preventDefault()
 
     const cleanLocalName = profileName.trim()
@@ -579,6 +801,30 @@ export default function MyPage() {
     if (!cleanAffiliation) {
       showToast(myTexts.toastInputAffiliation)
       return
+    }
+
+    // 🌟 서버 DB로 즉시 영구 저장 전송 (운영 모드 데이터 영구 보존)
+    try {
+      const res = await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_profile',
+          user_id: currentUser?.id || profileId,
+          name: cleanLocalName,
+          name_en: cleanEnName,
+          affiliation: cleanAffiliation,
+          country_code: profileCountry,
+          phone: cleanPhone,
+          avatar_url: profileAvatarId,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok && data?.error) {
+        console.warn('DB profile save warning:', data.error)
+      }
+    } catch (err) {
+      console.warn('Network error saving profile to DB:', err)
     }
 
     // WhatsApp 연동 번호도 프로필 전화번호로 자동 동기화!
@@ -723,13 +969,33 @@ export default function MyPage() {
   }
 
   // 🔑 계정 & 보안: 로그인 아이디(User ID) 저장 핸들러
-  const handleSaveUserId = (e?: React.FormEvent) => {
+  const handleSaveUserId = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     const cleanId = profileId.trim()
     if (!cleanId) {
       showToast(myTexts.toastInputUserId)
       return
     }
+
+    try {
+      const res = await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_security',
+          user_id: currentUser?.id || profileId,
+          new_id: cleanId,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok && data?.error) {
+        alert(data.error)
+        return
+      }
+    } catch (err) {
+      console.warn('API save id error:', err)
+    }
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('aamen_profile_id', cleanId)
       if (currentUser) {
@@ -745,7 +1011,7 @@ export default function MyPage() {
   }
 
   // 🔒 계정 & 보안: 비밀번호 저장/변경 핸들러
-  const handleSavePassword = (e: React.FormEvent) => {
+  const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     const cleanNewPw = newPassword.trim()
     const cleanConfirm = confirmPassword.trim()
@@ -754,7 +1020,7 @@ export default function MyPage() {
       showToast(myTexts.toastInputNewPw)
       return
     }
-    if (cleanNewPw.length < 6) {
+    if (cleanNewPw.length < 4) {
       showToast(myTexts.toastPwMinLength)
       return
     }
@@ -763,8 +1029,31 @@ export default function MyPage() {
       return
     }
 
+    try {
+      const res = await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_security',
+          user_id: currentUser?.id || profileId,
+          new_password: cleanNewPw,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok && data?.error) {
+        alert(data.error)
+        return
+      }
+    } catch (err) {
+      console.warn('API save password error:', err)
+    }
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('aamen_profile_password', cleanNewPw)
+      localStorage.setItem(`aamen_profile_password_${profileId}`, cleanNewPw)
+      if (currentUser?.id) {
+        localStorage.setItem(`aamen_profile_password_${currentUser.id}`, cleanNewPw)
+      }
       setProfilePassword(cleanNewPw)
     }
     setCurrentPassword('')
@@ -1181,13 +1470,7 @@ export default function MyPage() {
                       onChange={(e) => {
                         const newCountry = e.target.value
                         setProfileCountry(newCountry)
-                        // 회원 소속 국가 번호 자동 연동 및 0으로 채워진 전화번호 동기화
-                        if (
-                          !profilePhone ||
-                          profilePhone.includes('000') ||
-                          profilePhone.includes('2345') ||
-                          (profileId.toLowerCase() !== 'admin' && profilePhone.includes('4069'))
-                        ) {
+                        if (!profilePhone) {
                           setProfilePhone(getDefaultPhoneForCountry(newCountry))
                         }
                         setWhatsappCountryCode(getCallingCodeForCountry(newCountry))
@@ -1903,26 +2186,26 @@ export default function MyPage() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!connectedFacebook) {
-                          setConnectedFacebook(true)
-                          setFacebookProfileName(`${cleanName(profileName)} (Facebook)`)
-                          showToast(myTexts.toastFacebookConnected)
-                        } else {
-                          setConnectedFacebook(false)
-                          showToast(myTexts.toastFacebookDisconnected)
-                        }
-                      }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                        connectedFacebook
-                          ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                          : 'bg-[#1877F2] hover:bg-blue-700 text-white shadow-xs'
-                      }`}
-                    >
-                      {connectedFacebook ? t('social_accounts.disconnect_btn') : myTexts.facebookConnectBtn}
-                    </button>
+                    {connectedFacebook ? (
+                      <button
+                        type="button"
+                        onClick={handleDisconnectFacebook}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all cursor-pointer"
+                      >
+                        {t('social_accounts.disconnect_btn')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInputFacebookAccount(facebookProfileName || '')
+                          setIsFacebookModalOpen(true)
+                        }}
+                        className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1877F2] hover:bg-blue-700 text-white shadow-xs transition-all cursor-pointer"
+                      >
+                        {myTexts.facebookConnectBtn}
+                      </button>
+                    )}
                   </div>
 
                   {/* 💡 페이스북 연동 방식 설명 배너 */}
@@ -1955,19 +2238,26 @@ export default function MyPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setConnectedTelegram(!connectedTelegram)
-                      showToast(connectedTelegram ? myTexts.toastTelegramDisconnected : myTexts.toastTelegramConnected)
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                      connectedTelegram
-                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                        : 'bg-[#2AABEE] hover:bg-sky-600 text-white shadow-xs'
-                    }`}
-                  >
-                    {connectedTelegram ? t('social_accounts.disconnect_btn') : t('social_accounts.connect_btn')}
-                  </button>
+                  {connectedTelegram ? (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectTelegram}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all cursor-pointer shrink-0"
+                    >
+                      {t('social_accounts.disconnect_btn')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInputTelegramId(telegramChatId || '')
+                        setIsTelegramModalOpen(true)
+                      }}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#2AABEE] hover:bg-sky-600 text-white shadow-xs transition-all cursor-pointer shrink-0"
+                    >
+                      {t('social_accounts.connect_btn')}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -2360,6 +2650,189 @@ export default function MyPage() {
                   className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
                 >
                   {isKo ? '닫기' : 'Close'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🌐 Facebook 계정 연동 모달 */}
+        {isFacebookModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#1877F2] text-white flex items-center justify-center font-black text-lg shadow-xs">
+                    f
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-gray-900 text-sm sm:text-base">
+                      {isKo ? 'Facebook 계정 연동' : 'Connect Facebook Account'}
+                    </h3>
+                    <p className="text-[11px] text-gray-400">
+                      {isKo ? '미얀마·캄보디아·라오스 메콩 사역 네트워크 1:1 매칭' : 'Mekong Network 1:1 matching'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsFacebookModalOpen(false)}
+                  className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 space-y-2">
+                <p className="font-medium leading-relaxed">
+                  {isKo
+                    ? '미얀마, 캄보디아, 라오스 등 페이스북 기반 사역 현장과 직접 소통하기 위해 회원의 페이스북 프로필을 안전하게 매칭합니다.'
+                    : 'Safely link your Facebook profile to communicate directly with ministry fields in Myanmar, Cambodia, and Laos.'}
+                </p>
+                <a
+                  href="https://www.facebook.com/me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1877F2] hover:underline"
+                >
+                  <span>{isKo ? '🌐 내 Facebook 프로필 확인하기 (새창)' : 'Open My Facebook Profile (New Tab)'}</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="block text-xs font-bold text-gray-700">
+                  {isKo ? 'Facebook 프로필 URL 또는 사용자 이름' : 'Facebook Profile URL or Username'} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={inputFacebookAccount}
+                  onChange={(e) => setInputFacebookAccount(e.target.value)}
+                  placeholder={isKo ? '예: https://facebook.com/my.name 또는 홍길동' : 'e.g. https://facebook.com/my.name'}
+                  className="w-full px-3.5 py-2.5 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#1877F2] focus:outline-hidden"
+                />
+                <p className="text-[10px] text-gray-400">
+                  {isKo ? '페이스북 주소창의 링크나 프로필 이름을 입력해 주시면 AAMEN 계정과 1:1로 연결됩니다.' : 'Enter your profile URL or name to link with your AAMEN account.'}
+                </p>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleConnectFacebook}
+                  className="flex-1 py-2.5 bg-[#1877F2] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  {isKo ? 'Facebook 계정 연동 완료' : 'Complete Facebook Connection'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFacebookModalOpen(false)}
+                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {isKo ? '취소' : 'Cancel'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✈️ Telegram 알림봇 연동 모달 */}
+        {isTelegramModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#2AABEE] text-white flex items-center justify-center shadow-xs">
+                    <Send size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-gray-900 text-sm sm:text-base">
+                      {isKo ? 'Telegram 알림봇 연동' : 'Connect Telegram Bot'}
+                    </h3>
+                    <p className="text-[11px] text-gray-400">
+                      {isKo ? '실시간 긴급 기도제목 및 주요 공지사항 수신' : 'Real-time emergency prayers & notifications'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsTelegramModalOpen(false)}
+                  className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* 1단계 안내 */}
+              <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-100 text-xs text-sky-950 space-y-2">
+                <div className="font-bold flex items-center gap-1.5 text-sky-800">
+                  <span className="w-5 h-5 rounded-full bg-sky-200 text-sky-800 flex items-center justify-center text-[11px] font-black">1</span>
+                  <span>{isKo ? 'AAMEN 공식 알림봇 대화 시작' : 'Start chat with AAMEN Bot'}</span>
+                </div>
+                <p className="text-[11px] text-sky-900/80 leading-relaxed pl-6.5">
+                  {isKo
+                    ? '아래 버튼을 눌러 텔레그램 봇을 열고 [시작(Start)]을 먼저 눌러주세요.'
+                    : 'Click below to open the bot and tap [Start].'}
+                </p>
+                <div className="pl-6.5">
+                  <a
+                    href="https://t.me/AAMEN_Notice_bot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2AABEE] text-white rounded-lg text-[11px] font-bold shadow-xs hover:bg-sky-600 transition-all"
+                  >
+                    <Send size={12} />
+                    <span>@AAMEN_Notice_bot {isKo ? '대화창 열기' : 'Open Bot'}</span>
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              </div>
+
+              {/* 2단계 입력 */}
+              <div className="space-y-1.5 text-left pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-gray-700">
+                    {isKo ? '2. 나의 Telegram Chat ID 또는 @사용자명' : '2. Telegram Chat ID or @username'} <span className="text-rose-500">*</span>
+                  </label>
+                  <a
+                    href="https://t.me/userinfobot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-sky-600 hover:underline flex items-center gap-1"
+                  >
+                    <span>{isKo ? 'Chat ID 확인법 (@userinfobot)' : 'Check Chat ID'}</span>
+                    <ExternalLink size={10} />
+                  </a>
+                </div>
+                <input
+                  type="text"
+                  value={inputTelegramId}
+                  onChange={(e) => setInputTelegramId(e.target.value)}
+                  placeholder={isKo ? '예: 5618137472 또는 @my_username' : 'e.g. 5618137472 or @username'}
+                  className="w-full px-3.5 py-2.5 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2AABEE] focus:outline-hidden"
+                />
+                <p className="text-[10px] text-gray-400">
+                  {isKo
+                    ? '숫자로 된 Chat ID 또는 @사용자명을 입력해 주시면 AAMEN 시스템과 1:1로 연동됩니다.'
+                    : 'Enter your numeric Chat ID or @username to link with AAMEN notifications.'}
+                </p>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleConnectTelegram}
+                  className="flex-1 py-2.5 bg-[#2AABEE] hover:bg-sky-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle2 size={14} />
+                  <span>{isKo ? 'Telegram 알림 연동 완료' : 'Complete Telegram Connection'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsTelegramModalOpen(false)}
+                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {isKo ? '취소' : 'Cancel'}
                 </button>
               </div>
             </div>

@@ -1,5 +1,5 @@
 # 🌏 AAMEN (Asia Anabaptist Mennonite Education Network)
-### 아시아 아나밥티스트 메노나이트 교육 네트워크 플랫폼 (Release v1.4.0)
+### 아시아 아나밥티스트 메노나이트 교육 네트워크 플랫폼 (Release v1.4.1)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3.6-black.svg?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.8-blue.svg?style=flat&logo=react)](https://react.dev/)
@@ -69,8 +69,16 @@ AAMEN/
 ---
 
 ## 🌐 서버 및 배포 버전 정보
-- **공식 운영 서버:** [https://aamen.net](https://aamen.net) (`v1.4.0 Release`)
-- **최신 릴리즈 기능 (v1.4.0):** 
+- **공식 운영 서버:** [https://aamen.net](https://aamen.net) (`v1.4.1 Release`)
+- **최신 릴리즈 기능 (v1.4.1):** 
+  1. **게시판 전수 점검 및 업로드 활성화:** 공지사항, 자료실, 사진첩 전 게시판 글/파일 업로드 안정화
+  2. **이미지 크기 자동 조절 & 다중 업로드:** 클라이언트 Canvas 기반 자동 리사이징(1600px/WebP) 및 여러 이미지 일괄 업로드 지원
+  3. **공지사항 매거진 뷰 개편:** 공지사항 목록을 [대표 이미지(포스터) + 제목 + 내용 3줄 요약] 구조로 개편 및 상세 팝업 포스터 연동
+  4. **랜딩페이지 실제 DB 연동:** 최근게시물 가상 더미 데이터 완전 삭제 및 실제 데이터베이스 게시물 실시간 표시
+  5. **게시물 삭제 트랜잭션 정상화:** 웹호스팅 Apache HTTP DELETE 302 차단 우회 및 연관 데이터 완벽 삭제
+  6. **고해상도 로고 & 파비콘 번들 적용:** 웹/모바일 전 규격 파비콘 및 상단/푸터/로그인 브랜드 로고 일괄 반영
+
+- **이전 릴리즈 내역 (v1.4.0):**
   1. 마이페이지 14개국어 완전 번역 & 자국어/영어/이니셜 표기 표준화
   2. 50종 캐릭터 아바타 컬렉션 무작위 셔플 탑재 & 정밀 크롭
   3. MWC / MCSK 사역자 회원 등록 및 권한 부여

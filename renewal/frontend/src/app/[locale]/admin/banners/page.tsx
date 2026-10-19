@@ -24,6 +24,7 @@ import {
   Power,
   AlertCircle,
 } from 'lucide-react'
+import { optimizeImage } from '@/lib/imageOptimizer'
 
 const gradientPresets = [
   { label: '에메랄드 숲 & 틸', value: 'from-emerald-800 via-teal-900 to-slate-950' },
@@ -227,35 +228,34 @@ export default function AdminBannersPage() {
     }
   }
 
-  // 이미지 로컬 파일 업로드 처리
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 이미지 로컬 파일 업로드 처리 (자동 리사이즈 & 최적화)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Base64 즉시 프리뷰 & 저장
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const base64Url = reader.result as string
-      updateCurrentBanner('imageUrl', base64Url)
-    }
-    reader.readAsDataURL(file)
+    try {
+      // 1. 배너용 Canvas 자동 리사이즈 (가로 최대 1920px)
+      const optimized = await optimizeImage(file, { maxWidth: 1920, maxHeight: 1080, quality: 0.88 })
+      updateCurrentBanner('imageUrl', optimized.previewUrl)
 
-    // 서버 업로드 API 전송
-    const formData = new FormData()
-    formData.append('image', file)
-    fetch('/api/banners', {
-      method: 'POST',
-      body: formData,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.image_url) {
-          updateCurrentBanner('imageUrl', data.image_url)
+      // 2. 서버 업로드 API 전송 (upload.php 우선, banners.php fallback)
+      const formData = new FormData()
+      formData.append('type', 'banners')
+      formData.append('image', optimized.file)
+
+      let res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      if (!res.ok) {
+        res = await fetch('/api/banners.php', { method: 'POST', body: formData })
+      }
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && (data.image_url || data.file_url)) {
+          updateCurrentBanner('imageUrl', data.image_url || data.file_url)
         }
-      })
-      .catch((err) => {
-        console.log('Using local base64 fallback')
-      })
+      }
+    } catch (err) {
+      console.log('Error optimizing/uploading banner image', err)
+    }
   }
 
   // 전체 배너 서버 및 로컬스토리지 저장

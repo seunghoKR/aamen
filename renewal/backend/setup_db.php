@@ -133,7 +133,8 @@ $members_v150 = [
     [
         'id' => 'admin',
         'email' => 'leeshkr@gmail.com',
-        'name' => '개발자 관리자 (이승호)',
+        'name' => '이승호',
+        'name_en' => 'Seungho Lee',
         'provider' => 'google',
         'country_code' => 'KR',
         'role' => 'developer',
@@ -249,30 +250,32 @@ try {
             // 이미 존재하는 컬럼 무시
         }
     }
-    $results['tables'] = 'Created or verified successfully';
+    // 컬럼 마이그레이션 (안전한 누락 컬럼 추가)
+    $safe_migrations = [
+        "ALTER TABLE members ADD COLUMN name_en VARCHAR(100) NULL AFTER name",
+        "ALTER TABLE members ADD COLUMN password VARCHAR(255) NULL AFTER affiliation",
+        "ALTER TABLE members ADD COLUMN facebook_account VARCHAR(150) NULL AFTER affiliation",
+        "ALTER TABLE members ADD COLUMN telegram_chat_id VARCHAR(100) NULL AFTER facebook_account"
+    ];
+    foreach ($safe_migrations as $sm) {
+        try {
+            $pdo->exec($sm);
+        } catch (\Exception $e) {}
+    }
 
-    // 2. 실서버 모든 게시판 샘플 게시물 삭제 (posts, comments, prayer_cards)
-    $pdo->exec("DELETE FROM comments");
-    $pdo->exec("DELETE FROM posts");
-    $pdo->exec("DELETE FROM prayer_cards");
-    $results['sample_posts_cleaned'] = 'All sample posts, comments, and prayers deleted successfully';
+    $results['tables'] = 'Created or verified successfully (Production Safe Mode)';
 
-    // 3. 기존 불필요한 샘플 회원 삭제 (개발자 및 7명 이외 회원 전부 정리)
-    $validIds = array_map(function($m) { return "'" . $m['id'] . "'"; }, $members_v150);
-    $validIdsStr = implode(',', $validIds);
-    $pdo->exec("DELETE FROM members WHERE id NOT IN ($validIdsStr)");
-    $results['unregistered_members_cleaned'] = true;
-
-    // 4. 개발자 계정 및 7명 회원 정보 실서버 DB 최신 등록/갱신
-    $stmt = $pdo->prepare("REPLACE INTO members 
-        (id, email, name, provider, country_code, role, status, bio, phone, affiliation) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    // 🔒 운영 모드: 회원 정보 보존 (INSERT IGNORE로 기존 데이터는 절대 덮어쓰지 않음)
+    $stmt = $pdo->prepare("INSERT IGNORE INTO members 
+        (id, email, name, name_en, provider, country_code, role, status, bio, phone, affiliation) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     foreach ($members_v150 as $m) {
         $stmt->execute([
             $m['id'],
             $m['email'],
             $m['name'],
+            $m['name_en'] ?? $m['name'],
             $m['provider'],
             $m['country_code'],
             $m['role'],
@@ -282,13 +285,12 @@ try {
             $m['affiliation']
         ]);
     }
-    $results['members_updated_count'] = count($members_v150);
-    $results['members_list'] = array_column($members_v150, 'name');
+    $results['members_preserved'] = true;
 
     send_json([
         'status' => 'success',
-        'version' => 'v1.5.0',
-        'message' => 'Database successfully reset: sample posts removed, 7 official members + developer updated',
+        'version' => 'v1.5.0-prod',
+        'message' => 'Database schema verified successfully in Production Safe Mode. No data was deleted or overwritten.',
         'details' => $results
     ]);
 } catch (Exception $e) {

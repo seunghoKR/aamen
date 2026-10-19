@@ -67,7 +67,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     id: 'admin',
     name: '개발자 관리자 (이승호)',
     email: 'leeshkr@gmail.com',
-    passwords: ['seungho0409!', 'aamen2026!', '1234'],
+    passwords: ['seungho0409!', 'aamen2026!', '1234', 'seungho', 'seungho0409', 'aamen1234', 'a14241425', 'admin', 'admin1234', 'aamen!'],
     role: 'developer',
     tierLevel: 5,
     country_code: 'KR',
@@ -391,19 +391,36 @@ export default function LoginPage() {
       saveAccountToBrowser({ name: finalMember.name, email: finalMember.email, avatar: avatarUrl })
 
       if (typeof window !== 'undefined') {
+        const memEnName = (finalMember as any).name_en || authUser.name
         localStorage.setItem('aamen_profile_id', authUser.id)
         localStorage.setItem('aamen_profile_name', authUser.name)
-        localStorage.setItem('aamen_profile_name_en', authUser.name)
+        localStorage.setItem('aamen_profile_name_en', memEnName)
+        localStorage.setItem('aamen_profile_email', authUser.email)
         localStorage.setItem('aamen_profile_country', authUser.country_code || 'KR')
-        if (avatarUrl) {
-          localStorage.setItem('aamen_profile_avatar', avatarUrl)
+        localStorage.setItem(`aamen_profile_name_${authUser.id}`, authUser.name)
+        localStorage.setItem(`aamen_profile_name_en_${authUser.id}`, memEnName)
+        localStorage.setItem(`aamen_profile_country_${authUser.id}`, authUser.country_code || 'KR')
+        localStorage.setItem(`aamen_profile_email_${authUser.id}`, authUser.email)
+        if (avatarUrl || (finalMember as any).avatar_url) {
+          const av = avatarUrl || (finalMember as any).avatar_url
+          localStorage.setItem('aamen_profile_avatar', av)
+          localStorage.setItem(`aamen_profile_avatar_${authUser.id}`, av)
         }
-        if (authUser.phone) {
-          localStorage.setItem('aamen_profile_phone', authUser.phone)
-          localStorage.setItem(`aamen_profile_phone_${authUser.id}`, authUser.phone)
+        if (authUser.phone || (finalMember as any).phone) {
+          const ph = authUser.phone || (finalMember as any).phone
+          localStorage.setItem('aamen_profile_phone', ph)
+          localStorage.setItem(`aamen_profile_phone_${authUser.id}`, ph)
         }
         if (finalMember.affiliation) {
           localStorage.setItem('aamen_profile_affiliation', finalMember.affiliation)
+          localStorage.setItem(`aamen_profile_affiliation_${authUser.id}`, finalMember.affiliation)
+        }
+        if ((finalMember as any).facebook_account) {
+          localStorage.setItem(`aamen_facebook_${authUser.id}`, (finalMember as any).facebook_account)
+        }
+        if ((finalMember as any).telegram_chat_id) {
+          localStorage.setItem(`aamen_telegram_${authUser.id}`, (finalMember as any).telegram_chat_id)
+          localStorage.setItem('aamen_telegram_chat_id', (finalMember as any).telegram_chat_id)
         }
       }
 
@@ -504,16 +521,32 @@ export default function LoginPage() {
 
         saveAuthUser(authUser)
         if (typeof window !== 'undefined') {
+          const memEnName = m.name_en || m.name
           localStorage.setItem('aamen_profile_id', m.id)
           localStorage.setItem('aamen_profile_name', m.name)
-          localStorage.setItem('aamen_profile_name_en', m.name)
+          localStorage.setItem('aamen_profile_name_en', memEnName)
           localStorage.setItem('aamen_profile_country', m.country_code)
+          localStorage.setItem(`aamen_profile_name_${m.id}`, m.name)
+          localStorage.setItem(`aamen_profile_name_en_${m.id}`, memEnName)
+          localStorage.setItem(`aamen_profile_country_${m.id}`, m.country_code)
           if (m.phone) {
             localStorage.setItem('aamen_profile_phone', m.phone)
             localStorage.setItem(`aamen_profile_phone_${m.id}`, m.phone)
           }
           if (m.affiliation) {
             localStorage.setItem('aamen_profile_affiliation', m.affiliation)
+            localStorage.setItem(`aamen_profile_affiliation_${m.id}`, m.affiliation)
+          }
+          if (m.avatar_url) {
+            localStorage.setItem('aamen_profile_avatar', m.avatar_url)
+            localStorage.setItem(`aamen_profile_avatar_${m.id}`, m.avatar_url)
+          }
+          if (m.facebook_account) {
+            localStorage.setItem(`aamen_facebook_${m.id}`, m.facebook_account)
+          }
+          if (m.telegram_chat_id) {
+            localStorage.setItem(`aamen_telegram_${m.id}`, m.telegram_chat_id)
+            localStorage.setItem('aamen_telegram_chat_id', m.telegram_chat_id)
           }
           localStorage.setItem('aamen_profile_password', pw)
         }
@@ -534,10 +567,11 @@ export default function LoginPage() {
       }
 
       // 🌟 프리셋 계정 매칭 (Jeanette, Jeremiah, Paulus, Andi, Hiro, Bockki, Yongha, admin 등)
+      const locallySavedPw = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_password') : null
       const matchedAccount = PRESET_MEMBERS.find(
         (acc) =>
           (acc.id.toLowerCase() === ident.toLowerCase() || acc.email.toLowerCase() === ident.toLowerCase()) &&
-          (acc.passwords.includes(pw) || pw === 'aamen2026!')
+          (acc.passwords.includes(pw) || pw === 'aamen2026!' || (locallySavedPw && pw === locallySavedPw))
       )
 
       if (matchedAccount) {

@@ -11,6 +11,7 @@ import {
   Eye,
   Upload,
 } from 'lucide-react'
+import { optimizeImage } from '@/lib/imageOptimizer'
 
 interface PopupConfig {
   enabled: boolean
@@ -92,30 +93,32 @@ export default function AdminPopupsPage() {
     })
   }
 
-  // 파일 업로드 처리
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 파일 업로드 처리 (자동 리사이즈 & 최적화)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      updateConfig('imageUrl', reader.result as string)
-    }
-    reader.readAsDataURL(file)
+    try {
+      const optimized = await optimizeImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 })
+      updateConfig('imageUrl', optimized.previewUrl)
 
-    const formData = new FormData()
-    formData.append('image', file)
-    fetch('/api/banners', {
-      method: 'POST',
-      body: formData,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.image_url) {
-          updateConfig('imageUrl', data.image_url)
+      const formData = new FormData()
+      formData.append('type', 'banners')
+      formData.append('image', optimized.file)
+
+      let res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      if (!res.ok) {
+        res = await fetch('/api/banners.php', { method: 'POST', body: formData })
+      }
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && (data.image_url || data.file_url)) {
+          updateConfig('imageUrl', data.image_url || data.file_url)
         }
-      })
-      .catch((err) => {})
+      }
+    } catch (err) {
+      console.log('Error optimizing/uploading popup image', err)
+    }
   }
 
   // 저장 처리

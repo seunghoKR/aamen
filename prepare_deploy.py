@@ -29,9 +29,12 @@ if os.path.exists(ko_dir):
                 shutil.copy2(src, dst)
                 print("  Copied ko/index.html to root index.html")
 
-# API 폴더 복사
+# API 폴더 초기화 및 백엔드 PHP 복사 (Next.js가 생성한 정적 api 더미 파일 완전 제거)
 api_dir = os.path.join(deploy_dir, 'api')
+if os.path.exists(api_dir):
+    shutil.rmtree(api_dir)
 os.makedirs(api_dir, exist_ok=True)
+
 print("Copying backend PHP to deploy/api...")
 for item in os.listdir(backend_dir):
     src = os.path.join(backend_dir, item)
@@ -40,11 +43,20 @@ for item in os.listdir(backend_dir):
         shutil.copy2(src, dst)
         print(f"  Copied {item}")
 
+# uploads 기본 폴더 생성
+for sub in ['posts', 'resources', 'banners', 'notices']:
+    up_sub = os.path.join(deploy_dir, 'uploads', sub)
+    os.makedirs(up_sub, exist_ok=True)
+    # .gitkeep 생성하여 빈 폴더 유지
+    with open(os.path.join(up_sub, '.gitkeep'), 'w') as f:
+        f.write('')
+
 # .htaccess 작성
 htaccess_content = """# ============================================================================
 # AAMEN Apache Configuration (.htaccess)
 # ============================================================================
 
+Options -MultiViews
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /
@@ -53,8 +65,9 @@ RewriteBase /
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# 2. RESTful PHP API 라우팅
+# 2. RESTful PHP API 라우팅 (정적 파일 및 디렉토리 검사보다 최우선 실행)
 RewriteRule ^api/setup_db/?$ api/setup_db.php [L,QSA]
+RewriteRule ^api/upload/?$ api/upload.php [L,QSA]
 RewriteRule ^api/posts/([a-zA-Z0-9_\\-]+)/comments/?$ api/comments.php?post_id=$1 [L,QSA]
 RewriteRule ^api/posts/([a-zA-Z0-9_\\-]+)/?$ api/posts.php?id=$1 [L,QSA]
 RewriteRule ^api/posts/?$ api/posts.php [L,QSA]
@@ -65,14 +78,22 @@ RewriteRule ^api/banners/?$ api/banners.php [L,QSA]
 RewriteRule ^api/partners/?$ api/partners.php [L,QSA]
 RewriteRule ^api/calendar/?$ api/calendar.php [L,QSA]
 
-# 3. 정적 파일 및 디렉터리 존재 시 바로 서빙
+# 3. 정적 파일 및 디렉터리 존재 시 바로 서빙 (uploads, _next, css, js 등)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# 4. 끝에 슬래시 없는 경로를 index.html로 매핑
+# 4. Next.js trailing slash 및 HTML 서빙
 RewriteCond %{DOCUMENT_ROOT}/$1/index.html -f
 RewriteRule ^(.*)/?$ $1/index.html [L]
+
+RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+RewriteRule ^(.*)$ $1.html [L]
+
+# 5. Fallback: index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ index.html [L]
 
 </IfModule>
 

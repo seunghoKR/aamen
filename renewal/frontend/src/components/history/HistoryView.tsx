@@ -223,9 +223,18 @@ export default function HistoryView() {
                     매거진 뷰
                   </span>
                 </div>
-                <p className="text-xs text-gray-400">
-                  사역 현장 사진과 상세 스토리가 함께 정리된 게시판형 목록입니다.
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-gray-400 mr-2">
+                    사역 현장 사진과 상세 스토리가 함께 정리된 게시판형 목록입니다.
+                  </span>
+                  <a
+                    href="/community/photos"
+                    className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs shrink-0"
+                  >
+                    <Camera size={13} />
+                    <span>사역 사진 등록 & 전체보기 →</span>
+                  </a>
+                </div>
               </div>
 
               {/* 사진첩 게시판 목록: 이미지 + 내용이 함께 정갈하게 표시되는 카드 리스트 */}

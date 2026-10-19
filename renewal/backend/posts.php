@@ -124,35 +124,75 @@ if ($method === 'GET') {
         send_json(['success' => true, 'data' => $result]);
     }
 } elseif ($method === 'POST') {
-    // 이미지 파일 업로드 요청 처리
-    if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
-        $file = $_FILES['image'];
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-        if (!in_array($ext, $allowed)) {
-            send_json(['success' => false, 'error' => '지원하지 않는 이미지 형식입니다.'], 400);
-        }
-
-        $uploadDir = dirname(__DIR__) . '/uploads/posts';
+    // 이미지 및 파일 업로드 요청 처리 (단일/다중)
+    if (isset($_FILES['image']) || isset($_FILES['images']) || isset($_FILES['file'])) {
+        $rootDir = dirname(__DIR__);
+        $uploadDir = $rootDir . '/uploads/posts';
         if (!is_dir($uploadDir)) {
-            @mkdir($uploadDir, 0755, true);
+            @mkdir($uploadDir, 0777, true);
         }
 
-        $fileName = 'post_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
-        $destPath = $uploadDir . '/' . $fileName;
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'zip'];
 
-        if (move_uploaded_file($file['tmp_name'], $destPath)) {
-            $imageUrl = '/uploads/posts/' . $fileName;
-            send_json(['success' => true, 'image_url' => $imageUrl, 'message' => '이미지 업로드 성공']);
+        // 1) 다중 파일 업로드 처리 (최우선)
+        if (isset($_FILES['images']) && is_array($_FILES['images']['name']) && count($_FILES['images']['name']) > 0) {
+            $urls = [];
+            $count = count($_FILES['images']['name']);
+            for ($i = 0; $i < $count; $i++) {
+                $tmp = $_FILES['images']['tmp_name'][$i];
+                if (!is_uploaded_file($tmp)) continue;
+                $ext = strtolower(pathinfo($_FILES['images']['name'][$i], PATHINFO_EXTENSION));
+                if (!in_array($ext, $allowed)) continue;
+
+                $fn = 'post_' . date('Ymd_His') . '_' . $i . '_' . bin2hex(random_bytes(2)) . '.' . $ext;
+                if (move_uploaded_file($tmp, $uploadDir . '/' . $fn)) {
+                    @chmod($uploadDir . '/' . $fn, 0644);
+                    $urls[] = '/uploads/posts/' . $fn;
+                }
+            }
+            if (!empty($urls)) {
+                send_json([
+                    'success' => true,
+                    'image_url' => $urls[0],
+                    'image_urls' => $urls,
+                    'count' => count($urls),
+                    'message' => count($urls) . '개 사진 업로드 완료'
+                ]);
+            } else {
+                send_json(['success' => false, 'error' => '사진 저장에 실패했습니다.'], 400);
+            }
         } else {
-            send_json(['success' => false, 'error' => '파일 저장에 실패했습니다.'], 500);
+            // 2) 단일 파일 업로드 처리
+            $file = $_FILES['image'] ?? $_FILES['file'] ?? null;
+            if ($file && is_uploaded_file($file['tmp_name'])) {
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                if (!in_array($ext, $allowed)) {
+                    send_json(['success' => false, 'error' => '지원하지 않는 파일 형식입니다.'], 400);
+                }
+
+                $fileName = 'post_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+                $destPath = $uploadDir . '/' . $fileName;
+
+                if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                    @chmod($destPath, 0644);
+                    $imageUrl = '/uploads/posts/' . $fileName;
+                    send_json([
+                        'success' => true,
+                        'image_url' => $imageUrl,
+                        'image_urls' => [$imageUrl],
+                        'count' => 1,
+                        'message' => '이미지 업로드 성공'
+                    ]);
+                } else {
+                    send_json(['success' => false, 'error' => '파일 저장에 실패했습니다.'], 500);
+                }
+            }
         }
     }
 
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    $action = $input['action'] ?? null;
-    $id = $_GET['id'] ?? $input['id'] ?? null;
+    $action = $input['action'] ?? $_POST['action'] ?? $_GET['action'] ?? null;
+    $id = $_GET['id'] ?? $input['id'] ?? $_POST['id'] ?? null;
 
     // POST로 들어온 좋아요 액션 처리
     if ($action === 'like' && $id) {
@@ -166,11 +206,14 @@ if ($method === 'GET') {
         send_json(['success' => true, 'data' => ['likes' => $likes]]);
     }
 
-    // POST로 들어온 삭제 액션 처리
-    if ($action === 'delete' && $id) {
+    // POST/GET으로 들어온 삭제 액션 처리
+    if (($action === 'delete' || isset($_POST['delete'])) && $id) {
         $stmt = $pdo->prepare("DELETE FROM posts WHERE id = ?");
         $stmt->execute([$id]);
-        send_json(['success' => true, 'message' => 'Post deleted']);
+        // 관련 댓글도 함께 삭제
+        $stmt2 = $pdo->prepare("DELETE FROM comments WHERE post_id = ?");
+        $stmt2->execute([$id]);
+        send_json(['success' => true, 'message' => 'Post deleted successfully']);
     }
 
     // 신규 글 등록

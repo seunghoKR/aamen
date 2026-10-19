@@ -18,6 +18,9 @@ export const AVATAR_LIST: AvatarItem[] = Array.from({ length: 50 }, (_, i) => {
 
 export function getAvatarSrc(id?: string): string {
   if (!id) return '/images/avatars/avatar_01.png?v=2'
+  if (id.startsWith('http://') || id.startsWith('https://')) {
+    return id
+  }
   if (id.startsWith('avatar_')) {
     const num = id.replace('avatar_', '')
     const n = parseInt(num, 10)
@@ -45,6 +48,7 @@ export function CharacterSvg({
     <img
       src={src}
       alt="Avatar"
+      referrerPolicy="no-referrer"
       className={`object-cover ${className}`}
       loading="lazy"
       onError={(e) => {
