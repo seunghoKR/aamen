@@ -20,6 +20,7 @@ import {
   Trash2,
   X,
   RefreshCw,
+  User,
 } from 'lucide-react'
 import { MemberLevel, defaultTierSettings } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
@@ -273,6 +274,67 @@ export default function LivePrayerWall() {
     setTimeout(() => setNoticeToast(null), 3000)
   }
 
+  // 사용자 정보 자동 추출: 이름 (영문이름) | 국가 (이니셜)
+  const getUserInfo = () => {
+    const user = getStoredUser()
+    const rawId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_id') : null) || 'admin'
+    
+    let name = user?.name || ''
+    let nameEn = ''
+    let cCode = user?.country_code || ''
+
+    if (typeof window !== 'undefined') {
+      const savedName = localStorage.getItem(`aamen_profile_name_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_name') : null)
+      const savedNameEn = localStorage.getItem(`aamen_profile_name_en_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_name_en') : null)
+      const savedCountry = localStorage.getItem(`aamen_profile_country_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_country') : null)
+
+      if (savedName) name = savedName
+      if (savedNameEn) nameEn = savedNameEn
+      if (savedCountry) cCode = savedCountry
+    }
+
+    if (!name) {
+      if (rawId.toLowerCase() === 'admin') name = '이승호'
+      else if (rawId.toLowerCase() === 'yongha') name = 'Bae Yongha'
+      else name = 'AAMEN 사역자'
+    }
+
+    if (!nameEn) {
+      if (rawId.toLowerCase() === 'admin') nameEn = 'Seungho Lee'
+      else if (rawId.toLowerCase() === 'yongha') nameEn = 'Bae Yongha'
+      else if (rawId.toLowerCase() === 'jeanette') nameEn = 'Jeanette Hanson'
+      else if (rawId.toLowerCase() === 'jeremiah') nameEn = 'Jeremiah Choi'
+      else if (rawId.toLowerCase() === 'paulus') nameEn = 'Paulus S. Widjaja'
+      else if (rawId.toLowerCase() === 'andi') nameEn = 'Andi Santoso'
+      else if (rawId.toLowerCase() === 'hiro') nameEn = 'Hiro Katano'
+      else if (rawId.toLowerCase() === 'bockki') nameEn = 'Kim Bockki'
+    }
+
+    if (!cCode) {
+      const localeMap: Record<string, string> = {
+        ko: 'KR', ja: 'JP', vi: 'VN', th: 'TH', my: 'MM', id: 'ID',
+        ne: 'NP', hi: 'IN', km: 'KH', lo: 'LA', mn: 'MN', 'zh-TW': 'TW',
+        'zh-HK': 'HK', tl: 'PH', en: 'US'
+      }
+      cCode = localeMap[locale] || 'KR'
+    }
+
+    const nation = NATIONS_15.find((n) => n.code === cCode)
+    const cName = nation ? (nation.name[locale as 'ko' | 'en'] || nation.name.ko) : '대한민국'
+    const flag = nation ? nation.flag : '🇰🇷'
+
+    return {
+      id: rawId,
+      name,
+      nameEn,
+      countryCode: cCode,
+      countryName: cName,
+      countryFlag: flag,
+      displayName: nameEn && nameEn !== name ? `${name} (${nameEn})` : name,
+      displayCountry: `${cName} (${cCode})`
+    }
+  }
+
   // 기도제목 등록 모달 열기 핸들러
   const handleOpenPrayerModal = () => {
     if (isGuest) {
@@ -283,19 +345,9 @@ export default function LivePrayerWall() {
       showToast('🔒 ' + (t('toast_associate') || '준회원은 열람만 가능하며, 2단계(정회원) 승인 후 작성이 가능합니다.'))
       return
     }
-    const user = getStoredUser()
-    if (user?.name) {
-      setAuthorName(user.name)
-    } else if (currentLevel >= 4) {
-      setAuthorName('총괄관리자')
-    } else {
-      setAuthorName('AAMEN 사역자')
-    }
-    if (user?.country_code) {
-      setCountryCode(user.country_code)
-    } else {
-      setCountryCode('KR')
-    }
+    const info = getUserInfo()
+    setAuthorName(info.displayName)
+    setCountryCode(info.countryCode)
     setTitle('')
     setContent('')
     setIsUrgent(false)
@@ -306,22 +358,22 @@ export default function LivePrayerWall() {
   const handleCreatePrayer = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !content.trim()) {
-      showToast('⚠️ 기도제목과 기도 내용을 모두 입력해 주세요.')
+      showToast('⚠️ 기도제목과 상세내용을 모두 입력해 주세요.')
       return
     }
 
+    const info = getUserInfo()
     setSubmitting(true)
     try {
-      const user = getStoredUser()
       const res = await fetch('/api/prayers.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
           content: content.trim(),
-          author_name: authorName.trim() || user?.name || 'AAMEN 성도',
-          author_id: user?.id || null,
-          country_code: countryCode,
+          author_name: info.displayName,
+          author_id: info.id,
+          country_code: info.countryCode,
           is_urgent: isUrgent ? 1 : 0,
         }),
       })
@@ -718,43 +770,38 @@ export default function LivePrayerWall() {
 
             {/* 입력 폼 */}
             <form onSubmit={handleCreatePrayer} className="space-y-4">
-              {/* 작성자 & 국가 선택 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    {locale === 'ko' ? '작성자 (이름 / 사역명)' : 'Author Name'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
-                    placeholder={locale === 'ko' ? '이름을 입력하세요' : 'Enter your name'}
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    {locale === 'ko' ? '소속 국가 (15개국)' : 'Country (15 Nations)'}
-                  </label>
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium cursor-pointer"
-                  >
-                    {NATIONS_15.map((nation) => (
-                      <option key={nation.code} value={nation.code}>
-                        {nation.flag} {nation.name[locale as 'ko' | 'en'] || nation.name.ko} ({nation.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              {/* 1. 이름 (영문이름) | 국가 (이니셜) */}
+              {(() => {
+                const info = getUserInfo()
+                return (
+                  <div className="p-3.5 bg-gradient-to-r from-gray-50 via-emerald-50/25 to-gray-50 rounded-2xl border border-emerald-100 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                        <User size={15} />
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-black text-gray-900">
+                          {info.displayName}
+                        </span>
+                        <span className="text-gray-300 font-bold">|</span>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-emerald-200 text-emerald-950 font-extrabold text-xs shadow-2xs">
+                          <span>{info.countryFlag}</span>
+                          <span>{info.countryName}</span>
+                          <span className="font-mono text-emerald-700 font-black">({info.countryCode})</span>
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-lg">
+                      {locale === 'ko' ? '국가 자동 연동' : 'Auto Verified'}
+                    </span>
+                  </div>
+                )
+              })()}
 
-              {/* 기도제목 */}
+              {/* 2. 기도제목 */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  {locale === 'ko' ? '기도제목 (핵심 요약)' : 'Prayer Title'}
+                  {locale === 'ko' ? '기도제목' : 'Prayer Title'}
                 </label>
                 <input
                   type="text"
@@ -770,10 +817,10 @@ export default function LivePrayerWall() {
                 />
               </div>
 
-              {/* 기도 상세 내용 */}
+              {/* 3. 상세내용 */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  {locale === 'ko' ? '기도 상세 내용' : 'Prayer Details'}
+                  {locale === 'ko' ? '상세내용' : 'Details'}
                 </label>
                 <textarea
                   required
@@ -789,22 +836,29 @@ export default function LivePrayerWall() {
                 />
               </div>
 
-              {/* 긴급 중보기도 체크박스 */}
-              <div className="flex items-center gap-2 p-3 bg-rose-50/70 border border-rose-100 rounded-xl">
-                <input
-                  type="checkbox"
-                  id="is_urgent_checkbox"
-                  checked={isUrgent}
-                  onChange={(e) => setIsUrgent(e.target.checked)}
-                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-gray-300 cursor-pointer"
-                />
-                <label
-                  htmlFor="is_urgent_checkbox"
-                  className="text-xs font-bold text-rose-900 cursor-pointer flex items-center gap-1.5"
-                >
-                  <span>🚨 긴급 중보기도 요청</span>
-                  <span className="text-[10px] font-normal text-rose-600">(상단 우선 노출 및 긴급 뱃지 표시)</span>
+              {/* 4. 긴급 중보기도 요청 (뱃지 표시) */}
+              <div className="flex items-center justify-between p-3.5 bg-rose-50/70 border border-rose-200 rounded-2xl transition-all">
+                <label htmlFor="is_urgent_checkbox" className="flex items-center gap-2.5 cursor-pointer flex-1">
+                  <input
+                    type="checkbox"
+                    id="is_urgent_checkbox"
+                    checked={isUrgent}
+                    onChange={(e) => setIsUrgent(e.target.checked)}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-gray-300 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-black text-rose-950">
+                      {locale === 'ko' ? '긴급 중보기도 요청' : 'Urgent Prayer Request'}
+                    </span>
+                    {/* 뱃지 표시 */}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-extrabold tracking-wide shadow-2xs">
+                      <span>🚨 URGENT</span>
+                    </span>
+                  </div>
                 </label>
+                <span className="text-[11px] text-rose-600 font-medium hidden sm:inline-block">
+                  {locale === 'ko' ? '상단 우선 노출' : 'Priority display'}
+                </span>
               </div>
 
               {/* 모달 하단 버튼 */}
