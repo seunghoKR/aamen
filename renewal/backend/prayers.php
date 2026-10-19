@@ -40,6 +40,21 @@ if ($method === 'GET') {
         send_json(['status' => 'success', 'message' => 'Prayer deleted']);
     }
 
+    // POST로 들어온 수정 처리 (게시자 및 관리자)
+    if ($action === 'update') {
+        if (!$id) {
+            send_json(['error' => 'Prayer ID required'], 400);
+        }
+        $title = trim($input['title'] ?? '');
+        $content = trim($input['content'] ?? '');
+        $is_urgent = !empty($input['is_urgent']) ? 1 : 0;
+        $extra_json = isset($input['extra_json']) ? (is_string($input['extra_json']) ? $input['extra_json'] : json_encode($input['extra_json'], JSON_UNESCAPED_UNICODE)) : null;
+
+        $stmt = $pdo->prepare("UPDATE prayer_cards SET title = ?, content = ?, is_urgent = ?, extra_json = COALESCE(?, extra_json) WHERE id = ?");
+        $stmt->execute([$title, $content, $is_urgent, $extra_json, $id]);
+        send_json(['status' => 'success', 'message' => 'Prayer updated']);
+    }
+
     // POST로 들어온 아멘 카운트 증가 처리
     if ($action === 'amen' || ($id && !isset($input['title']))) {
         $stmt = $pdo->prepare("UPDATE prayer_cards SET amen_count = amen_count + 1 WHERE id = ?");
@@ -64,9 +79,10 @@ if ($method === 'GET') {
     $author_name = $input['author_name'] ?? '성도';
     $country_code = $input['country_code'] ?? 'KR';
     $is_urgent = !empty($input['is_urgent']) ? 1 : 0;
+    $extra_json = isset($input['extra_json']) ? (is_string($input['extra_json']) ? $input['extra_json'] : json_encode($input['extra_json'], JSON_UNESCAPED_UNICODE)) : null;
 
-    $stmt = $pdo->prepare("INSERT INTO prayer_cards (id, author_id, author_name, country_code, title, content, amen_count, is_urgent, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?, NOW())");
-    $stmt->execute([$id, $author_id, $author_name, $country_code, $title, $content, $is_urgent]);
+    $stmt = $pdo->prepare("INSERT INTO prayer_cards (id, author_id, author_name, country_code, title, content, extra_json, amen_count, is_urgent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NOW())");
+    $stmt->execute([$id, $author_id, $author_name, $country_code, $title, $content, $extra_json, $is_urgent]);
 
     send_json(['status' => 'success', 'id' => $id, 'message' => 'Prayer card created'], 201);
 } elseif ($method === 'PATCH') {

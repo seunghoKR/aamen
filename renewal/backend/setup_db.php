@@ -71,6 +71,7 @@ $queries = [
         country_code VARCHAR(10) NOT NULL,
         title VARCHAR(200) NOT NULL,
         content TEXT NOT NULL,
+        extra_json LONGTEXT DEFAULT NULL,
         amen_count INT DEFAULT 0,
         is_urgent TINYINT(1) DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -124,7 +125,8 @@ $alter_queries = [
     "ALTER TABLE posts MODIFY content LONGTEXT NOT NULL",
     "ALTER TABLE posts ADD COLUMN category VARCHAR(50) DEFAULT NULL",
     "ALTER TABLE posts ADD COLUMN image_url VARCHAR(500) DEFAULT NULL",
-    "ALTER TABLE posts ADD COLUMN extra_json LONGTEXT DEFAULT NULL"
+    "ALTER TABLE posts ADD COLUMN extra_json LONGTEXT DEFAULT NULL",
+    "ALTER TABLE prayer_cards ADD COLUMN extra_json LONGTEXT DEFAULT NULL"
 ];
 
 // 🌟 공식 7명 회원 + 1명 개발자 계정 데이터셋 (2026-10-15 확정본)
