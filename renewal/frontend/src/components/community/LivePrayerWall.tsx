@@ -1322,11 +1322,6 @@ export default function LivePrayerWall() {
                       ) : isRegularOrAbove ? (
                         <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
                           <span>{item.author}</span>
-                          {item.isLeader && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                              ★ {t('leader_badge') || 'Leader'}
-                            </span>
-                          )}
                         </div>
                       ) : (
                         <div className="font-bold text-sm text-emerald-800 flex items-center gap-1">
