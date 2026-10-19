@@ -109,7 +109,7 @@ const permissionDefinitionsKo = [
   { key: 'canDeleteOwn', label: '본인 글/댓글 삭제', desc: '자신이 작성한 게시글 및 댓글 삭제 가능' },
   { key: 'canManageBoard', label: '게시물 관리/모든 글 삭제', desc: '타인 게시물 삭제 및 게시판 관리자 권한' },
   { key: 'canWriteNotice', label: '공지사항 등록 권한', desc: '상단 고정 및 공식 공지사항 작성' },
-  { key: 'canDownloadFiles', label: '교안/자료실 다운로드', desc: '13개 언어 레슨플랜 및 자료 다운로드' },
+  { key: 'canDownloadFiles', label: '교안/자료실 다운로드', desc: '15개 언어 레슨플랜 및 자료 다운로드' },
   { key: 'canAccessAdmin', label: '관리자 대시보드 접근', desc: '관리자 화면(/admin) 접근 권한' },
 ] as const
 
@@ -664,7 +664,7 @@ export default function AdminMembersPage() {
                 onChange={(e) => setFilterCountry(e.target.value)}
                 className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
               >
-                <option value="ALL">{isEn ? 'All 13 Nations' : '13개국 전체'}</option>
+                <option value="ALL">{isEn ? 'All 15 Nations' : '15개국 전체'}</option>
                 <option value="KR">🇰🇷 {isEn ? 'South Korea' : '대한민국'}</option>
                 <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
                 <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>

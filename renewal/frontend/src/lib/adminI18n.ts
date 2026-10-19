@@ -8,7 +8,7 @@ export const ADMIN_TEXTS = {
     layout: {
       brandTitle: 'AAMEN 통합 관리자',
       serverBadge: 'MariaDB & PHP 8.4',
-      versionBadge: 'v1.4.1',
+      versionBadge: 'v1.4.5',
       adminConsole: 'AAMEN 관리자 콘솔',
       overviewBadge: '개요',
       adminRoleSuper: '배용하 관리자',
@@ -32,7 +32,7 @@ export const ADMIN_TEXTS = {
       menuPopups: '팝업 관리',
       menuPopupsBadge: '공지 모달',
       menuConvictions: '7대 신념 교안 관리',
-      menuConvictionsBadge: '13개국 완역/수정',
+      menuConvictionsBadge: '15개국 완역/수정',
       menuAiSettings: 'AI 엔진 설정',
       menuAiSettingsBadge: 'Gemini AI',
       backToSite: '사용자 웹사이트 바로가기',
@@ -44,7 +44,7 @@ export const ADMIN_TEXTS = {
       versionBadge: 'v1.5.0',
       welcomeTitle: '관리자님, 환영합니다! 👑',
       welcomeSubtitle:
-        '13개국 아시아 아나밥티스트 메노나이트 교육 네트워크의 회원 등급, 상단 배너, 공지 팝업 및 다국어 교안을 실시간으로 총괄 제어할 수 있는 관리자 화면입니다.',
+        '15개국 아시아 아나밥티스트 메노나이트 교육 네트워크의 회원 등급, 상단 배너, 공지 팝업 및 다국어 교안을 실시간으로 총괄 제어할 수 있는 관리자 화면입니다.',
       btnBanners: '배너 관리',
       btnMembers: '회원 등급 관리',
       btnCoordinators: '각 국가별 코디네이터',
@@ -55,7 +55,7 @@ export const ADMIN_TEXTS = {
 
       statMembersTitle: '전체 회원',
       statMembersUnit: '명',
-      statMembersSub: '13개국 활성 네트워크',
+      statMembersSub: '15개국 활성 네트워크',
 
       statCoordinatorsTitle: '국가관리자 (Coordinators)',
       statCoordinatorsUnit: '명',
@@ -77,7 +77,7 @@ export const ADMIN_TEXTS = {
 
       cardMembersTitle: '4단계 회원 등급 관리',
       cardMembersDesc:
-        '13개국 회원을 최고관리자, 국가관리자, 정회원, 준회원으로 구분하여 글쓰기 권한 및 자료 다운로드 권한을 세밀하게 제어합니다.',
+        '15개국 회원을 최고관리자, 국가관리자, 정회원, 준회원으로 구분하여 글쓰기 권한 및 자료 다운로드 권한을 세밀하게 제어합니다.',
       cardMembersAction: '회원 전체 목록 및 등급 변경',
       roleSuper: '최고관리자',
       roleCountry: '국가관리자',
@@ -87,28 +87,28 @@ export const ADMIN_TEXTS = {
       cardCoordTitle: '각 국가별 코디네이터',
       cardCoordDesc:
         '각 국가의 코디네이터를 확인하고 관리하며, 필요 시 전화번호로 WhatsApp 공식 사이트 초청장을 1초 만에 전송합니다.',
-      cardCoordStatusTitle: '13개국 코디네이터 현황',
-      cardCoordStatusBadge: '13개국 완비',
+      cardCoordStatusTitle: '15개국 코디네이터 현황',
+      cardCoordStatusBadge: '15개국 완비',
       cardCoordAction: '대표 코디네이터 및 WhatsApp 초청',
 
       cardPartnersTitle: '글로벌 협력단체 관리',
       cardPartnersDesc:
-        'MWC, MCC 등 글로벌 파트너 기구의 한국어/영어 정보, 웹사이트 링크를 등록하고 수정합니다. 한국어 모드에선 한국어, 12개국 모드에선 영어로 자동 분기됩니다.',
+        'MWC, MCC 등 글로벌 파트너 기구의 한국어/영어 정보, 웹사이트 링크를 등록하고 수정합니다. 한국어 모드에선 한국어, 14개국 모드에선 영어로 자동 분기됩니다.',
       cardPartnersStatusTitle: '등록된 공식 협력단체',
       cardPartnersStatusBadge: (count: number) => `${count}개 기관`,
       cardPartnersAction: '협력단체 목록 및 신규 등록',
 
       cardAiTitle: '제미나이(Gemini) AI 엔진 관리',
       cardAiDesc:
-        'Google Gemini 1.5 Flash API 키를 관리하고, 13개국 실시간 알림 번역 및 기도제목 변환 품질을 테스트합니다. 로컬 AI(LM Studio)와의 하이브리드 연동도 지원합니다.',
+        'Google Gemini 1.5 Flash API 키를 관리하고, 15개국 실시간 알림 번역 및 기도제목 변환 품질을 테스트합니다. 로컬 AI(LM Studio)와의 하이브리드 연동도 지원합니다.',
       cardAiRecommend: '권장 모델: Gemini 1.5 Flash',
-      cardAiSupportBadge: '13개국어 지원',
+      cardAiSupportBadge: '15개국어 지원',
       cardAiAction: 'API 키 및 모델 설정',
 
       cardConvictionsTitle: '7대 신념 교안 관리',
       cardConvictionsDesc:
-        'MWC 7대 공동 신념 교안을 13개국 언어별로 실시간 편집, 검토하고 학습 목표, 준비물, 시간대별 활동 계획을 저장합니다.',
-      cardConvictionsStatusTitle: '13개국 번역 완성도',
+        'MWC 7대 공동 신념 교안을 15개국 언어별로 실시간 편집, 검토하고 학습 목표, 준비물, 시간대별 활동 계획을 저장합니다.',
+      cardConvictionsStatusTitle: '15개국 번역 완성도',
       cardConvictionsStatusBadge: '100% 완역 완료',
       cardConvictionsAction: '교안 편집기 열기',
 
@@ -151,7 +151,7 @@ export const ADMIN_TEXTS = {
 
     members: {
       title: '회원 및 4단계 등급 관리',
-      subtitle: '13개국 회원의 권한과 소속을 체계적으로 관리하고 등급별 기능을 지정합니다.',
+      subtitle: '15개국 회원의 권한과 소속을 체계적으로 관리하고 등급별 기능을 지정합니다.',
       searchPlaceholder: '이름, 이메일, 국가명으로 검색...',
       totalCount: (cnt: number) => `총 ${cnt}명의 회원`,
       filterAll: '전체 등급',
@@ -231,7 +231,7 @@ export const ADMIN_TEXTS = {
     convictions: {
       studioBadge: 'MWC 7대 신념 교안 관리 스튜디오',
       versionSub: 'v1.4.1 노코드 에디터',
-      title: '7대 신념 13개국 언어 교안 대시보드',
+      title: '7대 신념 15개국 언어 교안 대시보드',
       subtitle: '코딩 지식이 없어도 걱정 NO! 🙅‍♀️ 각국 대표자 및 관리자님께서 자국어 문장만 입력하면 예쁜 교안으로 자동 조립됩니다. ✨',
       roleSuper: '총괄 관리자 (전 국가 편집 가능)',
       roleCountry: (code: string) => `국가 코디네이터 (${code})`,
@@ -257,7 +257,7 @@ export const ADMIN_TEXTS = {
       stepItems: '세부 활동 및 토의 질문 (한 줄에 하나씩)',
       btnDeleteStep: '단계 삭제',
       tabThemes: '7대 신념 주제 선택',
-      tabLanguages: '13개국 언어 선택',
+      tabLanguages: '15개국 언어 선택',
       savedToast: (lang: string) => `✅ [${lang}] 교안 데이터가 안전하게 저장되었습니다!`,
       resetConfirm: (lang: string) => `[${lang}] 국가 언어의 모든 수정사항을 공식 번역 원본으로 되돌리시겠습니까?`,
       resetToast: (lang: string) => `🔄 [${lang}] 공식 번역 원본으로 복원되었습니다. [교안 저장하기]를 누르면 영구 적용됩니다.`,
@@ -265,7 +265,7 @@ export const ADMIN_TEXTS = {
 
     aiSettings: {
       title: 'Gemini AI 엔진 및 다국어 번역 설정',
-      subtitle: 'Google Gemini 1.5 Flash API와 로컬 AI를 연동하여 13개국 실시간 다국어 지원을 관리합니다.',
+      subtitle: 'Google Gemini 1.5 Flash API와 로컬 AI를 연동하여 15개국 실시간 다국어 지원을 관리합니다.',
       engineCardTitle: 'AI 엔진 선택 & 엔드포인트',
       engineGemini: 'Google Gemini 클라우드 API',
       engineLocal: '로컬 AI (LM Studio / Ollama)',
@@ -276,7 +276,7 @@ export const ADMIN_TEXTS = {
       systemPromptLabel: '기본 시스템 프롬프트 (다국어 번역 및 평화 신념 가이드)',
       saveBtn: 'AI 엔진 설정 저장',
       savedToast: 'AI 엔진 설정이 안전하게 저장되었습니다!',
-      testSectionTitle: '13개국어 실시간 번역 품질 테스트',
+      testSectionTitle: '15개국어 실시간 번역 품질 테스트',
       testInputLabel: '테스트 원문 입력',
       testTargetLangLabel: '목표 번역 언어',
       btnRunTest: '번역 테스트 실행',
@@ -288,7 +288,7 @@ export const ADMIN_TEXTS = {
     layout: {
       brandTitle: 'AAMEN Global Admin',
       serverBadge: 'MariaDB & PHP 8.4',
-      versionBadge: 'v1.4.1',
+      versionBadge: 'v1.4.5',
       adminConsole: 'AAMEN Admin Console',
       overviewBadge: 'Overview',
       adminRoleSuper: 'Super Admin',
@@ -306,13 +306,13 @@ export const ADMIN_TEXTS = {
       menuMembers: 'Member Directory',
       menuMembersBadge: 'Tiers & Access',
       menuCoordinators: 'Country Coordinators',
-      menuCoordinatorsBadge: '13 Nations',
+      menuCoordinatorsBadge: '15 Nations',
       menuPartners: 'Global Partners',
       menuPartnersBadge: 'KO & EN',
       menuPopups: 'Notice Popups',
       menuPopupsBadge: 'Modal Alerts',
       menuConvictions: 'Shared Convictions',
-      menuConvictionsBadge: '13-Nation Curricula',
+      menuConvictionsBadge: '15-Nation Curricula',
       menuAiSettings: 'AI Engine Settings',
       menuAiSettingsBadge: 'Gemini AI',
       backToSite: 'Back to User Website',
@@ -357,7 +357,7 @@ export const ADMIN_TEXTS = {
 
       cardMembersTitle: '4-Tier Membership System',
       cardMembersDesc:
-        'Granularly manage members across 13 nations into Super Admin, Country Coordinator, Regular, and Associate tiers with distinct posting and download rights.',
+        'Granularly manage members across 15 nations into Super Admin, Country Coordinator, Regular, and Associate tiers with distinct posting and download rights.',
       cardMembersAction: 'View Members & Update Tiers',
       roleSuper: 'Super Admin',
       roleCountry: 'Country Coordinator',
@@ -382,7 +382,7 @@ export const ADMIN_TEXTS = {
       cardAiDesc:
         'Manage Google Gemini 1.5 Flash API keys, test real-time 13-language prayer and notice translations, and configure local AI (LM Studio) hybrid engines.',
       cardAiRecommend: 'Recommended: Gemini 1.5 Flash',
-      cardAiSupportBadge: '13 Languages Supported',
+      cardAiSupportBadge: '15 Languages Supported',
       cardAiAction: 'Configure API Keys & Models',
 
       cardConvictionsTitle: '7 Shared Convictions Curricula',
@@ -511,7 +511,7 @@ export const ADMIN_TEXTS = {
     convictions: {
       studioBadge: 'MWC Shared Convictions Curriculum Studio',
       versionSub: 'v1.4.1 No-Code Editor',
-      title: '7 Shared Convictions 13-Nation Curriculum Editor',
+      title: '7 Shared Convictions 15-Nation Curriculum Editor',
       subtitle: 'No coding required! Input local language sentences and curriculum pages will assemble automatically. ✨',
       roleSuper: 'Super Admin (All Nations Editable)',
       roleCountry: (code: string) => `Country Coordinator (${code})`,
@@ -556,7 +556,7 @@ export const ADMIN_TEXTS = {
       systemPromptLabel: 'System Prompt (Multilingual Translation & Peace Theology Guide)',
       saveBtn: 'Save AI Engine Settings',
       savedToast: 'AI engine settings saved successfully!',
-      testSectionTitle: '13-Language Live Translation Quality Test',
+      testSectionTitle: '15-Language Live Translation Quality Test',
       testInputLabel: 'Test Source Text',
       testTargetLangLabel: 'Target Language',
       btnRunTest: 'Run Translation Test',

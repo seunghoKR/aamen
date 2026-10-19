@@ -300,7 +300,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* 13개국 코디네이터 관리 카드 */}
+        {/* 15개국 코디네이터 관리 카드 */}
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">

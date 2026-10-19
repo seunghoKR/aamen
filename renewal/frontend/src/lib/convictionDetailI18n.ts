@@ -17,7 +17,7 @@ export interface ConvictionDetailI18nTexts {
   allConvictions: string
 }
 
-// 1. 공통 UI 레이블 (13개국어 완역)
+// 1. 공통 UI 레이블 (15개국어 완역)
 export const CONVICTION_DETAIL_I18N: Record<string, ConvictionDetailI18nTexts> = {
   ko: {
     home: '홈',
@@ -203,7 +203,7 @@ export const CONVICTION_DETAIL_I18N: Record<string, ConvictionDetailI18nTexts> =
   },
 }
 
-// 2. 7대 신념 바로가기 탭용 짧은 명칭 (13개국어 완역)
+// 2. 7대 신념 바로가기 탭용 짧은 명칭 (15개국어 완역)
 export const SHORT_TITLES_BY_LOCALE: Record<string, Record<string, string>> = {
   ko: {
     god: '하나님',

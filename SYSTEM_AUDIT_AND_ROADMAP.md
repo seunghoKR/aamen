@@ -2,7 +2,7 @@
 > **문서 버전:** v1.0.0  
 > **최종 작성일시:** 2026-10-12 (작성자: AI 디자인실장 영자 / Youngja)  
 > **프로젝트 공식 명칭:** AAMEN (Asia Anabaptist Mennonite Education Network)  
-> **실서버 배포 주소:** [https://aamen2.iwinv.net/](https://aamen2.iwinv.net/)  
+> **실서버 배포 주소:** [https://aamen.net/](https://aamen.net/)  
 
 ---
 
@@ -23,19 +23,17 @@
   - SSD 환경으로 파일 I/O 속도 극대화 및 네트워크 드라이브 잠금 방지
   - 프론트엔드: `C:\Dev\AAMEN\renewal\frontend`
   - 백엔드 PHP: `C:\Dev\AAMEN\renewal\backend`
-* **Synology NAS 영구 보관 & 백업:** `Y:\SynologyDrive\AAMEN`
-  - 작업 완료 시 반드시 변경 소스를 동기화하여 백업 보관
+* **Synology NAS 영구 보관 & 백업:** `C:\Users\leesh\Documents\SynologyDrive\AAMEN` (또는 NAS 네트워크 드라이브)
+  - 작업 완료 시 변경 소스를 동기화하여 안전하게 백업 보관
 
-### 1.2 서버 및 FTP 인프라 정보
-* **도메인:** `https://aamen2.iwinv.net`
-* **FTP 호스트:** `115.68.168.242`
-* **FTP 계정 / 루트 디렉토리:** `aamen2` / `/public_html`
-* **웹 트리거 언집 스크립트:** `https://aamen2.iwinv.net/clean_unzip.php`
-* **배포 자동화 스크립트 체계:**
-  1. `prepare_deploy.py`: 프론트엔드 빌드 결과물(`out`) 및 백엔드 PHP 파일을 `deploy` 디렉토리로 취합 (.htaccess 설정 포함)
-  2. `zip_deploy.py`: `deploy` 폴더를 리눅스 호환 슬래시(`/`) 방식으로 `deploy.zip` 압축
-  3. `upload_ftp.py`: FTP 서버에 `deploy.zip` 및 `clean_unzip.php` 업로드
-  4. 웹 브라우저 또는 PowerShell로 `clean_unzip.php` 호출하여 원터치 무중단 배포
+### 1.2 서버 및 FTP 인프라 정보 (정식 운영 서버)
+* **공식 도메인:** `https://aamen.net/`
+* **서버 IP (FTP 호스트):** `115.68.168.246` (포트 21)
+* **FTP 계정 / 루트 디렉토리:** `aamen1` / `/public_html`
+* **데이터베이스:** MariaDB 10.X / PHP 8.4 (DB명: `aamen1` / 유저: `aamen1`)
+* **웹 트리거 언집 스크립트:** `https://aamen.net/clean_unzip.php`
+* **배포 자동화 스크립트:**
+  - `C:\Dev\AAMEN\deploy_to_aamen1.ps1`: 원클릭으로 프론트엔드/백엔드/자료실 패키징, tar.exe 압축, FTP 업로드, 압축 해제 및 DB 자동 초기화까지 일괄 수행
 
 ---
 

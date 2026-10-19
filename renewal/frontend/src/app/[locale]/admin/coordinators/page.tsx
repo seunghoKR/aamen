@@ -244,8 +244,8 @@ export default function AdminCoordinatorsPage() {
     }
 
     const invitationMsg = isEn
-      ? `🕊️ *[Official Invitation: AAMEN 13-Nation Network]*\n\nShalom ${name} (${country}),\nYou are cordially invited to *AAMEN (Asia Anabaptist Mennonite Education Network)* sharing Christ's gospel of peace and discipleship.\n\n📖 MWC 7 Shared Convictions 13-Language Curricula\n🙏 Live 13-Nation Prayer Wall & Community\n👥 Pan-Asian Leadership Collaboration Platform\n\n👉 *Visit AAMEN:* https://aamen.net/en/network\n\nWe look forward to serving together in peace ministry!`
-      : `🕊️ *[AAMEN 아시아 13개국 네트워크 공식 초청]*\n\n샬롬! ${name}님(${country}),\n그리스도의 비폭력 평화와 제자도의 복음을 나누는 *AAMEN (아시아 아나밥티스트 메노나이트 교육 네트워크)*에 초대합니다.\n\n📖 MWC 7대 신념 13개 언어 무료 교안 자료실\n🙏 13개국 실시간 중보기도의 벽 & 다국어 커뮤니티\n👥 아시아 13개국 지도자 연대 플랫폼\n\n👉 *AAMEN 공식 사이트 방문하기:* https://aamen.net/ko/network\n\n함께 평화의 사역에 동참해 주시기를 소망합니다!`
+      ? `🕊️ *[Official Invitation: AAMEN 15-Nation Network]*\n\nShalom ${name} (${country}),\nYou are cordially invited to *AAMEN (Asia Anabaptist Mennonite Education Network)* sharing Christ's gospel of peace and discipleship.\n\n📖 MWC 7 Shared Convictions 15-Language Curricula\n🙏 Live 15-Nation Prayer Wall & Community\n👥 Pan-Asian Leadership Collaboration Platform\n\n👉 *Visit AAMEN:* https://aamen.net/en/network\n\nWe look forward to serving together in peace ministry!`
+      : `🕊️ *[AAMEN 아시아 15개국 네트워크 공식 초청]*\n\n샬롬! ${name}님(${country}),\n그리스도의 비폭력 평화와 제자도의 복음을 나누는 *AAMEN (아시아 아나밥티스트 메노나이트 교육 네트워크)*에 초대합니다.\n\n📖 MWC 7대 신념 15개 언어 무료 교안 자료실\n🙏 15개국 실시간 중보기도의 벽 & 다국어 커뮤니티\n👥 아시아 15개국 지도자 연대 플랫폼\n\n👉 *AAMEN 공식 사이트 방문하기:* https://aamen.net/ko/network\n\n함께 평화의 사역에 동참해 주시기를 소망합니다!`
 
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(invitationMsg)}`, '_blank')
   }

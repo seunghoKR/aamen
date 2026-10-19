@@ -1,12 +1,12 @@
 # 🌏 AAMEN (Asia Anabaptist Mennonite Education Network)
-### 아시아 아나밥티스트 메노나이트 교육 네트워크 플랫폼 (Release v1.4.1)
+### 아시아 아나밥티스트 메노나이트 교육 네트워크 플랫폼 (Release v1.4.5)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3.6-black.svg?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.8-blue.svg?style=flat&logo=react)](https://react.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38bdf8.svg?style=flat&logo=tailwindcss)](https://tailwindcss.com/)
-[![i18n](https://img.shields.io/badge/i18n-13_Nations-emerald.svg)](https://aamen.net/)
+[![i18n](https://img.shields.io/badge/i18n-15_Nations-emerald.svg)](https://aamen.net/)
 
-아시아 13개국(한국, 일본, 인도네시아, 베트남, 태국, 미얀마, 인도, 네팔, 필리핀, 캄보디아, 라오스, 몽골, 대만) 사역자와 성도들을 위한 평화·제자도 교육 및 중보기도 글로벌 네트워크 플랫폼입니다.
+아시아 15개국(홍콩, 인도네시아, 인도, 일본, 캄보디아, 한국, 라오스, 미얀마, 몽골, 네팔, 필리핀, 태국, 대만, 미국, 베트남) 사역자와 성도들을 위한 평화·제자도 교육 및 중보기도 글로벌 네트워크 플랫폼입니다.
 
 ---
 
@@ -69,19 +69,18 @@ AAMEN/
 ---
 
 ## 🌐 서버 및 배포 버전 정보
-- **공식 운영 서버:** [https://aamen.net](https://aamen.net) (`v1.4.1 Release`)
-- **최신 릴리즈 기능 (v1.4.1):** 
+- **공식 운영 서버:** [https://aamen.net](https://aamen.net) (`v1.4.5 Release`)
+- **최신 릴리즈 기능 (v1.4.5):** 
+  1. **홍콩(HK) 및 필리핀(PH) 포함 총 15개국 확장:** 15개국 국가 이니셜 알파벳(A-Z: HK, ID, IN, JP, KH, KR, LA, MM, MN, NP, PH, TH, TW, US, VN) 순서 정렬
+  2. **MWC 7대 신념 교안 및 요약 15개국어 완역:** 홍콩 번체(`zh-HK`), 필리핀어(`tl`) 정식 추가 및 Theme 01~07 전문 완비
+  3. **대시보드 교안 관리 15개국 알파벳 순 배치:** 상단 언어 선택기 15열 반응형 그리드 개편
+  4. **Google Gemini 전용 AI 번역 엔진 일원화:** 불필요한 로컬 AI 복잡성을 제거하고 Gemini 1.5 Flash 무료 티어에 최적화
+  5. **15개국 실시간 번역 품질 테스트 도구 탑재:** 실시간 지연 시간(ms) 측정 및 번역 결과 즉시 검증
+
+- **이전 릴리즈 내역 (v1.4.1):**
   1. **게시판 전수 점검 및 업로드 활성화:** 공지사항, 자료실, 사진첩 전 게시판 글/파일 업로드 안정화
   2. **이미지 크기 자동 조절 & 다중 업로드:** 클라이언트 Canvas 기반 자동 리사이징(1600px/WebP) 및 여러 이미지 일괄 업로드 지원
-  3. **공지사항 매거진 뷰 개편:** 공지사항 목록을 [대표 이미지(포스터) + 제목 + 내용 3줄 요약] 구조로 개편 및 상세 팝업 포스터 연동
-  4. **랜딩페이지 실제 DB 연동:** 최근게시물 가상 더미 데이터 완전 삭제 및 실제 데이터베이스 게시물 실시간 표시
-  5. **게시물 삭제 트랜잭션 정상화:** 웹호스팅 Apache HTTP DELETE 302 차단 우회 및 연관 데이터 완벽 삭제
-  6. **고해상도 로고 & 파비콘 번들 적용:** 웹/모바일 전 규격 파비콘 및 상단/푸터/로그인 브랜드 로고 일괄 반영
-
-- **이전 릴리즈 내역 (v1.4.0):**
-  1. 마이페이지 14개국어 완전 번역 & 자국어/영어/이니셜 표기 표준화
-  2. 50종 캐릭터 아바타 컬렉션 무작위 셔플 탑재 & 정밀 크롭
-  3. MWC / MCSK 사역자 회원 등록 및 권한 부여
-  4. 관리자 회원 목록 체크박스 다중 선택 및 일괄 삭제 기능
-  5. 프론트엔드 API 예외 방어 및 백엔드 라우트 핸들러 무결성 확보
+  3. **공지사항 매거진 뷰 개편:** 공지사항 목록을 [대표 이미지(포스터) + 제목 + 내용 3줄 요약] 구조로 개편
+  4. **랜딩페이지 실제 DB 연동:** 최근게시물 실제 데이터베이스 실시간 연동
+  5. **게시물 삭제 트랜잭션 정상화:** 웹호스팅 Apache DELETE 302 차단 우회
 

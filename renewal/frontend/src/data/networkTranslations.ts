@@ -1,4 +1,4 @@
-// 🌐 AAMEN 13개국 네트워크 & 주요일정 다국어 번역 딕셔너리
+// 🌐 AAMEN 15개국 네트워크 & 주요일정 다국어 번역 딕셔너리
 export interface NetworkTranslation {
   bannerBadge: string
   bannerTitle: string
@@ -50,11 +50,11 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
   ko: {
     bannerBadge: '아시아 아나밥티스트 메노나이트 연합',
     bannerTitle: 'AAMEN 네트워크',
-    bannerDesc: '13개국 교회 지도자들과 국제 협력 단체들이 손을 맞잡고 평화의 하나님 나라를 일구어가는 공식 연대 허브입니다.',
+    bannerDesc: '15개국 교회 지도자들과 국제 협력 단체들이 손을 맞잡고 평화의 하나님 나라를 일구어가는 공식 연대 허브입니다.',
     tabs: {
       all: '전체 보기',
       partners: '🤝 협력단체',
-      coordinators: '👥 13개국 코디네이터',
+      coordinators: '👥 15개국 코디네이터',
       schedule: '📅 월간 주요 일정 (캘린더)',
     },
     partners: {
@@ -67,9 +67,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: '설립',
     },
     coordinators: {
-      title: '13개국 대표 코디네이터',
+      title: '15개국 대표 코디네이터',
       desc: '각 국가 사역을 총괄하고 현지 교회들과 평화 교육을 연결하는 공식 코디네이터입니다.',
-      badge: '총 13개국 완비',
+      badge: '총 15개국 완비',
       whatsappInviteBtn: 'WhatsApp 초청장 전송',
       directChatBtn: 'WhatsApp 1:1 대화',
       emailBtn: '이메일',
@@ -78,7 +78,7 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
     schedulePage: {
       badge: '공식 캘린더 & 사역 일정',
       title: 'AAMEN 월간 주요 일정',
-      desc: '13개국 연합 컨퍼런스, 정기 온라인 기도회, 지도자 워크숍 등 아시아 전역의 주요 사역 일정을 한눈에 확인하세요.',
+      desc: '15개국 연합 컨퍼런스, 정기 온라인 기도회, 지도자 워크숍 등 아시아 전역의 주요 사역 일정을 한눈에 확인하세요.',
       googleCalendarTitle: 'AAMEN 공식 캘린더',
       googleCalendarSubtitle: '월간 일정 기준으로 실시간 동기화되는 AAMEN 공식 사역 캘린더입니다.',
       openGoogleCalendarBtn: '새 창에서 전체 보기',
@@ -115,7 +115,7 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
     coordinators: {
       title: '13 Country Coordinators',
       desc: 'Official coordinators overseeing ministry in each nation and connecting local churches with peace education.',
-      badge: '13 Nations Complete',
+      badge: '15 Nations Complete',
       whatsappInviteBtn: 'Send WhatsApp Invitation',
       directChatBtn: 'WhatsApp 1:1 Chat',
       emailBtn: 'Email',
@@ -142,11 +142,11 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
   ja: {
     bannerBadge: 'アジア・アナバプテスト・フェローシップ＆パートナー',
     bannerTitle: 'AAMEN ネットワーク',
-    bannerDesc: 'アジア13カ国の教会指導者と国際協力団体が手を携え、平和な神の国を築いていく公式連帯ハブです。',
+    bannerDesc: 'アジア15カ国の教会指導者と国際協力団体が手を携え、平和な神の国を築いていく公式連帯ハブです。',
     tabs: {
       all: 'すべて表示',
       partners: '🤝 協力団体',
-      coordinators: '👥 13カ国コーディネーター',
+      coordinators: '👥 15カ国コーディネーター',
       schedule: '📅 月間主要日程 (カレンダー)',
     },
     partners: {
@@ -159,9 +159,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: '設立',
     },
     coordinators: {
-      title: '13カ国代表コーディネーター',
+      title: '15カ国代表コーディネーター',
       desc: '各国の働きを統括し、現地の教会と平和教育をつなぐ公式コーディネーターです。',
-      badge: '全13カ国完備',
+      badge: '全15カ国完備',
       whatsappInviteBtn: 'WhatsApp招待状を送信',
       directChatBtn: 'WhatsApp 1:1チャット',
       emailBtn: 'メール',
@@ -170,7 +170,7 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
     schedulePage: {
       badge: '公式カレンダー＆働きの日程',
       title: 'AAMEN 月間主要日程',
-      desc: '13カ国合同カンファレンス、定期オンライン祈祷会、指導者ワークショップなどの日程を確認し、Googleカレンダーに同期しましょう。',
+      desc: '15カ国合同カンファレンス、定期オンライン祈祷会、指導者ワークショップなどの日程を確認し、Googleカレンダーに同期しましょう。',
       googleCalendarTitle: 'AAMEN Official Calendar',
       googleCalendarSubtitle: '月間スケジュール基準でリアルタイム同期されるAAMEN公式カレンダーです。',
       openGoogleCalendarBtn: 'Googleカレンダーで開く',
@@ -188,11 +188,11 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
   'zh-TW': {
     bannerBadge: '亞洲重浸派門諾會團契與合作夥伴',
     bannerTitle: 'AAMEN 網絡',
-    bannerDesc: '亞洲13國教會領袖與國際合作機構攜手並進，共同拓展和平天國的官方團契樞紐。',
+    bannerDesc: '亞洲15國教會領袖與國際合作機構攜手並進，共同拓展和平天國的官方團契樞紐。',
     tabs: {
       all: '查看全部',
       partners: '🤝 合作夥伴機構',
-      coordinators: '👥 13國聯絡代表',
+      coordinators: '👥 15國聯絡代表',
       schedule: '📅 月度主要日程 (行事曆)',
     },
     partners: {
@@ -205,9 +205,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: '創立',
     },
     coordinators: {
-      title: '13國代表協調人',
+      title: '15國代表協調人',
       desc: '總攬各國事工、連結在地教會與和平教育培訓的官方協調代表。',
-      badge: '13國齊備',
+      badge: '15國齊備',
       whatsappInviteBtn: '發送 WhatsApp 邀請函',
       directChatBtn: 'WhatsApp 1:1 對話',
       emailBtn: '電子郵件',
@@ -234,11 +234,11 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
   vi: {
     bannerBadge: 'HIỆP THÔNG ANABAPTIST MENNONITE CHÂU Á & ĐỐI TÁC',
     bannerTitle: 'Mạng lưới AAMEN',
-    bannerDesc: 'Trung tâm liên kết chính thức nơi các nhà lãnh đạo hội thánh từ 13 quốc gia châu Á và các tổ chức đối tác quốc tế cùng chung tay xây dựng vương quốc hòa bình của Đức Chúa Trời.',
+    bannerDesc: 'Trung tâm liên kết chính thức nơi các nhà lãnh đạo hội thánh từ 15 quốc gia châu Á và các tổ chức đối tác quốc tế cùng chung tay xây dựng vương quốc hòa bình của Đức Chúa Trời.',
     tabs: {
       all: 'Xem tất cả',
       partners: '🤝 Tổ chức đối tác',
-      coordinators: '👥 Điều phối viên 13 quốc gia',
+      coordinators: '👥 Điều phối viên 15 quốc gia',
       schedule: '📅 Lịch trình hàng tháng (Calendar)',
     },
     partners: {
@@ -251,9 +251,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: 'Thành lập',
     },
     coordinators: {
-      title: 'Điều phối viên đại diện 13 quốc gia',
+      title: 'Điều phối viên đại diện 15 quốc gia',
       desc: 'Những người điều phối chính thức phụ trách mục vụ tại mỗi quốc gia và kết nối các hội thánh địa phương.',
-      badge: 'Hoàn tất 13 quốc gia',
+      badge: 'Hoàn tất 15 quốc gia',
       whatsappInviteBtn: 'Gửi lời mời WhatsApp',
       directChatBtn: 'Trò chuyện 1:1 WhatsApp',
       emailBtn: 'Email',
@@ -284,7 +284,7 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
     tabs: {
       all: 'Lihat Semua',
       partners: '🤝 Organisasi Mitra',
-      coordinators: '👥 Koordinator 13 Negara',
+      coordinators: '👥 Koordinator 15 Negara',
       schedule: '📅 Jadwal Bulanan (Kalender)',
     },
     partners: {
@@ -297,9 +297,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: 'Didirikan',
     },
     coordinators: {
-      title: 'Koordinator Perwakilan 13 Negara',
+      title: 'Koordinator Perwakilan 15 Negara',
       desc: 'Koordinator resmi yang mengawasi pelayanan di setiap negara dan menghubungkan gereja-gereja lokal.',
-      badge: 'Lengkap 13 Negara',
+      badge: 'Lengkap 15 Negara',
       whatsappInviteBtn: 'Kirim Undangan WhatsApp',
       directChatBtn: 'Obrolan 1:1 WhatsApp',
       emailBtn: 'Email',
@@ -326,11 +326,11 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
   th: {
     bannerBadge: 'การสามัคคีธรรมและพันธมิตรอนาบัปติสต์เมนโนไนท์แห่งเอเชีย',
     bannerTitle: 'เครือข่าย AAMEN',
-    bannerDesc: 'ศูนย์กลางความเป็นน้ำหนึ่งใจเดียวกันอย่างเป็นทางการที่ผู้นำคริสตจักรจาก 13 ประเทศในเอเชียและองค์กรพันธมิตรระดับนานาชาติร่วมมือกันเพื่อแผ่นดินของพระเจ้าแห่งสันติสุข',
+    bannerDesc: 'ศูนย์กลางความเป็นน้ำหนึ่งใจเดียวกันอย่างเป็นทางการที่ผู้นำคริสตจักรจาก 15 ประเทศในเอเชียและองค์กรพันธมิตรระดับนานาชาติร่วมมือกันเพื่อแผ่นดินของพระเจ้าแห่งสันติสุข',
     tabs: {
       all: 'ดูทั้งหมด',
       partners: '🤝 องค์กรพันธมิตร',
-      coordinators: '👥 ผู้ประสานงาน 13 ประเทศ',
+      coordinators: '👥 ผู้ประสานงาน 15 ประเทศ',
       schedule: '📅 กำหนดการประจำเดือน (ปฏิทิน)',
     },
     partners: {
@@ -343,9 +343,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: 'ก่อตั้ง',
     },
     coordinators: {
-      title: 'ผู้ประสานงานตัวแทน 13 ประเทศ',
+      title: 'ผู้ประสานงานตัวแทน 15 ประเทศ',
       desc: 'ผู้ประสานงานอย่างเป็นทางการที่ดูแลพันธกิจในแต่ละประเทศและเชื่อมโยงคริสตจักรท้องถิ่นกับการศึกษาเรื่องสันติภาพ',
-      badge: 'ครบทั้ง 13 ประเทศ',
+      badge: 'ครบทั้ง 15 ประเทศ',
       whatsappInviteBtn: 'ส่งคำเชิญทาง WhatsApp',
       directChatBtn: 'แชท WhatsApp 1:1',
       emailBtn: 'อีเมล',
@@ -464,11 +464,11 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
   lo: {
     bannerBadge: 'ການຮ່ວមສຳພັນ ແລະ ພັນທະມິດອານາບັບຕິສເມນໂນໄນອາຊີ',
     bannerTitle: 'ເຄືອຂ່າຍ AAMEN',
-    bannerDesc: 'ສູນກາງຄວາມສາມັກຄີຢ່າງເປັນທາງການທີ່ຜູ້ນຳຄຣິສຕະຈັກຈາກ 13 ປະເທດໃນອາຊີ ແລະ ອົງການຈັດຕັ້ງສາກົນຮ່ວມມືກັນເພື່ອອານາຈັກແຫ່ງສັນຕິພາບຂອງພຣະເຈົ້າ.',
+    bannerDesc: 'ສູນກາງຄວາມສາມັກຄີຢ່າງເປັນທາງການທີ່ຜູ້ນຳຄຣິສຕະຈັກຈາກ 15 ປະເທດໃນອາຊີ ແລະ ອົງການຈັດຕັ້ງສາກົນຮ່ວມມືກັນເພື່ອອານາຈັກແຫ່ງສັນຕິພາບຂອງພຣະເຈົ້າ.',
     tabs: {
       all: 'ເບິ່ງທັງໝົດ',
       partners: '🤝 ອົງການຈັດຕັ້ງຄູ່ຮ່ວມງານ',
-      coordinators: '👥 ຜູ້ປະສານງານ 13 ປະເທດ',
+      coordinators: '👥 ຜູ້ປະສານງານ 15 ປະເທດ',
       schedule: '📅 ຕາຕະລາງປະຈຳເດືອນ (ປະຕິທິນ)',
     },
     partners: {
@@ -481,9 +481,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: 'ສ້າງຕັ້ງ',
     },
     coordinators: {
-      title: 'ຜູ້ປະສານງານຕົວແທນ 13 ປະເທດ',
+      title: 'ຜູ້ປະສານງານຕົວແທນ 15 ປະເທດ',
       desc: 'ຜູ້ປະສານງານທາງການທີ່ຊີ້ນຳພັນທະກິດໃນແຕ່ລະປະເທດ ແລະ ເຊື່ອມຕໍ່ຄຣິສຕະຈັກທ້ອງຖິ່ນ.',
-      badge: 'ຄົບທັງ 13 ປະເທດ',
+      badge: 'ຄົບທັງ 15 ປະເທດ',
       whatsappInviteBtn: 'ສົ່ງຄຳເຊີນ WhatsApp',
       directChatBtn: 'ສົນທະນາ WhatsApp 1:1',
       emailBtn: 'ອີເມວ',
@@ -514,7 +514,7 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
     tabs: {
       all: 'सभी देखें',
       partners: '🤝 साझेदार संगठन',
-      coordinators: '👥 13 देशों के समन्वयक',
+      coordinators: '👥 15 देशों के समन्वयक',
       schedule: '📅 मासिक कार्यक्रम (कैलेंडर)',
     },
     partners: {
@@ -527,9 +527,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: 'स्थापना',
     },
     coordinators: {
-      title: '13 देशों के प्रतिनिधि समन्वयक',
+      title: '15 देशों के प्रतिनिधि समन्वयक',
       desc: 'आधिकारिक समन्वयक जो प्रत्येक देश में सेवा की देखरेख करते हैं और स्थानीय चर्चों को शांति शिक्षा से जोड़ते हैं।',
-      badge: 'सभी 13 देश पूर्ण',
+      badge: 'सभी 15 देश पूर्ण',
       whatsappInviteBtn: 'WhatsApp निमंत्रण भेजें',
       directChatBtn: 'WhatsApp 1:1 चैट',
       emailBtn: 'ईमेल',
@@ -602,11 +602,11 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
   mn: {
     bannerBadge: 'АЗИЙН АНАБАПТИСТ МЕННОНИТ НӨХӨРЛӨЛ БОЛОН ТҮНШҮҮД',
     bannerTitle: 'AAMEN Сүлжээ',
-    bannerDesc: 'Азийн 13 орны сүмийн удирдагчид болон олон улсын түнш байгууллагууд Бурханы амар тайвны хаанчлалын төлөө хамтран ажилладаг албан ёсны эв санааны нэгдлийн төв юм.',
+    bannerDesc: 'Азийн 15 орны сүмийн удирдагчид болон олон улсын түнш байгууллагууд Бурханы амар тайвны хаанчлалын төлөө хамтран ажилладаг албан ёсны эв санааны нэгдлийн төв юм.',
     tabs: {
       all: 'Бүгдийг харах',
       partners: '🤝 Түнш байгууллагууд',
-      coordinators: '👥 13 орны зохицуулагчид',
+      coordinators: '👥 15 орны зохицуулагчид',
       schedule: '📅 Сарын гол хуваарь (Хуанли)',
     },
     partners: {
@@ -619,9 +619,9 @@ export const networkTranslations: Record<string, NetworkTranslation> = {
       estLabel: 'Үүсгэн байгуулагдсан',
     },
     coordinators: {
-      title: '13 орны төлөөлөгч зохицуулагчид',
+      title: '15 орны төлөөлөгч зохицуулагчид',
       desc: 'Улс бүрийн үйлчлэлийг удирдан чиглүүлж, орон нутгийн сүмүүдийг энх тайвны боловсролтой холбодог албан ёсны зохицуулагчид юм.',
-      badge: '13 улс бүрэн бүрдсэн',
+      badge: '15 улс бүрэн бүрдсэн',
       whatsappInviteBtn: 'WhatsApp урилга илгээх',
       directChatBtn: 'WhatsApp 1:1 чат',
       emailBtn: 'Имэйл',

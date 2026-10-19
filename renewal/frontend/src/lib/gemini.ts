@@ -1,5 +1,5 @@
 // ============================================================================
-// AAMEN Gemini AI & Translation Engine Management Utility
+// AAMEN Gemini AI & Translation Engine Management Utility (15-Nation Specialized)
 // ============================================================================
 
 export interface GeminiConfig {
@@ -15,36 +15,39 @@ export const DEFAULT_GEMINI_MODEL = 'gemini-1.5-flash'
 export const DEFAULT_LOCAL_AI_ENDPOINT = 'http://localhost:1234/v1'
 export const DEFAULT_LOCAL_AI_MODEL = 'gemma-2-9b-it'
 
-export const DEFAULT_SYSTEM_PROMPT = `당신은 아시아 13개국 기독교 아나밥티스트 메노나이트 교육 네트워크(AAMEN)의 공식 다국어 번역 및 사역 지원 AI입니다.
+export const DEFAULT_SYSTEM_PROMPT = `당신은 아시아 15개국 기독교 아나밥티스트 메노나이트 교육 네트워크(AAMEN)의 공식 다국어 번역 및 사역 지원 AI입니다.
 원문의 기독교적 은혜와 평화(Shalom), 존중의 뉘앙스를 보존하고, 현지 성도들이 자연스럽고 따뜻하게 이해할 수 있도록 번역 및 작성하세요.`
 
+// 15개국 지원 언어 목록 (국가 이니셜 알파벳 순서 정렬)
 export const AAMEN_LANGUAGES = [
-  { code: 'ko', name: '한국어', flag: '🇰🇷' },
-  { code: 'en', name: 'English (공용)', flag: '🌐' },
-  { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
-  { code: 'th', name: 'ภาษาไทย (태국)', flag: '🇹🇭' },
-  { code: 'vi', name: 'Tiếng Việt (베트남)', flag: '🇻🇳' },
-  { code: 'my', name: 'မြန်မာစာ (미얀마)', flag: '🇲🇲' },
-  { code: 'ja', name: '日本語 (일본)', flag: '🇯🇵' },
-  { code: 'zh-TW', name: '繁體中文 (대만)', flag: '🇹🇼' },
+  { code: 'zh-HK', name: '香港 繁體中文 (홍콩)', flag: '🇭🇰' },
+  { code: 'id', name: 'Bahasa Indonesia (인도네시아)', flag: '🇮🇩' },
   { code: 'hi', name: 'हिन्दी (인도)', flag: '🇮🇳' },
-  { code: 'ne', name: 'नेपाली (네팔)', flag: '🇳🇵' },
+  { code: 'ja', name: '日本語 (일본)', flag: '🇯🇵' },
   { code: 'km', name: 'ភាសាខ្មែរ (캄보디아)', flag: '🇰🇭' },
+  { code: 'ko', name: '한국어 (대한민국)', flag: '🇰🇷' },
   { code: 'lo', name: 'ພາສາລາວ (라오스)', flag: '🇱🇦' },
+  { code: 'my', name: 'မြန်မာစာ (미얀마)', flag: '🇲🇲' },
   { code: 'mn', name: 'Монгол хэл (몽골)', flag: '🇲🇳' },
+  { code: 'ne', name: 'नेपाली (네팔)', flag: '🇳🇵' },
+  { code: 'tl', name: 'Filipino / Tagalog (필리핀)', flag: '🇵🇭' },
+  { code: 'th', name: 'ภาษาไทย (태국)', flag: '🇹🇭' },
+  { code: 'zh-TW', name: '台灣 繁體中文 (대만)', flag: '🇹🇼' },
+  { code: 'en', name: 'English (공용/미국)', flag: '🇺🇸' },
+  { code: 'vi', name: 'Tiếng Việt (베트남)', flag: '🇻🇳' },
 ]
 
 export const AVAILABLE_GEMINI_MODELS = [
   {
     id: 'gemini-1.5-flash',
     name: 'Gemini 1.5 Flash (권장)',
-    desc: '초고속 1~2초 응답, 13개국어 번역에 최적화, 무료 티어 충분',
-    badge: '추천',
+    desc: '초고속 1~2초 응답, 15개국어 교안 번역 및 수정에 최적화 (무료 티어 충분)',
+    badge: '추천/무료',
   },
   {
     id: 'gemini-2.0-flash',
     name: 'Gemini 2.0 Flash',
-    desc: '최신 차세대 고속 모델, 향상된 문맥 이해도',
+    desc: '최신 차세대 고속 모델, 향상된 문맥 이해도 (무료 사용 지원)',
     badge: '최신',
   },
   {
@@ -125,7 +128,7 @@ export async function testGeminiConnection(apiKey: string, model: string = DEFAU
   }
 
   const startTime = Date.now()
-  const testPrompt = '샬롬! 아시아 13개국 평화의 네트워크 AAMEN을 위한 짧은 축복 인사말 한 문장을 영어와 한국어로 작성해 주세요.'
+  const testPrompt = '샬롬! 아시아 15개국 평화의 네트워크 AAMEN을 위한 짧은 축복 인사말 한 문장을 영어와 한국어로 작성해 주세요.'
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`

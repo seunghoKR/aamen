@@ -32,7 +32,14 @@ import {
   type ConvictionPageData,
   type ConvictionTimelineStep,
 } from '@/data/convictionsData'
-import { locales, localeCountryNames, localeFlags, type Locale } from '@/config/locales'
+import {
+  locales,
+  nationOrderedLocales,
+  localeToCode,
+  localeCountryNames,
+  localeFlags,
+  type Locale,
+} from '@/config/locales'
 import { getStoredUser, type AuthUser } from '@/lib/auth'
 import { getAdminTexts } from '@/lib/adminI18n'
 
@@ -464,35 +471,39 @@ export default function AdminConvictionsPage() {
         </div>
       </div>
 
-      {/* 13개국 언어 선택 셀렉터 */}
+      {/* 15개국 언어 선택 셀렉터 (국가 이니셜 알파벳 순서 정렬) */}
       <div className="bg-white p-5 rounded-3xl border border-gray-200/80 shadow-xs">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 text-xs font-extrabold text-gray-700 uppercase tracking-wider">
             <Globe className="w-4 h-4 text-emerald-600" />
-            <span>{isEn ? '13 Asian Nations Languages' : '13개국 언어 선택 (Language Selector)'}</span>
+            <span>{isEn ? '15 Asian Nations Languages (LANGUAGE SELECTOR)' : '15개국 언어 선택 (LANGUAGE SELECTOR)'}</span>
           </div>
           <span className="text-xs text-gray-400 font-medium">
             {isEn ? 'Current Selection: ' : '현재 선택: '}<strong className="text-emerald-700">{localeCountryNames[selectedLocale as Locale] || selectedLocale}</strong>
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 lg:grid-cols-13 gap-2">
-          {locales.map((loc) => {
+        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-15 gap-2">
+          {nationOrderedLocales.map((loc) => {
             const isSelected = selectedLocale === loc
+            const countryCode = localeToCode[loc]
             return (
               <button
                 key={loc}
                 type="button"
                 onClick={() => setSelectedLocale(loc)}
-                className={`py-2 px-2 rounded-2xl border text-center transition-all flex flex-col items-center justify-center relative ${
+                className={`py-2.5 px-2 rounded-2xl border text-center transition-all flex flex-col items-center justify-center relative cursor-pointer ${
                   isSelected
-                    ? 'bg-gradient-to-b from-emerald-600 to-teal-700 text-white border-emerald-600 shadow-md shadow-emerald-700/20 scale-[1.03]'
-                    : 'bg-gray-50/70 hover:bg-emerald-50/50 text-gray-700 border-gray-200'
+                    ? 'bg-gradient-to-b from-emerald-600 to-teal-700 text-white border-emerald-600 shadow-md shadow-emerald-700/25 scale-[1.03]'
+                    : 'bg-gray-50/70 hover:bg-emerald-50/50 text-gray-700 border-gray-200 hover:border-emerald-300'
                 }`}
               >
-                <span className="text-base mb-0.5">{localeFlags[loc]}</span>
-                <span className="text-[11px] font-bold block leading-tight">{loc.toUpperCase()}</span>
-                <span className={`text-[9px] block truncate max-w-full ${isSelected ? 'text-emerald-100' : 'text-gray-400'}`}>
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className="text-sm">{localeFlags[loc]}</span>
+                  <span className="text-xs font-black tracking-wider block">{countryCode}</span>
+                </div>
+                <span className="text-[10px] font-bold block leading-tight">{loc.toUpperCase()}</span>
+                <span className={`text-[9px] block truncate max-w-full mt-0.5 ${isSelected ? 'text-emerald-100 font-semibold' : 'text-gray-400'}`}>
                   {localeCountryNames[loc].split(' ')[0]}
                 </span>
               </button>

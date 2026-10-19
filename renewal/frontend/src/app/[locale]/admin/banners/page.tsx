@@ -191,7 +191,7 @@ export default function AdminBannersPage() {
       id: newId,
       type: isEven ? 'image' : 'gradient_text',
       title: `새 배너 슬롯 #${banners.length + 1}`,
-      subtitle: '아시아 13개국 성도들과 나눌 소식을 입력해 주세요.',
+      subtitle: '아시아 15개국 성도들과 나눌 소식을 입력해 주세요.',
       badgeText: 'AAMEN NOTICE',
       imageUrl: isEven
         ? 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80'

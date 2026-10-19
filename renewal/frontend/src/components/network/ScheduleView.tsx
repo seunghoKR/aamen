@@ -57,7 +57,7 @@ export default function ScheduleView() {
               </h1>
               <p className="text-white/85 text-xs sm:text-sm max-w-2xl leading-relaxed">
                 {isKo
-                  ? '13개국 메노나이트 평화 연합 총회, 온라인 다국어 기도회 및 주요 사역 일정을 공식 구글 캘린더로 확인하세요.'
+                  ? '15개국 메노나이트 평화 연합 총회, 온라인 다국어 기도회 및 주요 사역 일정을 공식 구글 캘린더로 확인하세요.'
                   : t.schedulePage.desc}
               </p>
             </div>

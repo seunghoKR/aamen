@@ -11,7 +11,7 @@ import { MemberLevel, defaultTierSettings } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import { getStoredUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
 
-// 13개 참여국 정의 (각 국가의 언어로 국가명 | 영어 표기 | 이니셜)
+// 15개 참여국 정의 (각 국가의 언어로 국가명 | 영어 표기 | 이니셜)
 interface CountryItemInfo {
   code: string
   nativeName: string
@@ -19,19 +19,21 @@ interface CountryItemInfo {
 }
 
 const countryInfos: Record<Locale, CountryItemInfo> = {
-  ko: { code: 'KR', nativeName: '대한민국', englishName: 'South Korea' },
-  en: { code: 'US', nativeName: 'United States', englishName: 'United States' },
-  ja: { code: 'JP', nativeName: '日本', englishName: 'Japan' },
-  'zh-TW': { code: 'TW', nativeName: '台灣', englishName: 'Taiwan' },
-  vi: { code: 'VN', nativeName: 'Việt Nam', englishName: 'Vietnam' },
+  'zh-HK': { code: 'HK', nativeName: '香港', englishName: 'Hong Kong' },
   id: { code: 'ID', nativeName: 'Indonesia', englishName: 'Indonesia' },
-  th: { code: 'TH', nativeName: 'ไทย', englishName: 'Thailand' },
+  hi: { code: 'IN', nativeName: 'भारत', englishName: 'India' },
+  ja: { code: 'JP', nativeName: '日本', englishName: 'Japan' },
+  km: { code: 'KH', nativeName: 'កម្ពុជា', englishName: 'Cambodia' },
+  ko: { code: 'KR', nativeName: '대한민국', englishName: 'South Korea' },
   lo: { code: 'LA', nativeName: 'ລາວ', englishName: 'Laos' },
   my: { code: 'MM', nativeName: 'မြန်မာ', englishName: 'Myanmar' },
-  ne: { code: 'NP', nativeName: 'नेपाल', englishName: 'Nepal' },
-  hi: { code: 'IN', nativeName: 'भारत', englishName: 'India' },
-  km: { code: 'KH', nativeName: 'កម្ពុជា', englishName: 'Cambodia' },
   mn: { code: 'MN', nativeName: 'Монгол', englishName: 'Mongolia' },
+  ne: { code: 'NP', nativeName: 'नेपाल', englishName: 'Nepal' },
+  tl: { code: 'PH', nativeName: 'Pilipinas', englishName: 'Philippines' },
+  th: { code: 'TH', nativeName: 'ไทย', englishName: 'Thailand' },
+  'zh-TW': { code: 'TW', nativeName: '台灣', englishName: 'Taiwan' },
+  en: { code: 'US', nativeName: 'United States', englishName: 'United States' },
+  vi: { code: 'VN', nativeName: 'Việt Nam', englishName: 'Vietnam' },
 }
 
 // 1차 및 2차 서브메뉴 구조

@@ -1,13 +1,13 @@
-// 아시아 13개국 로그인 및 인증 다국어 사전
+// 아시아 15개국 로그인 및 인증 다국어 사전
 export const authTranslations = {
   "ko": {
     "login_title": "AAMEN 회원 로그인",
-    "login_subtitle": "13개국 아시아 아나밥티스트 메노나이트 신앙 공동체에 오신 것을 환영합니다.",
+    "login_subtitle": "15개국 아시아 아나밥티스트 메노나이트 신앙 공동체에 오신 것을 환영합니다.",
     "recommended_badge": "권장: 가장 빠르고 안전한 로그인",
     "google_login_btn": "Google 계정으로 계속하기",
     "google_checking": "Google 계정 확인 중...",
     "google_desc": "별도 비밀번호 없이 1초 만에 안전하게 정회원으로 연결됩니다.",
-    "sns_title": "아시아 13개국 맞춤형 메신저 & SNS 간편 로그인",
+    "sns_title": "아시아 15개국 맞춤형 메신저 & SNS 간편 로그인",
     "divider_or": "또는",
     "email_toggle_btn": "기존 이메일/비밀번호로 로그인",
     "id_label": "아이디 또는 이메일 주소",
@@ -35,12 +35,12 @@ export const authTranslations = {
   },
   "en": {
     "login_title": "AAMEN Member Login",
-    "login_subtitle": "Welcome to the 13-Nation Asian Anabaptist Mennonite Faith Community.",
+    "login_subtitle": "Welcome to the 15-Nation Asian Anabaptist Mennonite Faith Community.",
     "recommended_badge": "Recommended: Fastest & Safest Login",
     "google_login_btn": "Continue with Google",
     "google_checking": "Verifying Google Account...",
     "google_desc": "Connect securely as a full member in 1 second without a separate password.",
-    "sns_title": "Quick Login via Asian 13-Nation Messenger & Social Media",
+    "sns_title": "Quick Login via Asian 15-Nation Messenger & Social Media",
     "divider_or": "OR",
     "email_toggle_btn": "Log in with Email / Password",
     "id_label": "Username or Email Address",

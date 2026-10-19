@@ -6,37 +6,41 @@ import { Globe, Check, ChevronDown } from 'lucide-react'
 import { locales, type Locale } from '@/config/locales'
 import { getStoredUser, type AuthUser } from '@/lib/auth'
 
-// 13개국 맞춤형 표시 정보 (미국 US 🇺🇸 적용)
+// 15개국 맞춤형 표시 정보 (홍콩 HK, 필리핀 PH 포함)
 const authCountryDisplay: Record<Locale, { name: string; code: string; flag: string }> = {
-  ko: { name: '대한민국', code: 'KR', flag: '🇰🇷' },
-  en: { name: 'United States', code: 'US', flag: '🇺🇸' },
-  ja: { name: '日本語', code: 'JP', flag: '🇯🇵' },
-  'zh-TW': { name: '繁體中文', code: 'TW', flag: '🇹🇼' },
-  vi: { name: 'Tiếng Việt', code: 'VN', flag: '🇻🇳' },
+  'zh-HK': { name: '香港 繁體中文', code: 'HK', flag: '🇭🇰' },
   id: { name: 'Bahasa Indonesia', code: 'ID', flag: '🇮🇩' },
-  th: { name: 'ไทย', code: 'TH', flag: '🇹🇭' },
+  hi: { name: 'हिन्दी', code: 'IN', flag: '🇮🇳' },
+  ja: { name: '日本語', code: 'JP', flag: '🇯🇵' },
+  km: { name: 'ភាសាខ្មែរ', code: 'KH', flag: '🇰🇭' },
+  ko: { name: '대한민국', code: 'KR', flag: '🇰🇷' },
   lo: { name: 'ລາວ', code: 'LA', flag: '🇱🇦' },
   my: { name: 'မြန်မာ', code: 'MM', flag: '🇲🇲' },
-  ne: { name: 'नेपाली', code: 'NP', flag: '🇳🇵' },
-  hi: { name: 'हिन्दी', code: 'IN', flag: '🇮🇳' },
-  km: { name: 'ភាសាខ្មែរ', code: 'KH', flag: '🇰🇭' },
   mn: { name: 'Монгол', code: 'MN', flag: '🇲🇳' },
+  ne: { name: 'नेपाली', code: 'NP', flag: '🇳🇵' },
+  tl: { name: 'Pilipino (Tagalog)', code: 'PH', flag: '🇵🇭' },
+  th: { name: 'ไทย', code: 'TH', flag: '🇹🇭' },
+  'zh-TW': { name: '繁體中文', code: 'TW', flag: '🇹🇼' },
+  en: { name: 'United States', code: 'US', flag: '🇺🇸' },
+  vi: { name: 'Tiếng Việt', code: 'VN', flag: '🇻🇳' },
 }
 
 const countryCodeToLocale: Record<string, Locale> = {
-  KR: 'ko',
-  US: 'en',
-  JP: 'ja',
-  TW: 'zh-TW',
-  VN: 'vi',
+  HK: 'zh-HK',
   ID: 'id',
-  TH: 'th',
+  IN: 'hi',
+  JP: 'ja',
+  KH: 'km',
+  KR: 'ko',
   LA: 'lo',
   MM: 'my',
-  NP: 'ne',
-  IN: 'hi',
-  KH: 'km',
   MN: 'mn',
+  NP: 'ne',
+  PH: 'tl',
+  TH: 'th',
+  TW: 'zh-TW',
+  US: 'en',
+  VN: 'vi',
 }
 
 interface AuthLanguageSwitcherProps {

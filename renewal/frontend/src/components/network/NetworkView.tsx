@@ -86,7 +86,7 @@ export default function NetworkView() {
           }
         })
 
-      // 2. 13개국 코디네이터 데이터 로드 및 최신 영문/현지어 데이터 병합
+      // 2. 15개국 코디네이터 데이터 로드 및 최신 영문/현지어 데이터 병합
       const savedCoords = localStorage.getItem('aamen_coordinators_data')
       if (savedCoords) {
         const parsed = JSON.parse(savedCoords)
@@ -128,7 +128,7 @@ export default function NetworkView() {
     }
 
     const invitationMsg = isKo
-      ? `🕊️ *[AAMEN 아시아 13개국 네트워크 초청]*\n\n샬롬! ${recipientName}님(${country}),\n그리스도의 비폭력 평화와 제자도의 복음을 나누는 *AAMEN (아시아 아나밥티스트 메노나이트 교육 네트워크)*에 초대합니다.\n\n📖 MWC 7대 신념 13개 언어 무료 교안 자료실\n🙏 13개국 실시간 중보기도의 벽 & 다국어 커뮤니티\n👥 아시아 13개국 지도자 연대 플랫폼\n\n👉 *AAMEN 공식 사이트 방문하기:* https://aamen.net/ko/network\n\n함께 평화의 사역에 동참해 주시기를 소망합니다!`
+      ? `🕊️ *[AAMEN 아시아 15개국 네트워크 초청]*\n\n샬롬! ${recipientName}님(${country}),\n그리스도의 비폭력 평화와 제자도의 복음을 나누는 *AAMEN (아시아 아나밥티스트 메노나이트 교육 네트워크)*에 초대합니다.\n\n📖 MWC 7대 신념 15개 언어 무료 교안 자료실\n🙏 15개국 실시간 중보기도의 벽 & 다국어 커뮤니티\n👥 아시아 15개국 지도자 연대 플랫폼\n\n👉 *AAMEN 공식 사이트 방문하기:* https://aamen.net/ko/network\n\n함께 평화의 사역에 동참해 주시기를 소망합니다!`
       : `🕊️ *[AAMEN Asia 13 Nations Network Invitation]*\n\nShalom! ${recipientName} (${country}),\nYou are warmly invited to *AAMEN (Asia Anabaptist Mennonite Education Network)*.\n\n📖 13 Languages MWC 7 Core Convictions Curriculum\n🙏 13 Nations Real-time Wall of Intercessory Prayer\n👥 Asian Leaders Fellowship & Peace Education Hub\n\n👉 *Visit AAMEN:* https://aamen.net/en/network\n\nJoin hands with us in Christ's peace!`
 
     window.open(`https://wa.me/${phoneToSend}?text=${encodeURIComponent(invitationMsg)}`, '_blank')
@@ -297,7 +297,7 @@ export default function NetworkView() {
             </div>
           )}
 
-          {/* 2. 13개국 대표 코디네이터 (제목/소개는 각 국가 언어) */}
+          {/* 2. 15개국 대표 코디네이터 (제목/소개는 각 국가 언어) */}
           {(activeTab === 'all' || activeTab === 'coordinators') && (
             <div id="coordinators" className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-sm mb-10">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-gray-100">

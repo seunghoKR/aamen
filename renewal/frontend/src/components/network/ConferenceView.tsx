@@ -99,7 +99,7 @@ export default function ConferenceView() {
   const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
     '[AAMEN] 제4차 아시아 아나밥티스트 연합 컨퍼런스 (Seoul, Korea)'
   )}&dates=20261015/20261018&details=${encodeURIComponent(
-    '13개국 교회 지도자, 사역자, 청년 리더십이 함께 모이는 AAMEN 공식 연례 최대 중심 행사\nhttps://aamen.net/network/conference'
+    '15개국 교회 지도자, 사역자, 청년 리더십이 함께 모이는 AAMEN 공식 연례 최대 중심 행사\nhttps://aamen.net/network/conference'
   )}&location=${encodeURIComponent('서울 & 오산 아시아 평화 교육 센터, 대한민국')}&ctz=Asia/Seoul`
 
   return (
@@ -266,7 +266,7 @@ export default function ConferenceView() {
                 <div>
                   <div className="text-xs font-bold text-gray-400 uppercase">{t.details.attendeesLabel}</div>
                   <div className="text-sm font-extrabold text-gray-900 mt-0.5">{t.details.attendeesValue}</div>
-                  <div className="text-xs text-purple-700 font-semibold mt-1">● 총 13개국 200여 명 규모</div>
+                  <div className="text-xs text-purple-700 font-semibold mt-1">● 총 15개국 200여 명 규모</div>
                 </div>
               </div>
 
@@ -277,7 +277,7 @@ export default function ConferenceView() {
                 <div>
                   <div className="text-xs font-bold text-gray-400 uppercase">{t.details.languagesLabel}</div>
                   <div className="text-sm font-extrabold text-gray-900 mt-0.5">{t.details.languagesValue}</div>
-                  <div className="text-xs text-amber-700 font-semibold mt-1">● 13개국 언어 교재 및 동시통역</div>
+                  <div className="text-xs text-amber-700 font-semibold mt-1">● 15개국 언어 교재 및 동시통역</div>
                 </div>
               </div>
             </div>
@@ -293,7 +293,7 @@ export default function ConferenceView() {
                   <div className="font-black text-emerald-800 text-sm">DAY 1 (10. 15 목)</div>
                   <div className="font-bold text-gray-800">개회 총회 & 연합 찬양</div>
                   <p className="text-gray-500 leading-relaxed">
-                    13개국 대표단 입장식, 기조 강연(MWC 총무), 다국어 연합 저녁 기도회
+                    15개국 대표단 입장식, 기조 강연(MWC 총무), 다국어 연합 저녁 기도회
                   </p>
                 </div>
 
@@ -309,7 +309,7 @@ export default function ConferenceView() {
                   <div className="font-black text-purple-800 text-sm">DAY 3 (10. 17 토)</div>
                   <div className="font-bold text-gray-800">공동 선언 & 성찬식</div>
                   <p className="text-gray-500 leading-relaxed">
-                    2026-2030 아시아 평화 선언문 채택, 13개국 연합 성찬 예배, 파송식
+                    2026-2030 아시아 평화 선언문 채택, 15개국 연합 성찬 예배, 파송식
                   </p>
                 </div>
               </div>

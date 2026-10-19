@@ -73,7 +73,7 @@ const convictionsList: ConvictionItemMeta[] = [
     id: 'unity',
     num: '07',
     translationKey: 'mission',
-    descKo: '13개국 장벽을 넘는 그리스도의 몸',
+    descKo: '15개국 장벽을 넘는 그리스도의 몸',
     descEn: 'Global Family in Christ',
     emoji: '🌏',
     color: 'from-pink-400 to-rose-500',
@@ -104,7 +104,7 @@ export default function ConvictionsPreview() {
   const overviewDesc = t.has('overview_desc')
     ? t('overview_desc')
     : (locale === 'ko'
-        ? 'MWC 7대 확신의 공식 전문과 아시아 13개국 교육 커리큘럼 가이드를 한 번에 확인하세요.'
+        ? 'MWC 7대 확신의 공식 전문과 아시아 15개국 교육 커리큘럼 가이드를 한 번에 확인하세요.'
         : 'Explore full MWC conviction statements and Asian church curriculum guides.')
   const readFullText = t.has('read_full') ? t('read_full') : (locale === 'ko' ? '전문 읽어보기' : 'Read Full Text')
 

@@ -18,7 +18,7 @@ export default function HeroSection() {
   const [progress, setProgress] = useState(0)
   const [mounted, setMounted] = useState(false)
 
-  // 13개국 다국어 번역 헬퍼
+  // 15개국 다국어 번역 헬퍼
   const getBannerField = (id: string, field: 'title' | 'subtitle' | 'buttonText' | 'secondaryButtonText' | 'badgeText', fallback?: string) => {
     try {
       if (tBanners.has(`${id}.${field}`)) {
@@ -284,7 +284,7 @@ export default function HeroSection() {
           )}
         </div>
 
-        {/* 13개국 글로벌 통계 배지 (고정 하단 바) */}
+        {/* 15개국 글로벌 통계 배지 (고정 하단 바) */}
         <div className="pt-3 border-t border-white/10 flex items-center justify-center gap-6 sm:gap-14 text-white/85 max-w-3xl w-full">
           <div className="text-center">
             <div className="text-lg sm:text-2xl font-black text-white">13</div>

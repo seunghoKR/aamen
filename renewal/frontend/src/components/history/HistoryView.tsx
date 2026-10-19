@@ -25,8 +25,8 @@ const historyMilestones = [
   },
   {
     year: '2018',
-    title: 'AAMEN 공식 출범 및 13개국 협의체 구성',
-    desc: '한국, 일본, 베트남, 미얀마, 태국, 인도네시아 등 아시아 13개국 대표들이 참여하여 아시아 아나밥티스트 메노나이트 교육 네트워크(AAMEN)를 정식 발족했습니다.',
+    title: 'AAMEN 공식 출범 및 15개국 협의체 구성',
+    desc: '한국, 일본, 베트남, 미얀마, 태국, 인도네시아 등 아시아 15개국 대표들이 참여하여 아시아 아나밥티스트 메노나이트 교육 네트워크(AAMEN)를 정식 발족했습니다.',
   },
   {
     year: '2022',
@@ -36,7 +36,7 @@ const historyMilestones = [
   {
     year: '2025~2026',
     title: '온라인 통합 디지털 플랫폼 및 상호 교류 활성화',
-    desc: '언어의 장벽을 넘어 13개국 성도와 지도자들이 실시간으로 기도와 자료를 나누는 디지털 플랫폼으로 새롭게 도약합니다.',
+    desc: '언어의 장벽을 넘어 15개국 성도와 지도자들이 실시간으로 기도와 자료를 나누는 디지털 플랫폼으로 새롭게 도약합니다.',
   },
 ]
 
@@ -69,14 +69,14 @@ const historyPhotos: HistoryPhotoItem[] = [
     location: '방콕 (Bangkok, Thailand)',
     flag: '🇹🇭',
     date: '2018-11-15',
-    attendees: '13개국 대표단 120명',
+    attendees: '15개국 대표단 120명',
     imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
-    story: '아시아 13개국 교회 지도자들과 평화 사역자들이 한자리에 모여 AAMEN의 공식 출범을 선포하고 평화 교육 헌장을 채택했습니다. 분쟁과 갈등이 깊은 아시아 땅에서 화해의 제자도를 살아내기로 결단한 역사적인 순간이었습니다.',
-    tags: ['AAMEN출범', '평화컨퍼런스', '13개국연합'],
+    story: '아시아 15개국 교회 지도자들과 평화 사역자들이 한자리에 모여 AAMEN의 공식 출범을 선포하고 평화 교육 헌장을 채택했습니다. 분쟁과 갈등이 깊은 아시아 땅에서 화해의 제자도를 살아내기로 결단한 역사적인 순간이었습니다.',
+    tags: ['AAMEN출범', '평화컨퍼런스', '15개국연합'],
   },
   {
     id: 'hp_2',
-    title: '13개국 대표단 7대 레슨 플랜 집필 및 감수 워크숍',
+    title: '15개국 대표단 7대 레슨 플랜 집필 및 감수 워크숍',
     location: '서울 (Seoul, Korea)',
     flag: '🇰🇷',
     date: '2022-06-20',
@@ -104,7 +104,7 @@ const historyPhotos: HistoryPhotoItem[] = [
     date: '2024-03-05',
     attendees: '현지 사역자 및 성도 70명',
     imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1200&q=80',
-    story: '정치적 격변과 불안 속에서도 복음의 평화를 증거하기 위한 현지 청년 센터가 문을 열었습니다. AAMEN 13개국은 구호 물품과 기도 지원을 통해 미얀마 형제자매들과 굳건히 연대하고 있습니다.',
+    story: '정치적 격변과 불안 속에서도 복음의 평화를 증거하기 위한 현지 청년 센터가 문을 열었습니다. AAMEN 15개국은 구호 물품과 기도 지원을 통해 미얀마 형제자매들과 굳건히 연대하고 있습니다.',
     tags: ['미얀마사역', '긴급구호', '화해와평화'],
   },
 ]
@@ -131,7 +131,7 @@ export default function HistoryView() {
             </span>
             <h1 className="text-3xl sm:text-4xl font-black mb-3 tracking-tight">역사와 교회</h1>
             <p className="text-white/85 text-sm sm:text-base max-w-2xl leading-relaxed">
-              아시아 땅에 뿌리내린 아나밥티스트 메노나이트 신앙의 발자취와 13개국 교회들의 생생한 역사 및 사역 사진첩입니다.
+              아시아 땅에 뿌리내린 아나밥티스트 메노나이트 신앙의 발자취와 15개국 교회들의 생생한 역사 및 사역 사진첩입니다.
             </p>
 
             {/* 네비게이션 탭 칩 */}
@@ -139,7 +139,7 @@ export default function HistoryView() {
               {[
                 { id: 'all', label: '전체 보기' },
                 { id: 'history', label: '📜 AAMEN 걸어온 길' },
-                { id: 'churches', label: '⛪ 13개국 교회 소개' },
+                { id: 'churches', label: '⛪ 15개국 교회 소개' },
                 { id: 'photos', label: '📸 사진첩 (게시판)' },
               ].map((tab) => (
                 <button
@@ -182,12 +182,12 @@ export default function HistoryView() {
             </div>
           )}
 
-          {/* 2. 13개국 교회 소개 섹션 */}
+          {/* 2. 15개국 교회 소개 섹션 */}
           {(activeTab === 'all' || activeTab === 'churches') && (
             <div id="churches" className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-sm mb-10">
               <div className="flex items-center gap-2 mb-6 font-black text-xl text-gray-900">
                 <Church size={22} className="text-emerald-600" />
-                <span>함께하는 13개국 교회 소개 (Churches)</span>
+                <span>함께하는 15개국 교회 소개 (Churches)</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

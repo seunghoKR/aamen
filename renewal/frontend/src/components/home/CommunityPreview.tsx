@@ -21,11 +21,11 @@ const COMMUNITY_CARDS_BY_LOCALE: Record<string, CommunityCardsLocale> = {
     },
     resources: {
       title: '자료방',
-      desc: '13개국 완역 7대 신념 교안, 찬양집, 예배자료 무료 다운로드',
+      desc: '15개국 완역 7대 신념 교안, 찬양집, 예배자료 무료 다운로드',
     },
     prayer: {
       title: '함께 기도해요',
-      desc: '13개국 실시간 기도의 벽과 원클릭 WhatsApp 중보기도 연대',
+      desc: '15개국 실시간 기도의 벽과 원클릭 WhatsApp 중보기도 연대',
     },
     photos: {
       title: '사진첩',
@@ -43,7 +43,7 @@ const COMMUNITY_CARDS_BY_LOCALE: Record<string, CommunityCardsLocale> = {
     },
     prayer: {
       title: 'Pray Together',
-      desc: 'Real-time prayer wall across 13 nations & one-click WhatsApp prayer network',
+      desc: 'Real-time prayer wall across 15 nations & one-click WhatsApp prayer network',
     },
     photos: {
       title: 'Photo Gallery',

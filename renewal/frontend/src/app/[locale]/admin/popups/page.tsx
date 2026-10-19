@@ -27,7 +27,7 @@ const defaultPopupConfigKo: PopupConfig = {
   enabled: true,
   title: '2026 MWC 아시아 아나밥티스트 연합 컨퍼런스 안내',
   content:
-    '아시아 13개국 멘토와 청년들이 한자리에 모여 평화와 복음을 나누는 글로벌 연합 수련회가 열립니다. 각국 코디네이터를 통해 참가 신청을 받고 있으니 많은 기도와 참여를 바랍니다.',
+    '아시아 15개국 멘토와 청년들이 한자리에 모여 평화와 복음을 나누는 글로벌 연합 수련회가 열립니다. 각국 코디네이터를 통해 참가 신청을 받고 있으니 많은 기도와 참여를 바랍니다.',
   imageUrl:
     'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
   buttonText: '공지사항 자세히 보기',
@@ -39,7 +39,7 @@ const defaultPopupConfigEn: PopupConfig = {
   enabled: true,
   title: '2026 MWC Asia Anabaptist Joint Conference Notice',
   content:
-    'A pan-Asian gathering where mentors and youth from 13 nations come together to share the gospel of peace. Registration is now open through each country coordinator.',
+    'A pan-Asian gathering where mentors and youth from 15 nations come together to share the gospel of peace. Registration is now open through each country coordinator.',
   imageUrl:
     'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
   buttonText: 'View Conference Details',

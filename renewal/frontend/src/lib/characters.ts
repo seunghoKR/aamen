@@ -25,7 +25,7 @@ export const AAMEN_CHARACTERS: CharacterAvatar[] = [
     region: 'east_asia',
     bgGradient: 'from-blue-500 to-indigo-600',
     tag: '평화사역 코디네이터',
-    desc: '아시아 13개국 지체들을 따뜻하게 연결하는 청년 리더',
+    desc: '아시아 15개국 지체들을 따뜻하게 연결하는 청년 리더',
   },
   {
     id: 'kr-jiwoo',
