@@ -31,7 +31,8 @@ export default async function LocaleLayout({
     <NextIntlClientProvider messages={messages}>
       {children}
       <GlobalTierSimulator />
-      <WhatsAppWidget />
+      {/* 왓츠앱 플로팅 위젯 (현재 비활성화 / 추후 필요 시 주석 해제) */}
+      {/* <WhatsAppWidget /> */}
     </NextIntlClientProvider>
   )
 }

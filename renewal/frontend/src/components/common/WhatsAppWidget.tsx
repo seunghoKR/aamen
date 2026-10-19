@@ -4,6 +4,10 @@ import { useState } from 'react'
 import { MessageCircle, X, Send, Heart, BookOpen, Users, HelpCircle, Sparkles } from 'lucide-react'
 
 export default function WhatsAppWidget() {
+  // 대표님 요청: 현재는 활용도가 낮아 필요 시까지 플로팅 아이콘 비활성화(숨김)
+  const isEnabled = false
+  if (!isEnabled) return null
+
   const [isOpen, setIsOpen] = useState(false)
   const [message, setMessage] = useState('')
 
