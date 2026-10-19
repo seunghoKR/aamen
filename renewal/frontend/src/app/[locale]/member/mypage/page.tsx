@@ -39,6 +39,7 @@ import { getStoredUser, saveAuthUser, logoutUser, AUTH_EVENT_NAME, type AuthUser
 import { AVATAR_LIST, getAvatarSrc, CharacterSvg } from '@/lib/avatarCharacters'
 import MessagesInbox from '@/components/member/MessagesInbox'
 import NotificationHistoryList from '@/components/member/NotificationHistoryList'
+import AppInstallGuide from '@/components/member/AppInstallGuide'
 import { subscribeToWebPush, sendTestWebPush } from '@/lib/pushNotifications'
 import {
   getLocalizedTierInfo,
@@ -1383,6 +1384,30 @@ export default function MyPage() {
         {/* 탭 1: 프로필 & 권한 현황 */}
         {activeTab === 'profile' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 📱 스마트폰 앱 설치 & 알림 바로가기 배너 */}
+            <div className="lg:col-span-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3">
+                <span className="p-2 rounded-xl bg-emerald-600 text-white shrink-0">
+                  <Smartphone size={16} />
+                </span>
+                <div>
+                  <span className="font-extrabold text-emerald-950 block">
+                    {isKo ? '📱 스마트폰 홈 화면에 AAMEN 앱을 설치해 보세요!' : '📱 Install AAMEN on your Smartphone!'}
+                  </span>
+                  <span className="text-emerald-800 text-[11px]">
+                    {isKo ? '앱스토어 다운로드 없이 1초 설치 & 실시간 기기 푸시 알림을 받을 수 있습니다.' : 'Install in 1 second without App Store & receive real-time push alerts.'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('notifications')}
+                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-xs shrink-0 cursor-pointer"
+              >
+                {isKo ? '설치 방법 보기 & 알림 켜기' : 'View Guide & Enable'}
+              </button>
+            </div>
+
             {/* 좌측 2열: 내 기본 정보 카드 */}
             <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm space-y-6">
               <div className="pb-4 border-b border-gray-100">
@@ -1649,6 +1674,21 @@ export default function MyPage() {
                 userId={currentUser.id} 
               />
             )}
+
+            {/* 2. 📱 스마트폰 웹앱(PWA) 설치 & 푸시 알림 설정 안내문 */}
+            <AppInstallGuide
+              locale={locale}
+              onEnablePush={requestWebPushPermission}
+              onTestPush={async () => {
+                if (currentUser?.id) {
+                  await sendTestWebPush(currentUser.id)
+                  showToast(myTexts.toastWebPushTestSent)
+                } else {
+                  showToast(myTexts.toastWebPushNotSupported)
+                }
+              }}
+              pushPermissionStatus={pushPermissionStatus}
+            />
 
             {/* 💡 선택 사항 안내 배너 */}
             <div className="p-4 rounded-2xl bg-gray-100/90 border border-gray-200 text-gray-700 text-xs flex items-center justify-between">

@@ -102,6 +102,13 @@ export default function AdminLayout({
       badge: t.menuPopupsBadge,
       badgeColor: 'bg-amber-500/20 text-amber-300',
     },
+    {
+      title: isEn ? 'Site Manual' : '사이트 운영 설명서',
+      href: '/admin/manual',
+      icon: BookOpen,
+      badge: isEn ? 'Guide' : '필독',
+      badgeColor: 'bg-purple-500/20 text-purple-300',
+    },
   ]
 
   // 2) 개발자 전용 메뉴 (o 표시 항목: 오직 개발자에게만 노출)

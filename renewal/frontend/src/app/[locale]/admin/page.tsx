@@ -19,6 +19,7 @@ import {
 import { Member, BannerConfig, defaultBanner, initialMembers, initialPartnerOrgs } from '@/lib/store'
 import { getStoredUser, type AuthUser } from '@/lib/auth'
 import { getAdminTexts } from '@/lib/adminI18n'
+import AdminSiteManual from '@/components/admin/AdminSiteManual'
 
 export default function AdminDashboardPage() {
   const params = useParams()
@@ -132,6 +133,13 @@ export default function AdminDashboardPage() {
               <span>{t.btnAiSettings}</span>
             </Link>
           )}
+          <a
+            href="#admin-manual"
+            className="px-4 py-2.5 bg-white/20 hover:bg-white/30 border border-white/40 text-white font-black rounded-xl text-xs transition-all shadow-xs flex items-center gap-1.5"
+          >
+            <BookOpen size={13} />
+            <span>{isEn ? 'Site Manual' : '사이트 운영 설명서'}</span>
+          </a>
         </div>
       </div>
 
@@ -489,6 +497,13 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 4. 관리자를 위한 사이트 운영 설명서 (Admin & Site Manual) */}
+      {/* ========================================================================= */}
+      <div id="admin-manual" className="pt-2">
+        <AdminSiteManual locale={currentLocale} isDeveloper={isDeveloper} />
       </div>
     </div>
   )
