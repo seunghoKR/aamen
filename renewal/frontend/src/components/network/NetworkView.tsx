@@ -30,6 +30,27 @@ import {
 } from '@/lib/store'
 import { networkTranslations } from '@/data/networkTranslations'
 
+// 🌟 오직 국가 코디네이터(Coordinator)만 엄격히 필터링 (MWC 총괄 디렉터/Boss, 개발자 등 제외)
+function isCoordinatorOnly(c: CountryCoordinator): boolean {
+  if (!c) return false
+  if (c.id === 'coord_mwc' || c.memberId === 'Jeanette' || c.id === 'coord_kr' || c.memberId === 'admin' || c.memberId === 'Bockki') {
+    return false
+  }
+  const r = (c.role || '').toLowerCase()
+  if (
+    r.includes('boss') ||
+    r.includes('디렉터') ||
+    r.includes('director') ||
+    r.includes('개발자') ||
+    r.includes('developer') ||
+    r.includes('helper') ||
+    r.includes('최고관리자')
+  ) {
+    return false
+  }
+  return r.includes('코디네이터') || r.includes('coord')
+}
+
 export default function NetworkView() {
   const locale = useLocale()
   const isKo = locale === 'ko'
@@ -37,7 +58,9 @@ export default function NetworkView() {
 
   const [activeTab, setActiveTab] = useState<'all' | 'partners' | 'coordinators'>('all')
   const [partners, setPartners] = useState<PartnerOrgItem[]>(initialPartnerOrgs)
-  const [coordinators, setCoordinators] = useState<CountryCoordinator[]>(initialCoordinators)
+  const [coordinators, setCoordinators] = useState<CountryCoordinator[]>(() =>
+    initialCoordinators.filter(isCoordinatorOnly)
+  )
 
   // 관리자 대시보드에서 등록/수정한 협력단체 및 코디네이터 데이터 불러오기
   useEffect(() => {
@@ -68,19 +91,21 @@ export default function NetworkView() {
       if (savedCoords) {
         const parsed = JSON.parse(savedCoords)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const merged = initialCoordinators.map((init) => {
-            const saved = parsed.find((p: any) => p.countryCode === init.countryCode || p.id === init.id)
-            if (!saved) return init
-            return {
-              ...init,
-              ...saved,
-              nameNative: init.nameNative,
-              nameEn: init.nameEn,
-              name: init.name,
-              email: saved.email || init.email,
-            }
-          })
-          setCoordinators(merged)
+          const merged = initialCoordinators
+            .filter(isCoordinatorOnly)
+            .map((init) => {
+              const saved = parsed.find((p: any) => p.countryCode === init.countryCode || p.id === init.id)
+              if (!saved) return init
+              return {
+                ...init,
+                ...saved,
+                nameNative: init.nameNative,
+                nameEn: init.nameEn,
+                name: init.name,
+                email: saved.email || init.email,
+              }
+            })
+          setCoordinators(merged.filter(isCoordinatorOnly))
         }
       }
     } catch (e) {
@@ -295,6 +320,7 @@ export default function NetworkView() {
               {/* 🌟 PC 모드 1열에 4명 (국가 이니셜 알파벳 순서 정렬) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 {[...coordinators]
+                  .filter(isCoordinatorOnly)
                   .sort((a, b) => a.countryCode.localeCompare(b.countryCode))
                   .map((lead) => {
                     const flagSvg = `/images/flags/${lead.countryCode.toLowerCase()}.svg`

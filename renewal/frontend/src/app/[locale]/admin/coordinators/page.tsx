@@ -47,10 +47,12 @@ const countryNameMapEn: Record<string, string> = {
   US: 'United States (US)',
 }
 
-// 🌟 직책이 코디네이터(Level 4)인 회원만 필터링 (개발자, Boss/최고관리자, Helper/사역자 엄격 제외)
+// 🌟 직책이 코디네이터(Level 4)인 회원만 필터링 (MWC 총괄 디렉터/Boss, 개발자, 최고관리자, Helper 등 엄격 제외)
 function isStrictCoordinator(c: CountryCoordinator): boolean {
   if (!c) return false
-  if (c.id === 'coord_kr' || c.memberId === 'admin' || c.memberId === 'Jeanette' || c.memberId === 'Bockki') return false
+  if (c.id === 'coord_mwc' || c.memberId === 'Jeanette' || c.id === 'coord_kr' || c.memberId === 'admin' || c.memberId === 'Bockki') {
+    return false
+  }
   const r = (c.role || '').toLowerCase()
   if (
     r.includes('developer') ||
@@ -58,11 +60,13 @@ function isStrictCoordinator(c: CountryCoordinator): boolean {
     r.includes('boss') ||
     r.includes('최고관리자') ||
     r.includes('helper') ||
-    r.includes('사역자')
+    r.includes('사역자') ||
+    r.includes('디렉터') ||
+    r.includes('director')
   ) {
     return false
   }
-  return true
+  return r.includes('코디네이터') || r.includes('coord')
 }
 
 export default function AdminCoordinatorsPage() {
