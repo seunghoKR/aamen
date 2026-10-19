@@ -233,7 +233,7 @@ ${text}`
 /**
  * 무료 Google Translate 단일 번역 헬퍼 (Gemini API 비상용 안전망 Fallback)
  */
-async function translateSingleGoogle(text: string, targetLang: string): Promise<string> {
+export async function translateSingleGoogle(text: string, targetLang: string): Promise<string> {
   try {
     const googleLang = targetLang === 'zh-HK' ? 'zh-TW' : targetLang
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${googleLang}&dt=t&q=${encodeURIComponent(text)}`

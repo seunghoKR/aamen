@@ -1885,6 +1885,10 @@ export default function MyPage() {
                           <option value="+81">🇯🇵 +81 ({getLocalizedCountryName('JP', currentLocale)})</option>
                           <option value="+855">🇰🇭 +855 ({getLocalizedCountryName('KH', currentLocale)})</option>
                           <option value="+856">🇱🇦 +856 ({getLocalizedCountryName('LA', currentLocale)})</option>
+                          <option value="+886">🇹🇼 +886 ({getLocalizedCountryName('TW', currentLocale)})</option>
+                          <option value="+852">🇭🇰 +852 ({getLocalizedCountryName('HK', currentLocale)})</option>
+                          <option value="+976">🇲🇳 +976 ({getLocalizedCountryName('MN', currentLocale)})</option>
+                          <option value="+63">🇵🇭 +63 ({getLocalizedCountryName('PH', currentLocale)})</option>
                           <option value="+1">🇺🇸 +1 ({getLocalizedCountryName('US', currentLocale)})</option>
                         </select>
 

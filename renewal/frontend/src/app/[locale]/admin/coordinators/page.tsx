@@ -47,6 +47,28 @@ const countryNameMapEn: Record<string, string> = {
   US: 'United States (US)',
 }
 
+// 🌍 국가별 국제전화 국가번호 및 포맷 가이드
+export const COUNTRY_CALLING_CODES: Record<
+  string,
+  { code: string; defaultPhone: string; flag: string; nameEn: string; nameKo: string }
+> = {
+  KR: { code: '+82', defaultPhone: '+82 10-1234-5678', flag: '🇰🇷', nameEn: 'South Korea', nameKo: '대한민국' },
+  US: { code: '+1', defaultPhone: '+1 234-567-8901', flag: '🇺🇸', nameEn: 'United States', nameKo: '미국' },
+  ID: { code: '+62', defaultPhone: '+62 812-3456-7890', flag: '🇮🇩', nameEn: 'Indonesia', nameKo: '인도네시아' },
+  HK: { code: '+852', defaultPhone: '+852 9123-4567', flag: '🇭🇰', nameEn: 'Hong Kong', nameKo: '홍콩' },
+  JP: { code: '+81', defaultPhone: '+81 90-1234-5678', flag: '🇯🇵', nameEn: 'Japan', nameKo: '일본' },
+  MM: { code: '+95', defaultPhone: '+95 9-1234-5678', flag: '🇲🇲', nameEn: 'Myanmar', nameKo: '미얀마' },
+  VN: { code: '+84', defaultPhone: '+84 90-123-4567', flag: '🇻🇳', nameEn: 'Vietnam', nameKo: '베트남' },
+  TH: { code: '+66', defaultPhone: '+66 81-234-5678', flag: '🇹🇭', nameEn: 'Thailand', nameKo: '태국' },
+  NP: { code: '+977', defaultPhone: '+977 98-1234-5678', flag: '🇳🇵', nameEn: 'Nepal', nameKo: '네팔' },
+  IN: { code: '+91', defaultPhone: '+91 98765-43210', flag: '🇮🇳', nameEn: 'India', nameKo: '인도' },
+  KH: { code: '+855', defaultPhone: '+855 12-345-678', flag: '🇰🇭', nameEn: 'Cambodia', nameKo: '캄보디아' },
+  LA: { code: '+856', defaultPhone: '+856 20-1234-5678', flag: '🇱🇦', nameEn: 'Laos', nameKo: '라오스' },
+  MN: { code: '+976', defaultPhone: '+976 99-12-3456', flag: '🇲🇳', nameEn: 'Mongolia', nameKo: '몽골' },
+  TW: { code: '+886', defaultPhone: '+886 912-345-678', flag: '🇹🇼', nameEn: 'Taiwan', nameKo: '대만' },
+  PH: { code: '+63', defaultPhone: '+63 912-345-6789', flag: '🇵🇭', nameEn: 'Philippines', nameKo: '필리핀' },
+}
+
 // 🌟 직책이 코디네이터(Level 4)인 회원만 필터링 (MWC 총괄 디렉터/Boss, 개발자, 최고관리자, Helper 등 엄격 제외)
 function isStrictCoordinator(c: CountryCoordinator): boolean {
   if (!c) return false
@@ -143,11 +165,12 @@ export default function AdminCoordinatorsPage() {
   // 수정 모달 열기
   const handleOpenEdit = (coord: CountryCoordinator) => {
     setSelectedCoord(coord)
+    const callingInfo = COUNTRY_CALLING_CODES[coord.countryCode] || COUNTRY_CALLING_CODES['KR']
     setEditForm({
       name: coord.name,
       role: coord.role,
       email: coord.email,
-      phone: coord.phone || '',
+      phone: coord.phone ? coord.phone : `${callingInfo.code} `,
       selectedMemberId: coord.memberId || '',
     })
   }
@@ -161,6 +184,8 @@ export default function AdminCoordinatorsPage() {
 
     const found = members.find((m) => m.id === memberId)
     if (found) {
+      const targetCountry = found.countryCode || selectedCoord?.countryCode || 'KR'
+      const callingInfo = COUNTRY_CALLING_CODES[targetCountry] || COUNTRY_CALLING_CODES['KR']
       const roleText = isEn
         ? `${countryNameMapEn[found.countryCode] || found.countryCode} Coordinator`
         : `${found.countryName} 코디네이터 (${found.countryCode} Coord.)`
@@ -168,7 +193,7 @@ export default function AdminCoordinatorsPage() {
         name: found.name,
         role: roleText,
         email: found.email,
-        phone: editForm.phone || '+82 10-2345-6789',
+        phone: (found as any).phone || (editForm.phone && editForm.phone !== '+82 10-2345-6789' ? editForm.phone : `${callingInfo.code} `),
         selectedMemberId: found.id,
       })
       showToast(
@@ -349,18 +374,10 @@ export default function AdminCoordinatorsPage() {
                     {countryDisplay}
                   </div>
 
-                  {/* 대표 이름 (해당국가 언어 + 영문) & 회원 매핑 뱃지 */}
+                  {/* 대표 이름 (해당국가 언어 + 영문) */}
                   <div className="mb-2">
                     <div className="flex items-center justify-center gap-1.5">
                       <h3 className="font-black text-base text-gray-900">{lead.nameNative || lead.name}</h3>
-                      {lead.isRegisteredMember && (
-                        <span
-                          className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800"
-                          title={isEn ? 'Linked with registered member' : '가입 회원과 연동됨'}
-                        >
-                          {isEn ? 'Linked Member' : '회원연동'}
-                        </span>
-                      )}
                     </div>
                     {lead.nameEn && (
                       <p className="text-xs font-bold text-gray-400 font-mono uppercase tracking-wider mt-0.5">
@@ -527,16 +544,57 @@ export default function AdminCoordinatorsPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">
-                    {isEn ? 'WhatsApp Phone Number' : 'WhatsApp 전화번호'}
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.phone}
-                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    placeholder="+82 10-1234-5678"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 font-mono text-xs focus:outline-emerald-600"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-gray-700">
+                      {isEn ? 'WhatsApp Phone Number' : 'WhatsApp 전화번호'}
+                    </label>
+                    {selectedCoord && COUNTRY_CALLING_CODES[selectedCoord.countryCode] && (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                        <span>{COUNTRY_CALLING_CODES[selectedCoord.countryCode].flag}</span>
+                        <span>
+                          {isEn
+                            ? COUNTRY_CALLING_CODES[selectedCoord.countryCode].nameEn
+                            : COUNTRY_CALLING_CODES[selectedCoord.countryCode].nameKo}{' '}
+                          ({COUNTRY_CALLING_CODES[selectedCoord.countryCode].code})
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      placeholder={
+                        selectedCoord && COUNTRY_CALLING_CODES[selectedCoord.countryCode]
+                          ? COUNTRY_CALLING_CODES[selectedCoord.countryCode].defaultPhone
+                          : '+82 10-1234-5678'
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 font-mono text-xs focus:outline-emerald-600 pr-20"
+                    />
+                    {selectedCoord && COUNTRY_CALLING_CODES[selectedCoord.countryCode] && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cCode = COUNTRY_CALLING_CODES[selectedCoord.countryCode].code
+                          const clean = editForm.phone.replace(/^\+\d+[\s-]*/, '')
+                          setEditForm({ ...editForm, phone: `${cCode} ${clean}`.trim() })
+                        }}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-lg transition-colors cursor-pointer"
+                        title={isEn ? 'Apply country calling code' : '해당 국가번호 적용'}
+                      >
+                        {COUNTRY_CALLING_CODES[selectedCoord.countryCode].code} {isEn ? 'Apply' : '적용'}
+                      </button>
+                    )}
+                  </div>
+                  {selectedCoord && COUNTRY_CALLING_CODES[selectedCoord.countryCode] && (
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      💡{' '}
+                      {isEn
+                        ? `Calling code: ${COUNTRY_CALLING_CODES[selectedCoord.countryCode].code} (e.g. ${COUNTRY_CALLING_CODES[selectedCoord.countryCode].defaultPhone})`
+                        : `국가번호 참고: ${COUNTRY_CALLING_CODES[selectedCoord.countryCode].flag} ${COUNTRY_CALLING_CODES[selectedCoord.countryCode].nameKo} (${COUNTRY_CALLING_CODES[selectedCoord.countryCode].code}) — 형식 예: ${COUNTRY_CALLING_CODES[selectedCoord.countryCode].defaultPhone}`}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

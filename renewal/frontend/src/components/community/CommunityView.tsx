@@ -59,7 +59,7 @@ import {
   formatBytes,
   OptimizedResult,
 } from '@/lib/imageOptimizer'
-import { translateTitleTo15Languages } from '@/lib/gemini'
+import { translateTitleTo15Languages, translateSingleGoogle } from '@/lib/gemini'
 import { getCommunityStrings, NATIONS_15 } from './communityI18n'
 
 interface Comment {
@@ -204,7 +204,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [photoAttendees, setPhotoAttendees] = useState('')
   const [photoTags, setPhotoTags] = useState('')
 
-  // 🌐 언어별 게시물 제목 추출 헬퍼 (extra_json.titles[locale] 우선)
+  // 🌐 실시간 번역 캐시 상태 (DB에 번역본이 없는 기존 글 자동 번역)
+  const [runtimeTitles, setRuntimeTitles] = useState<Record<string, string>>({})
+
+  // 🌐 언어별 게시물 제목 추출 헬퍼 (extra_json.titles[locale] 우선, 실시간 번역 캐시 차선)
   const getPostTitle = (p?: Post | null, langCode: string = locale): string => {
     if (!p) return ''
     let extra: any = {}
@@ -214,8 +217,48 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     if (extra?.titles && typeof extra.titles === 'object' && extra.titles[langCode]) {
       return extra.titles[langCode]
     }
+    const cacheKey = `${p.id}_${langCode}`
+    if (runtimeTitles[cacheKey]) {
+      return runtimeTitles[cacheKey]
+    }
     return p.title || ''
   }
+
+  // 🌐 언어가 변경되었거나 게시물이 로드되었을 때 번역이 없는 기존 게시물 실시간 자동 번역
+  useEffect(() => {
+    if (!posts || posts.length === 0) return
+
+    const missingPosts = posts.filter((p) => {
+      let extra: any = {}
+      try {
+        extra = typeof p.extra_json === 'string' ? JSON.parse(p.extra_json) : p.extra_json || {}
+      } catch (e) {}
+      const hasPrecomputed = extra?.titles && extra.titles[locale]
+      const hasRuntime = runtimeTitles[`${p.id}_${locale}`]
+      return !hasPrecomputed && !hasRuntime && Boolean(p.title)
+    })
+
+    if (missingPosts.length === 0) return
+
+    let isMounted = true
+    missingPosts.forEach(async (p) => {
+      try {
+        const translated = await translateSingleGoogle(p.title, locale)
+        if (isMounted && translated && translated !== p.title) {
+          setRuntimeTitles((prev) => ({
+            ...prev,
+            [`${p.id}_${locale}`]: translated,
+          }))
+        }
+      } catch (err) {
+        // silent fallback
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [posts, locale, runtimeTitles])
   const [photoImageUrl, setPhotoImageUrl] = useState('')
   const [photoImageUrls, setPhotoImageUrls] = useState<string[]>([])
   const [optimizedPreviews, setOptimizedPreviews] = useState<OptimizedResult[]>([])
