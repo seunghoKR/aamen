@@ -33,6 +33,9 @@ if (Test-Path $koDir) {
 # 2. Backend api copy
 Write-Host ">>> [3/7] Copying backend PHP API files to api/..." -ForegroundColor Cyan
 $apiDir = "$deployDir\api"
+if (Test-Path $apiDir) {
+    Remove-Item -Path $apiDir -Recurse -Force
+}
 New-Item -ItemType Directory -Path $apiDir -Force | Out-Null
 Copy-Item -Path "$backendDir\*" -Destination $apiDir -Recurse -Force
 
@@ -56,14 +59,13 @@ RewriteBase /
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# 2. Existing files and directories directly served
+# 2. Clean API routes FIRST (e.g. /api/posts -> api/posts.php)
+RewriteRule ^api/([a-zA-Z0-9_-]+)/?$ api/$1.php [L,QSA]
+
+# 3. Existing files and directories directly served
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
-
-# 3. Clean API routes (e.g. /api/posts -> api/posts.php)
-RewriteCond %{DOCUMENT_ROOT}/api/$1.php -f
-RewriteRule ^api/([^/.]+)/?$ api/$1.php [L,QSA]
 
 # 4. Next.js trailing slash directories
 RewriteCond %{REQUEST_FILENAME}/index.html -f

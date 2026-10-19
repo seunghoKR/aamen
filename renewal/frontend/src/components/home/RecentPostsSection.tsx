@@ -93,9 +93,9 @@ export default function RecentPostsSection() {
     async function fetchLive() {
       try {
         setLoading(true)
-        let res = await fetch('/api/posts?limit=12&role=regular')
+        let res = await fetch('/api/posts.php?limit=12&role=regular')
         if (!res.ok) {
-          res = await fetch('/api/posts.php?limit=12&role=regular')
+          res = await fetch('/api/posts?limit=12&role=regular')
         }
         if (!res.ok) return
         const contentType = res.headers.get('content-type')

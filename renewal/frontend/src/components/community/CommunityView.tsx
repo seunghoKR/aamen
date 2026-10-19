@@ -247,7 +247,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     try {
       setLoading(true)
       const roleParam = currentLevel === 0 ? 'guest' : currentLevel === 1 ? 'associate' : currentLevel >= 4 ? 'country_admin' : 'regular'
-      const res = await fetch(`/api/posts?type=${activeTab}&search=${encodeURIComponent(searchTerm)}&role=${roleParam}`)
+      const res = await fetch(`/api/posts.php?type=${activeTab}&search=${encodeURIComponent(searchTerm)}&role=${roleParam}`)
       if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
         const data = await res.json()
         if (data.success && Array.isArray(data.data)) {
@@ -275,7 +275,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     setIsDetailLoading(true)
     try {
       const roleParam = currentLevel === 0 ? 'guest' : currentLevel === 1 ? 'associate' : currentLevel >= 4 ? 'country_admin' : 'regular'
-      const res = await fetch(`/api/posts?id=${postId}&role=${roleParam}`)
+      const res = await fetch(`/api/posts.php?id=${postId}&role=${roleParam}`)
       if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
         const data = await res.json()
         if (data.success) {
