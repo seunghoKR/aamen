@@ -173,8 +173,8 @@ export default function AppInstallGuide({
                 <span>💡</span>
                 <span>
                   {isKo
-                    ? '삼성 인터넷 브라우저를 쓰시는 경우: 하단 삼선 메뉴(≡) > [현재 페이지 추가] > [홈 화면]을 누르시면 가장 편리합니다.'
-                    : 'Samsung Internet tip: Tap the bottom menu (≡) > [Add page to] > [Home screen].'}
+                    ? '삼성 인터넷 브라우저를 쓰시는 경우: 하단 삼선 메뉴(≡) → [현재 페이지 추가] → [홈 화면]을 누르시면 가장 편리합니다.'
+                    : 'Samsung Internet tip: Tap the bottom menu (≡) → [Add page to] → [Home screen].'}
                 </span>
               </div>
             </div>
@@ -292,9 +292,9 @@ export default function AppInstallGuide({
                   </span>
                   <p className="text-[11px] text-rose-900 leading-relaxed">
                     {isKo ? (
-                      <>스마트폰 <strong>[설정] > [알림] > [사용 중인 브라우저(또는 AAMEN 앱)]</strong>의 알림 허용 스위치가 켜져 있는지 확인해 주세요. 또한 스마트폰이 <strong>방해금지 모드</strong>나 <strong>집중 모드</strong> 상태일 경우 알림이 무음 처리될 수 있습니다.</>
+                      <>스마트폰 <strong>[설정] → [알림] → [사용 중인 브라우저(또는 AAMEN 앱)]</strong>의 알림 허용 스위치가 켜져 있는지 확인해 주세요. 또한 스마트폰이 <strong>방해금지 모드</strong>나 <strong>집중 모드</strong> 상태일 경우 알림이 무음 처리될 수 있습니다.</>
                     ) : (
-                      <>Check your phone's <strong>Settings > Notifications > Browser (or AAMEN)</strong> to ensure notifications are allowed. Also verify that Do Not Disturb mode is off.</>
+                      <>Check your phone&apos;s <strong>Settings &rarr; Notifications &rarr; Browser (or AAMEN)</strong> to ensure notifications are allowed. Also verify that Do Not Disturb mode is off.</>
                     )}
                   </p>
                 </div>
