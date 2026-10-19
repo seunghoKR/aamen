@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useLocale, useTranslations } from 'next-intl'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, X, ChevronDown, Settings, ShieldCheck, Shield, User, LogOut, Code, UserCheck } from 'lucide-react'
+import { Menu, X, ChevronDown, Settings, ShieldCheck, Shield, User, LogOut, Code, UserCheck, Mail } from 'lucide-react'
 import { locales, localeFlags, type Locale } from '@/config/locales'
 import { MemberLevel, defaultTierSettings } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
@@ -413,6 +413,15 @@ export default function Header() {
             </Link>
           ) : (
             <div className="hidden sm:flex items-center gap-1.5">
+              <Link
+                href={localePath(locale, '/member/mypage?tab=messages')}
+                title={locale === 'en' ? 'Messages' : '쪽지함'}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-2xs text-emerald-900 bg-white border-emerald-300 hover:bg-emerald-50"
+              >
+                <Mail size={13} className="text-emerald-600" />
+                <span>{locale === 'en' ? 'Messages' : '쪽지함'}</span>
+              </Link>
+
               <Link
                 href={localePath(locale, '/member/mypage')}
                 title={t('mypage')}

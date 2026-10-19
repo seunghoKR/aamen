@@ -115,6 +115,73 @@ $queries = [
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_partners_order (display_order ASC, created_at ASC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
+    // 7. internal_messages 테이블 (회원 간 1:1 쪽지 및 Level 4+ 그룹 공지 쪽지)
+    "CREATE TABLE IF NOT EXISTS internal_messages (
+        id VARCHAR(64) PRIMARY KEY,
+        sender_id VARCHAR(64) NOT NULL,
+        sender_name VARCHAR(100) NOT NULL,
+        sender_country VARCHAR(10) DEFAULT 'KR',
+        sender_role VARCHAR(30) DEFAULT 'regular',
+        target_type ENUM('individual', 'group_country', 'group_coordinators', 'group_all') DEFAULT 'individual',
+        target_country VARCHAR(10) DEFAULT NULL,
+        receiver_id VARCHAR(64) DEFAULT NULL,
+        receiver_name VARCHAR(100) DEFAULT NULL,
+        title VARCHAR(300) NOT NULL,
+        content LONGTEXT NOT NULL,
+        translations_json LONGTEXT DEFAULT NULL,
+        is_read TINYINT(1) DEFAULT 0,
+        read_at DATETIME NULL,
+        deleted_by_sender TINYINT(1) DEFAULT 0,
+        deleted_by_receiver TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_msg_receiver (receiver_id, is_read),
+        INDEX idx_msg_sender (sender_id),
+        INDEX idx_msg_target (target_type, target_country),
+        INDEX idx_msg_created_at (created_at DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
+    // 8. message_receipts 테이블 (그룹 및 1:1 메시지 수신자별 읽음/삭제 상태 추적)
+    "CREATE TABLE IF NOT EXISTS message_receipts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        message_id VARCHAR(64) NOT NULL,
+        user_id VARCHAR(64) NOT NULL,
+        is_read TINYINT(1) DEFAULT 0,
+        read_at DATETIME NULL,
+        is_deleted TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_receipt (message_id, user_id),
+        INDEX idx_user_read (user_id, is_read),
+        INDEX idx_user_deleted (user_id, is_deleted)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
+    // 9. notifications 테이블 (통합 인앱 알림 센터)
+    "CREATE TABLE IF NOT EXISTS notifications (
+        id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        sender_id VARCHAR(64) NULL,
+        sender_name VARCHAR(100) NULL,
+        type VARCHAR(30) NOT NULL,
+        title VARCHAR(300) NOT NULL,
+        body TEXT NOT NULL,
+        link_url VARCHAR(255) NOT NULL,
+        is_read TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_noti_user (user_id, is_read, created_at DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
+    // 10. push_subscriptions 테이블 (Web Push 토큰 구독)
+    "CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh VARCHAR(255) NOT NULL,
+        auth VARCHAR(255) NOT NULL,
+        user_agent VARCHAR(255) NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_push_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 ];
 

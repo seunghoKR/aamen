@@ -189,6 +189,7 @@
     "developer_badge": "💻 개발자 (Developer)",
     "tabs": {
       "profile": "내 프로필",
+      "messages": "쪽지함",
       "notifications": "알림 센터",
       "activity": "활동 & 기도",
       "security": "계정 & 보안"

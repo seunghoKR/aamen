@@ -189,6 +189,7 @@
     "developer_badge": "💻 Developer",
     "tabs": {
       "profile": "Profile",
+      "messages": "Messages",
       "notifications": "Alert Center",
       "activity": "Activity & Prayers",
       "security": "Security & Account"

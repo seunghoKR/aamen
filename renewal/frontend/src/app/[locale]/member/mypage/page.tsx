@@ -37,6 +37,7 @@ import { MemberLevel, defaultTierSettings, MemberTierInfo } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import { getStoredUser, saveAuthUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
 import { AVATAR_LIST, getAvatarSrc, CharacterSvg } from '@/lib/avatarCharacters'
+import MessagesInbox from '@/components/member/MessagesInbox'
 import {
   getLocalizedTierInfo,
   getLocalizedCountryList,
@@ -279,7 +280,8 @@ export default function MyPage() {
   const [inputTelegramId, setInputTelegramId] = useState('')
 
   // 탭 상태
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'activity' | 'security'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'messages' | 'notifications' | 'activity' | 'security'>('profile')
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const showToast = (msg: string) => {
@@ -488,6 +490,10 @@ export default function MyPage() {
     // URL 쿼리에 welcome=true가 있거나 신규 구글 가입인 경우 환영 배너 활성화
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search)
+      const tabParam = searchParams.get('tab')
+      if (tabParam === 'messages' || tabParam === 'notifications' || tabParam === 'activity' || tabParam === 'security') {
+        setActiveTab(tabParam)
+      }
       if (searchParams.get('welcome') === 'true') {
         setIsWelcomeBanner(true)
       }
@@ -1101,7 +1107,7 @@ export default function MyPage() {
   }, [isProfileDirty])
 
   // 🧭 마이페이지 내부 탭 전환 시에도 수정사항 있을 경우 팝업 안내
-  const handleTabChange = (newTab: 'profile' | 'notifications' | 'activity' | 'security') => {
+  const handleTabChange = (newTab: 'profile' | 'messages' | 'notifications' | 'activity' | 'security') => {
     if (activeTab === 'profile' && isProfileDirty) {
       setPendingNavigation(`tab:${newTab}`)
       setShowLeaveModal(true)
@@ -1286,9 +1292,9 @@ export default function MyPage() {
           </div>
         )}
 
-        {/* 탭 네비게이션 (13개국어 완벽 대응: 반응형 4분할 그리드 & 잘림 없는 카드) */}
+        {/* 탭 네비게이션 (13개국어 완벽 대응: 반응형 5분할 그리드 & 잘림 없는 카드) */}
         <div className="bg-white/95 backdrop-blur-md p-2 sm:p-2.5 rounded-2xl sm:rounded-3xl shadow-md border border-gray-200/80 mb-8 max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-2.5">
             <button
               type="button"
               onClick={() => handleTabChange('profile')}
@@ -1300,6 +1306,24 @@ export default function MyPage() {
             >
               <User size={15} className={`shrink-0 ${activeTab === 'profile' ? 'text-white' : 'text-emerald-600'}`} />
               <span className="truncate sm:whitespace-normal">{t('tabs.profile')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange('messages')}
+              className={`w-full min-h-[46px] sm:min-h-[50px] px-2.5 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center text-center gap-1.5 sm:gap-2 cursor-pointer break-keep select-none relative ${
+                activeTab === 'messages'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-500/20'
+                  : 'text-gray-700 bg-gray-50/80 hover:bg-emerald-50/60 hover:text-emerald-800 border border-gray-200/60'
+              }`}
+            >
+              <Send size={15} className={`shrink-0 ${activeTab === 'messages' ? 'text-white' : 'text-emerald-600'}`} />
+              <span className="truncate sm:whitespace-normal">{t('tabs.messages')}</span>
+              {unreadMessageCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-500 text-white shrink-0 shadow-2xs animate-pulse">
+                  {unreadMessageCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -1592,6 +1616,15 @@ export default function MyPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* 탭: 쪽지함 (Messages) */}
+        {activeTab === 'messages' && (
+          <MessagesInbox
+            currentUser={currentUser}
+            currentLevel={currentLevel}
+            onUnreadChange={(count) => setUnreadMessageCount(count)}
+          />
         )}
 
         {/* 탭 2: 알림 설정 센터 (웹앱 팝업 & 텔레그램 & 왓츠앱) */}
