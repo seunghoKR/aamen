@@ -50,5 +50,22 @@ if ($method === 'POST') {
         send_json(['success' => true]);
     }
 
+    if ($action === 'delete') {
+        $notiId = $input['id'] ?? null;
+        $userId = $input['user_id'] ?? null;
+        if ($notiId && $userId) {
+            $pdo->prepare("DELETE FROM notifications WHERE id = ? AND user_id = ?")->execute([$notiId, $userId]);
+        }
+        send_json(['success' => true]);
+    }
+
+    if ($action === 'delete_all') {
+        $userId = $input['user_id'] ?? null;
+        if ($userId) {
+            $pdo->prepare("DELETE FROM notifications WHERE user_id = ?")->execute([$userId]);
+        }
+        send_json(['success' => true]);
+    }
+
     send_json(['success' => false, 'error' => 'Invalid action'], 400);
 }

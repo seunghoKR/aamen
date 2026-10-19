@@ -5,11 +5,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useLocale, useTranslations } from 'next-intl'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, X, ChevronDown, Settings, ShieldCheck, Shield, User, LogOut, Code, UserCheck, Mail } from 'lucide-react'
+import { Menu, X, ChevronDown, Settings, ShieldCheck, Shield, User, LogOut, Code, UserCheck, Mail, Bell } from 'lucide-react'
 import { locales, localeFlags, type Locale } from '@/config/locales'
 import { MemberLevel, defaultTierSettings } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import { getStoredUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
+import NotificationBell from './NotificationBell'
+import { registerAamenServiceWorker } from '@/lib/pushNotifications'
 
 // 15개 참여국 정의 (각 국가의 언어로 국가명 | 영어 표기 | 이니셜)
 interface CountryItemInfo {
@@ -175,6 +177,7 @@ export default function Header() {
     setMounted(true)
     setCurrentLevel(getStoredTierLevel())
     setCurrentUser(getStoredUser())
+    registerAamenServiceWorker()
 
     const handleTierChange = (e: Event) => {
       const customEvent = e as CustomEvent<{ level: MemberLevel }>
@@ -412,49 +415,58 @@ export default function Header() {
               <span>{t('login')}</span>
             </Link>
           ) : (
-            <div className="hidden sm:flex items-center gap-1.5">
-              <Link
-                href={localePath(locale, '/member/mypage?tab=messages')}
-                title={locale === 'en' ? 'Messages' : '쪽지함'}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-2xs text-emerald-900 bg-white border-emerald-300 hover:bg-emerald-50"
-              >
-                <Mail size={13} className="text-emerald-600" />
-                <span>{locale === 'en' ? 'Messages' : '쪽지함'}</span>
-              </Link>
+            <div className="flex items-center gap-1.5">
+              {/* 🔔 알림 센터 (인앱 알림 드롭다운) */}
+              <NotificationBell 
+                locale={locale} 
+                userId={currentUser?.id} 
+                userRole={currentUser?.role} 
+              />
 
-              <Link
-                href={localePath(locale, '/member/mypage')}
-                title={t('mypage')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-2xs ${
-                  currentUser?.role === 'developer'
-                    ? 'text-indigo-900 bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
-                    : currentLevel >= 4
-                    ? 'text-purple-900 bg-purple-50 border-purple-200 hover:bg-purple-100'
-                    : currentLevel === 1
-                    ? 'text-amber-900 bg-amber-50 border-amber-200 hover:bg-amber-100'
-                    : 'text-emerald-900 bg-emerald-50 border-emerald-300 hover:bg-emerald-100'
-                }`}
-              >
-                <User size={13} />
-                <span>{t('mypage')}</span>
-              </Link>
+              <div className="hidden sm:flex items-center gap-1.5">
+                <Link
+                  href={localePath(locale, '/member/mypage?tab=messages')}
+                  title={locale === 'en' ? 'Messages' : '쪽지함'}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-2xs text-emerald-900 bg-white border-emerald-300 hover:bg-emerald-50"
+                >
+                  <Mail size={13} className="text-emerald-600" />
+                  <span>{locale === 'en' ? 'Messages' : '쪽지함'}</span>
+                </Link>
 
-              {/* 로그아웃 버튼 */}
-              <button
-                type="button"
-                onClick={() => {
-                  logoutUser()
-                  alert(locale === 'en' ? 'Logged out successfully.' : '로그아웃되었습니다.')
-                  if (typeof window !== 'undefined' && (window.location.pathname.includes('/member/mypage') || window.location.pathname.includes('/admin'))) {
-                    window.location.href = localePath(locale, '/')
-                  }
-                }}
-                title={t('logout')}
-                className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors border border-transparent hover:border-rose-100"
-                aria-label="Logout"
-              >
-                <LogOut size={14} />
-              </button>
+                <Link
+                  href={localePath(locale, '/member/mypage')}
+                  title={t('mypage')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-2xs ${
+                    currentUser?.role === 'developer'
+                      ? 'text-indigo-900 bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
+                      : currentLevel >= 4
+                      ? 'text-purple-900 bg-purple-50 border-purple-200 hover:bg-purple-100'
+                      : currentLevel === 1
+                      ? 'text-amber-900 bg-amber-50 border-amber-200 hover:bg-amber-100'
+                      : 'text-emerald-900 bg-emerald-50 border-emerald-300 hover:bg-emerald-100'
+                  }`}
+                >
+                  <User size={13} />
+                  <span>{t('mypage')}</span>
+                </Link>
+
+                {/* 로그아웃 버튼 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    logoutUser()
+                    alert(locale === 'en' ? 'Logged out successfully.' : '로그아웃되었습니다.')
+                    if (typeof window !== 'undefined' && (window.location.pathname.includes('/member/mypage') || window.location.pathname.includes('/admin'))) {
+                      window.location.href = localePath(locale, '/')
+                    }
+                  }}
+                  title={t('logout')}
+                  className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors border border-transparent hover:border-rose-100"
+                  aria-label="Logout"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -533,30 +545,51 @@ export default function Header() {
             )}
 
             {(currentLevel >= 1 || currentUser) && (
-              <div className="flex gap-2">
-                <Link
-                  href={localePath(locale, '/member/mypage')}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center px-3 py-2 text-sm font-bold text-emerald-800 bg-emerald-50 rounded-xl flex items-center justify-center gap-2 border border-emerald-200"
-                >
-                  <User size={15} />
-                  <span>{t('mypage')}</span>
-                </Link>
+              <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href={localePath(locale, '/member/mypage?tab=messages')}
+                    onClick={() => setMobileOpen(false)}
+                    className="text-center px-3 py-2 text-xs font-bold text-emerald-800 bg-white rounded-xl flex items-center justify-center gap-1.5 border border-emerald-300"
+                  >
+                    <Mail size={14} className="text-emerald-600" />
+                    <span>{locale === 'en' ? 'Messages' : '쪽지함'}</span>
+                  </Link>
+                  <Link
+                    href={localePath(locale, '/member/mypage?tab=notifications')}
+                    onClick={() => setMobileOpen(false)}
+                    className="text-center px-3 py-2 text-xs font-bold text-teal-800 bg-white rounded-xl flex items-center justify-center gap-1.5 border border-teal-300"
+                  >
+                    <Bell size={14} className="text-teal-600" />
+                    <span>{locale === 'en' ? 'Notifications' : '알림 내역'}</span>
+                  </Link>
+                </div>
 
-                <button
-                  onClick={() => {
-                    logoutUser()
-                    setMobileOpen(false)
-                    alert(locale === 'en' ? 'Logged out successfully.' : '로그아웃되었습니다.')
-                    if (typeof window !== 'undefined' && (window.location.pathname.includes('/member/mypage') || window.location.pathname.includes('/admin'))) {
-                      window.location.href = localePath(locale, '/')
-                    }
-                  }}
-                  className="px-3 py-2 text-sm font-bold text-rose-700 bg-rose-50 rounded-xl flex items-center justify-center gap-1.5 border border-rose-200"
-                >
-                  <LogOut size={15} />
-                  <span>{t('logout')}</span>
-                </button>
+                <div className="flex gap-2">
+                  <Link
+                    href={localePath(locale, '/member/mypage')}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex-1 text-center px-3 py-2 text-sm font-bold text-emerald-800 bg-emerald-50 rounded-xl flex items-center justify-center gap-2 border border-emerald-200"
+                  >
+                    <User size={15} />
+                    <span>{t('mypage')}</span>
+                  </Link>
+
+                  <button
+                    onClick={() => {
+                      logoutUser()
+                      setMobileOpen(false)
+                      alert(locale === 'en' ? 'Logged out successfully.' : '로그아웃되었습니다.')
+                      if (typeof window !== 'undefined' && (window.location.pathname.includes('/member/mypage') || window.location.pathname.includes('/admin'))) {
+                        window.location.href = localePath(locale, '/')
+                      }
+                    }}
+                    className="px-3 py-2 text-sm font-bold text-rose-700 bg-rose-50 rounded-xl flex items-center justify-center gap-1.5 border border-rose-200"
+                  >
+                    <LogOut size={15} />
+                    <span>{t('logout')}</span>
+                  </button>
+                </div>
               </div>
             )}
 

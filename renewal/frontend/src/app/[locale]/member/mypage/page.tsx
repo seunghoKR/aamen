@@ -38,6 +38,8 @@ import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/compone
 import { getStoredUser, saveAuthUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
 import { AVATAR_LIST, getAvatarSrc, CharacterSvg } from '@/lib/avatarCharacters'
 import MessagesInbox from '@/components/member/MessagesInbox'
+import NotificationHistoryList from '@/components/member/NotificationHistoryList'
+import { subscribeToWebPush, sendTestWebPush } from '@/lib/pushNotifications'
 import {
   getLocalizedTierInfo,
   getLocalizedCountryList,
@@ -552,6 +554,16 @@ export default function MyPage() {
     }
 
     try {
+      if (currentUser?.id) {
+        const subResult = await subscribeToWebPush(currentUser.id)
+        if (subResult.success) {
+          setPushPermissionStatus('granted')
+          setWebPushEnabled(true)
+          showToast(isKo ? '웹 푸시 알림이 활성화되었습니다! 🔔' : 'Web push notification enabled!')
+          return
+        }
+      }
+
       const perm = await Notification.requestPermission()
       setPushPermissionStatus(perm)
       if (perm === 'granted') {
@@ -560,7 +572,7 @@ export default function MyPage() {
         if ('Notification' in window) {
           new Notification(myTexts.testPushPayloadTitle, {
             body: myTexts.testPushPayloadBody,
-            icon: '/icon.png',
+            icon: '/icon-256.png',
           })
         }
       } else {
@@ -1627,9 +1639,17 @@ export default function MyPage() {
           />
         )}
 
-        {/* 탭 2: 알림 설정 센터 (웹앱 팝업 & 텔레그램 & 왓츠앱) */}
+        {/* 탭: 알림 센터 (실시간 수신 알림 내역 & 알림 수신 채널 설정) */}
         {activeTab === 'notifications' && (
           <div className="space-y-6">
+            {/* 1. 실시간 수신 알림 내역 목록 */}
+            {currentUser && (
+              <NotificationHistoryList 
+                locale={locale} 
+                userId={currentUser.id} 
+              />
+            )}
+
             {/* 💡 선택 사항 안내 배너 */}
             <div className="p-4 rounded-2xl bg-gray-100/90 border border-gray-200 text-gray-700 text-xs flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1741,11 +1761,14 @@ export default function MyPage() {
               <div className="pt-4 border-t border-gray-100 mt-6 flex justify-between items-center">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined' && 'Notification' in window) {
+                  onClick={async () => {
+                    if (currentUser?.id) {
+                      await sendTestWebPush(currentUser.id)
+                      showToast(myTexts.toastWebPushTestSent)
+                    } else if (typeof window !== 'undefined' && 'Notification' in window) {
                       new Notification(myTexts.testPushPayloadTitle, {
                         body: myTexts.testPushPayloadBody,
-                        icon: '/logo.png',
+                        icon: '/icon-256.png',
                       })
                       showToast(myTexts.toastWebPushTestSent)
                     } else {

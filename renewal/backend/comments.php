@@ -30,6 +30,23 @@ if ($method === 'GET') {
     $stmt = $pdo->prepare("INSERT INTO comments (id, post_id, author_id, author_name, author_country, author_role, content, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
     $stmt->execute([$id, $post_id, $author_id, $author_name, $author_country, $author_role, $content]);
 
+    // 게시글 작성자에게 알림 생성
+    try {
+        $pStmt = $pdo->prepare("SELECT author_id, title, board_type FROM posts WHERE id = ?");
+        $pStmt->execute([$post_id]);
+        $post = $pStmt->fetch();
+        if ($post && !empty($post['author_id']) && $post['author_id'] !== $author_id) {
+            $notiId = 'noti_' . time() . '_' . substr(bin2hex(random_bytes(3)), 0, 5);
+            $boardTab = ($post['board_type'] === 'photos' || $post['board_type'] === 'album') ? 'photos' : ($post['board_type'] === 'announce' ? 'announce' : 'resources');
+            $notiLink = "/community/{$boardTab}";
+            $notiTitle = "💬 {$author_name}님이 회원님의 글에 댓글을 남겼습니다.";
+            $notiBody = mb_substr($content, 0, 80, 'UTF-8');
+            $pdo->prepare("INSERT INTO notifications (id, user_id, sender_id, sender_name, type, title, body, link_url, is_read, created_at)
+                           VALUES (?, ?, ?, ?, 'comment', ?, ?, ?, 0, NOW())")
+                ->execute([$notiId, $post['author_id'], $author_id, $author_name, $notiTitle, $notiBody, $notiLink]);
+        }
+    } catch (\Exception $e) {}
+
     send_json([
         'success' => true,
         'data' => [

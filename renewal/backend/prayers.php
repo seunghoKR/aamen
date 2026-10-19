@@ -60,9 +60,25 @@ if ($method === 'GET') {
         $stmt = $pdo->prepare("UPDATE prayer_cards SET amen_count = amen_count + 1 WHERE id = ?");
         $stmt->execute([$id]);
 
-        $stmt = $pdo->prepare("SELECT amen_count FROM prayer_cards WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT author_id, title, amen_count FROM prayer_cards WHERE id = ?");
         $stmt->execute([$id]);
-        $amen_count = (int)$stmt->fetchColumn();
+        $row = $stmt->fetch();
+        $amen_count = (int)($row['amen_count'] ?? 0);
+
+        // 기도제목 작성자에게 알림 생성
+        $user_id = $input['user_id'] ?? null;
+        $user_name = $input['user_name'] ?? '아시아 성도';
+        if ($row && !empty($row['author_id']) && $row['author_id'] !== $user_id) {
+            try {
+                $notiId = 'noti_' . time() . '_' . substr(bin2hex(random_bytes(3)), 0, 5);
+                $notiTitle = "🙏 {$user_name}님이 기도제목에 '저도 기도할게요'로 연대했습니다.";
+                $notiBody = mb_substr($row['title'], 0, 80, 'UTF-8');
+                $notiLink = "/community/prayer";
+                $pdo->prepare("INSERT INTO notifications (id, user_id, sender_id, sender_name, type, title, body, link_url, is_read, created_at)
+                               VALUES (?, ?, ?, ?, 'amen', ?, ?, ?, 0, NOW())")
+                    ->execute([$notiId, $row['author_id'], $user_id, $user_name, $notiTitle, $notiBody, $notiLink]);
+            } catch (\Exception $e) {}
+        }
 
         send_json(['status' => 'success', 'amen_count' => $amen_count]);
     }
@@ -83,6 +99,27 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare("INSERT INTO prayer_cards (id, author_id, author_name, country_code, title, content, extra_json, amen_count, is_urgent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NOW())");
     $stmt->execute([$id, $author_id, $author_name, $country_code, $title, $content, $extra_json, $is_urgent]);
+
+    if ($is_urgent) {
+        try {
+            $admins = $pdo->query("SELECT id FROM members WHERE role IN ('country_admin', 'super_admin') LIMIT 20")->fetchAll();
+            foreach ($admins as $adm) {
+                if ($adm['id'] !== $author_id) {
+                    $nId = 'noti_' . time() . '_' . substr(bin2hex(random_bytes(3)), 0, 5);
+                    $pdo->prepare("INSERT INTO notifications (id, user_id, sender_id, sender_name, type, title, body, link_url, is_read, created_at)
+                                   VALUES (?, ?, ?, ?, 'urgent_prayer', ?, ?, '/community/prayer', 0, NOW())")
+                        ->execute([
+                            $nId,
+                            $adm['id'],
+                            $author_id,
+                            $author_name,
+                            "🔥 [긴급] {$country_code} 국가의 긴급 중보기도가 등록되었습니다.",
+                            $title
+                        ]);
+                }
+            }
+        } catch (\Exception $e) {}
+    }
 
     send_json(['status' => 'success', 'id' => $id, 'message' => 'Prayer card created'], 201);
 } elseif ($method === 'PATCH') {
