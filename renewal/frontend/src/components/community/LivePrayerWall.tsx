@@ -102,7 +102,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: '첫 번째 기도제목을 작성하여 아시아 15개국 성도들과 함께 기도해 보세요.',
     btn_first_submit: '첫 기도제목 등록하기',
     btn_amen: '아멘 (기도동참)',
-    btn_pray: '함께 기도합니다',
+    btn_pray: '저도 기도할께요',
   },
   en: {
     prayer_wall: 'Live Prayer Wall',
@@ -137,7 +137,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'Be the first to share a prayer request with believers across 15 Asian nations.',
     btn_first_submit: 'Submit First Prayer',
     btn_amen: 'Amen',
-    btn_pray: 'Pray Together',
+    btn_pray: 'I will pray too',
   },
   ja: {
     prayer_wall: 'リアルタイム祈りの壁',
@@ -172,7 +172,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: '最初の祈りの題目を投稿して、アジア15カ国の信徒たちと共に祈りましょう。',
     btn_first_submit: '最初の祈りを登録',
     btn_amen: 'アーメン',
-    btn_pray: '共に祈ります',
+    btn_pray: '私も祈ります',
   },
   'zh-TW': {
     prayer_wall: '即時代禱牆',
@@ -207,7 +207,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: '發佈第一個代禱題目，與亞洲15國信徒一同禱告。',
     btn_first_submit: '發佈首條代禱',
     btn_amen: '阿們',
-    btn_pray: '同心祈禱',
+    btn_pray: '我也同心代禱',
   },
   'zh-HK': {
     prayer_wall: '即時代禱牆',
@@ -242,7 +242,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: '發佈第一個代禱題目，與亞洲15國信徒一同禱告。',
     btn_first_submit: '發佈首條代禱',
     btn_amen: '阿們',
-    btn_pray: '同心祈禱',
+    btn_pray: '我也同心代禱',
   },
   vi: {
     prayer_wall: 'Bức Tường Cầu Nguyện Trực Tiếp',
@@ -277,7 +277,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'Hãy là người đầu tiên chia sẻ lời cầu nguyện với 15 quốc gia Châu Á.',
     btn_first_submit: 'Đăng lời cầu nguyện đầu tiên',
     btn_amen: 'Amen',
-    btn_pray: 'Cùng cầu nguyện',
+    btn_pray: 'Tôi cũng sẽ cầu nguyện',
   },
   th: {
     prayer_wall: 'กำแพงอธิษฐานสด',
@@ -312,7 +312,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'ร่วมแบ่งปันหัวข้ออธิษฐานแรกกับผู้เชื่อใน 15 ประเทศทั่วเอเชีย',
     btn_first_submit: 'ส่งหัวข้ออธิษฐานแรก',
     btn_amen: 'อาเมน',
-    btn_pray: 'ร่วมอธิษฐาน',
+    btn_pray: 'ฉันจะร่วมอธิษฐานด้วย',
   },
   id: {
     prayer_wall: 'Dinding Doa Langsung',
@@ -347,7 +347,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'Jadilah yang pertama membagikan pokok doa kepada saudara seiman di 15 negara Asia.',
     btn_first_submit: 'Kirim Pokok Doa Pertama',
     btn_amen: 'Amin',
-    btn_pray: 'Berdoa Bersama',
+    btn_pray: 'Saya juga akan berdoa',
   },
   my: {
     prayer_wall: 'တိုက်ရိုက် ဆုတောင်းခြင်း နံရံ',
@@ -382,7 +382,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'အာရှ ၁၅ နိုင်ငံရှိ ယုံကြည်သူများနှင့်အတူ ပထမဆုံး ဆုတောင်းချက်ကို မျှဝေပါ။',
     btn_first_submit: 'ပထမဆုံး ဆုတောင်းချက် တင်ရန်',
     btn_amen: 'အာမင်',
-    btn_pray: 'အတူတကွ ဆုတောင်းပါမည်',
+    btn_pray: 'ကျွန်ုပ်လည်း ဆုတောင်းပေးပါမည်',
   },
   ne: {
     prayer_wall: 'प्रत्यक्ष प्रार्थना पर्खाल',
@@ -417,7 +417,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'एसियाका १५ देशका विश्वासीहरूसँग पहिलो प्रार्थना अनुरोध साझा गर्नुहोस्।',
     btn_first_submit: 'पहिलो प्रार्थना पेश गर्नुहोस्',
     btn_amen: 'आमेन',
-    btn_pray: 'सँगै प्रार्थना गर्नुहोस्',
+    btn_pray: 'म पनि प्रार्थना गर्नेछु',
   },
   hi: {
     prayer_wall: 'सजीव प्रार्थना दीवार',
@@ -452,7 +452,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: '15 एशियाई देशों के विश्वासियों के साथ पहला प्रार्थना निवेदन साझा करें।',
     btn_first_submit: 'पहला प्रार्थना निवेदन भेजें',
     btn_amen: 'आमीन',
-    btn_pray: 'साथ मिलकर प्रार्थना करें',
+    btn_pray: 'मैं भी प्रार्थना करूँगा',
   },
   km: {
     prayer_wall: 'ជញ្ជាំងអធិស្ឋានផ្ទាល់',
@@ -487,7 +487,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'ក្លាយជាអ្នកដំបូងដែលចែករំលែកការអធិស្ឋានជាមួយបងប្អូនទូទាំង ១៥ ប្រទេសនៅអាស៊ី។',
     btn_first_submit: 'ដាក់ស្នើការអធិស្ឋានដំបូង',
     btn_amen: 'អាមែន',
-    btn_pray: 'រួមគ្នាអធិស្ឋាន',
+    btn_pray: 'ខ្ញុំក៏នឹងអធិស្ឋានដែរ',
   },
   lo: {
     prayer_wall: 'ກຳແພງອະທິຖານສົດ',
@@ -522,7 +522,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'ຮ່ວມແບ່ງປັນຫົວຂໍ້ອະທິຖານທຳອິດກັບຜູ້ເຊື່ອໃນ 15 ປະເທດອາຊີ.',
     btn_first_submit: 'ສົ່ງຫົວຂໍ້ອະທິຖານທຳອິດ',
     btn_amen: 'ອາແມນ',
-    btn_pray: 'ຮ່ວມອະທິຖານ',
+    btn_pray: 'ຂ້ອຍກໍ່ຈະອະທິຖານເຊັ່ນກັນ',
   },
   mn: {
     prayer_wall: 'Шууд залбирлын хана',
@@ -557,7 +557,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'Азийн 15 орны итгэгчидтэй хамт залбирах анхны хүсэлтээ хуваалцаарай.',
     btn_first_submit: 'Анхны залбирлыг бүртгэх',
     btn_amen: 'Амен',
-    btn_pray: 'Хамтдаа залбиръя',
+    btn_pray: 'Би бас залбиръя',
   },
   tl: {
     prayer_wall: 'Live Prayer Wall',
@@ -592,7 +592,7 @@ const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
     empty_desc: 'Maging una sa pagbabahagi ng panalangin sa mga mananampalataya sa 15 bansa sa Asya.',
     btn_first_submit: 'Isumite ang Unang Panalangin',
     btn_amen: 'Amen',
-    btn_pray: 'Manalangin Tayo',
+    btn_pray: 'Mananalangin din ako',
   },
 }
 
@@ -1249,11 +1249,11 @@ export default function LivePrayerWall() {
               </span>
             ) : isLeaderOrAdmin ? (
               <span className="text-purple-800 font-medium">
-                ⭐ <strong>{currentTier.name}:</strong> 15개국 모든 기도제목 및 사역자 실명 열람, AI 번역, 그리고 <strong>게시판 수정/삭제 권한</strong>이 활성화되어 있습니다.
+                ⭐ <strong>{currentTier.name}:</strong> 15개국 모든 기도제목 및 사역자 실명 열람, 15개국 제목 자동 번역, 그리고 <strong>게시판 수정/삭제 권한</strong>이 활성화되어 있습니다.
               </span>
             ) : (
               <span className="text-emerald-800 font-medium">
-                🌟 <strong>2단계 이상(정회원):</strong> 15개국 성도들의 전체 기도제목과 사역자 이름을 모두 열람하고 AI 다국어 번역 및 기도 등록을 이용하실 수 있습니다.
+                🌟 <strong>2단계 이상(정회원):</strong> 15개국 성도들의 전체 기도제목과 사역자 이름을 모두 열람하고 15개국 제목 자동 번역 및 중보기도에 동참하실 수 있습니다.
               </span>
             )}
           </p>
@@ -1302,18 +1302,9 @@ export default function LivePrayerWall() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {prayers.map((item) => {
-            const isTranslated = !!translatedSet[item.id]
             const isPrayed = !!prayedSet[item.id]
-
-            // 다국어 번역 텍스트 선택
-            const fullContent =
-              isTranslated && item.translations[locale]
-                ? item.translations[locale]
-                : isTranslated && item.translations['en']
-                ? item.translations['en']
-                : item.content || item.originalText
-
-            const firstLine = fullContent.split('\n')[0]
+            const cardContent = item.content || item.originalText
+            const firstLine = cardContent.split('\n')[0]
 
             return (
               <div
@@ -1414,7 +1405,7 @@ export default function LivePrayerWall() {
                         </div>
                       </div>
                     ) : isRegularOrAbove ? (
-                      <p className="whitespace-pre-line text-gray-700">{fullContent}</p>
+                      <p className="whitespace-pre-line text-gray-700">{cardContent}</p>
                     ) : (
                       <div>
                         <p className="line-clamp-1 font-medium text-gray-700">
@@ -1427,29 +1418,9 @@ export default function LivePrayerWall() {
                       </div>
                     )}
                   </div>
-
-                  {/* 원클릭 AI 다국어 본문 번역 토글 버튼 */}
-                  <div className="mb-4">
-                    <button
-                      onClick={() => toggleTranslate(item.id)}
-                      className={`inline-flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-                        isRegularOrAbove
-                          ? 'text-emerald-600 hover:text-emerald-700 hover:underline'
-                          : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      <Globe size={13} />
-                      <span>{isTranslated ? (t('translate_original') || 'Original') : (t('translate_action') || 'AI Translate')}</span>
-                    </button>
-                    {isTranslated && (
-                      <span className="ml-2 text-[10px] bg-emerald-100/70 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
-                        AI Powered
-                      </span>
-                    )}
-                  </div>
                 </div>
 
-                {/* 하단 인터랙션 바: 함께 기도합니다(아멘) & 공유 */}
+                {/* 하단 인터랙션 바: 저도 기도할께요(아멘) & 공유 */}
                 <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
                   <button
                     onClick={() => handlePray(item.id)}
