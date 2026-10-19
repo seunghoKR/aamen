@@ -76,6 +76,18 @@ const categoryInfo: Record<
   },
 }
 
+const isImageFile = (url?: string | null): boolean => {
+  if (!url || typeof url !== 'string') return false
+  const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase().trim()
+  if (!cleanUrl) return false
+  if (/\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z|hwp|txt|csv|mp3|mp4|mov|avi)$/i.test(cleanUrl)) return false
+  if (cleanUrl.startsWith('data:image/')) return true
+  if (/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico|avif)$/i.test(cleanUrl)) return true
+  if (cleanUrl.includes('/uploads/resources/') || cleanUrl.includes('/uploads/files/')) return false
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return true
+  return false
+}
+
 export default function RecentPostsSection() {
   const locale = useLocale()
   const tHome = useTranslations('home')
@@ -120,7 +132,8 @@ export default function RecentPostsSection() {
                   if (!p.image_url && extra.image_url) p.image_url = extra.image_url
                 } catch (e) {}
               }
-              const firstImg = p.image_url || (images.length > 0 ? images[0] : undefined)
+              const validImages = images.filter(isImageFile)
+              const candidate = isImageFile(p.image_url) ? p.image_url : (validImages.length > 0 ? validImages[0] : undefined)
 
               let cat: 'announce' | 'board' | 'share' | 'album' = 'board'
               if (p.board_type === 'announce') cat = 'announce'
@@ -139,8 +152,8 @@ export default function RecentPostsSection() {
                 views: Number(p.views) || 0,
                 likes: Number(p.likes) || 0,
                 commentCount: p.comments ? p.comments.length : 0,
-                imageUrl: firstImg,
-                photoCount: images.length > 0 ? images.length : (firstImg ? 1 : 0),
+                imageUrl: candidate,
+                photoCount: validImages.length > 0 ? validImages.length : (candidate ? 1 : 0),
               }
             })
           setPosts(apiPosts)
@@ -259,32 +272,54 @@ export default function RecentPostsSection() {
                 className="group bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden flex flex-col justify-between"
               >
                 <div>
-                  {/* 포스트 썸네일 (사진첩 및 이미지 첨부 게시물 지원) */}
-                  {post.imageUrl && (
-                    <div className="relative h-48 w-full overflow-hidden bg-slate-900">
-                      <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                        style={{ backgroundImage: `url(${post.imageUrl})` }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-                      {isAlbum && (post.photoCount || 0) > 1 && (
-                        <div className="absolute top-3 left-3">
-                          <span className="px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-md text-white text-[11px] font-bold border border-white/20 flex items-center gap-1">
-                            <Camera size={11} className="text-amber-400" />
-                            <span>사진 {post.photoCount}장</span>
+                  {/* 포스트 썸네일 (실제 이미지 또는 흐릿한 대표 로고 워터마크 대표이미지) */}
+                  <Link
+                    href={getLocalizedPath(isAlbum ? '/community/photos' : `/community/${post.category === 'announce' ? 'announce' : 'resources'}`)}
+                    className="block relative h-48 w-full overflow-hidden group/thumb cursor-pointer select-none"
+                  >
+                    {post.imageUrl ? (
+                      <div className="relative h-full w-full overflow-hidden bg-slate-900">
+                        <div
+                          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                          style={{ backgroundImage: `url(${post.imageUrl})` }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+                        {isAlbum && (post.photoCount || 0) > 1 && (
+                          <div className="absolute top-3 left-3">
+                            <span className="px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-md text-white text-[11px] font-bold border border-white/20 flex items-center gap-1">
+                              <Camera size={11} className="text-amber-400" />
+                              <span>사진 {post.photoCount}장</span>
+                            </span>
+                          </div>
+                        )}
+                        <div className="absolute bottom-3 right-3">
+                          <span className="px-2 py-0.5 rounded-md bg-white/20 backdrop-blur-md text-white text-[10px] font-bold">
+                            {countryBadgeMap[post.countryCode] || post.countryCode}
                           </span>
                         </div>
-                      )}
-                      <div className="absolute bottom-3 right-3">
-                        <span className="px-2 py-0.5 rounded-md bg-white/20 backdrop-blur-md text-white text-[10px] font-bold">
-                          {countryBadgeMap[post.countryCode] || post.countryCode}
-                        </span>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-emerald-50/80 via-slate-50 to-teal-50/50 border-b border-slate-100 flex items-center justify-center">
+                        {/* 흐릿한 로고 대표 이미지 (검은 상태 방지) */}
+                        <div className="relative flex items-center justify-center pointer-events-none p-4">
+                          <img
+                            src="/logo.png"
+                            alt="AAMEN"
+                            className="max-h-16 w-auto object-contain opacity-25 filter blur-[0.4px] group-hover:scale-110 group-hover:opacity-40 transition-all duration-700"
+                          />
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/5 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute bottom-3 right-3">
+                          <span className="px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-slate-700 text-[10px] font-bold shadow-2xs border border-slate-200/80">
+                            {countryBadgeMap[post.countryCode] || post.countryCode}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </Link>
 
                   <div className="p-6">
-                    {/* 카테고리 배지 & 국가 */}
+                    {/* 카테고리 배지 */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${cat.badgeClass}`}
@@ -300,12 +335,6 @@ export default function RecentPostsSection() {
                             : tHome('tab_album')}
                         </span>
                       </span>
-
-                      {!post.imageUrl && (
-                        <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                          {countryBadgeMap[post.countryCode] || post.countryCode}
-                        </span>
-                      )}
                     </div>
 
                     {/* 제목 */}

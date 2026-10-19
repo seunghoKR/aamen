@@ -897,16 +897,29 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     }
   }
 
+  const isImageFile = (url?: string | null): boolean => {
+    if (!url || typeof url !== 'string') return false
+    const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase().trim()
+    if (!cleanUrl) return false
+    if (/\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z|hwp|txt|csv|mp3|mp4|mov|avi)$/i.test(cleanUrl)) return false
+    if (cleanUrl.startsWith('data:image/')) return true
+    if (/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico|avif)$/i.test(cleanUrl)) return true
+    if (cleanUrl.includes('/uploads/resources/') || cleanUrl.includes('/uploads/files/')) return false
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return true
+    return false
+  }
+
   // 헬퍼: 게시물 대표 이미지 추출 (공지사항, 자료방, 사진첩 통일)
   const getPostImageUrl = (post: Post | null | undefined): string | null => {
     if (!post) return null
-    if (post.image_url && post.image_url.trim()) return post.image_url.trim()
+    if (post.image_url && isImageFile(post.image_url)) return post.image_url.trim()
     const extra = parseExtra(post)
-    if (extra.image_url && typeof extra.image_url === 'string' && extra.image_url.trim()) {
+    if (extra.image_url && typeof extra.image_url === 'string' && isImageFile(extra.image_url)) {
       return extra.image_url.trim()
     }
     if (Array.isArray(extra.images) && extra.images.length > 0) {
-      return extra.images[0]
+      const valid = extra.images.find(isImageFile)
+      if (valid) return valid
     }
     return null
   }
@@ -1202,12 +1215,15 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
-                            <div className="w-full h-full min-h-[140px] bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-900 flex flex-col items-center justify-center p-4 text-white text-center">
-                              <Bell className="w-8 h-8 text-emerald-200 mb-2 opacity-90 group-hover:scale-110 transition-transform" />
-                              <span className="text-[11px] font-black tracking-wider text-emerald-100 uppercase">
+                            <div className="w-full h-full min-h-[140px] bg-gradient-to-br from-emerald-50/90 via-slate-50 to-teal-50/60 border border-slate-100 flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
+                              <img
+                                src="/logo.png"
+                                alt="AAMEN"
+                                className="max-h-12 w-auto object-contain opacity-25 filter blur-[0.3px] group-hover:scale-110 group-hover:opacity-40 transition-all duration-500 select-none mb-1.5"
+                              />
+                              <span className="text-[10px] font-black tracking-wider text-emerald-800 uppercase">
                                 AAMEN NOTICE
                               </span>
-                              <span className="text-[10px] text-emerald-200/80 mt-0.5">공식 공지사항</span>
                             </div>
                           )}
                           {post.is_pinned && (
