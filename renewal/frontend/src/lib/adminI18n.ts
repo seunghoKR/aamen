@@ -8,7 +8,7 @@ export const ADMIN_TEXTS = {
     layout: {
       brandTitle: 'AAMEN 통합 관리자',
       serverBadge: 'MariaDB & PHP 8.4',
-      versionBadge: 'v1.4.6',
+      versionBadge: 'v1.5.0',
       adminConsole: 'AAMEN 관리자 콘솔',
       overviewBadge: '개요',
       adminRoleSuper: '배용하 관리자',
@@ -288,7 +288,7 @@ export const ADMIN_TEXTS = {
     layout: {
       brandTitle: 'AAMEN Global Admin',
       serverBadge: 'MariaDB & PHP 8.4',
-      versionBadge: 'v1.4.6',
+      versionBadge: 'v1.5.0',
       adminConsole: 'AAMEN Admin Console',
       overviewBadge: 'Overview',
       adminRoleSuper: 'Super Admin',
