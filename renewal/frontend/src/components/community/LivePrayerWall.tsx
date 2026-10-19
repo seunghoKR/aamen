@@ -388,7 +388,11 @@ export default function LivePrayerWall() {
     if (!isLeaderOrAdmin) return
     if (confirm(`[관리자 권한] ${country}의 기도제목을 삭제하시겠습니까?`)) {
       try {
-        await fetch(`/api/prayers.php?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+        await fetch('/api/prayers.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, action: 'delete' }),
+        })
       } catch (e) {}
       setPrayers((prev) => prev.filter((p) => p.id !== id))
       showToast('기도제목이 성공적으로 삭제되었습니다.')

@@ -30,6 +30,16 @@ if ($method === 'GET') {
     $action = $input['action'] ?? null;
     $id = $_GET['id'] ?? $input['id'] ?? null;
 
+    // POST로 들어온 삭제 처리
+    if ($action === 'delete') {
+        if (!$id) {
+            send_json(['error' => 'Prayer ID required'], 400);
+        }
+        $stmt = $pdo->prepare("DELETE FROM prayer_cards WHERE id = ?");
+        $stmt->execute([$id]);
+        send_json(['status' => 'success', 'message' => 'Prayer deleted']);
+    }
+
     // POST로 들어온 아멘 카운트 증가 처리
     if ($action === 'amen' || ($id && !isset($input['title']))) {
         $stmt = $pdo->prepare("UPDATE prayer_cards SET amen_count = amen_count + 1 WHERE id = ?");
