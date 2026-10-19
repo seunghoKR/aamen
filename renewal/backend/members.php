@@ -119,7 +119,7 @@ if ($method === 'GET') {
 
     // 단일 회원 조회 (마이페이지 실시간 DB 동기화)
     if ($singleId) {
-        $stmt = $pdo->prepare("SELECT id, email, name, name_en, avatar_url, provider, country_code, role, status, bio, phone, affiliation, facebook_account, telegram_chat_id, created_at, updated_at FROM members WHERE id = ? OR email = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, email, name, name_en, avatar_url, provider, country_code, role, status, bio, phone, affiliation, facebook_account, telegram_chat_id, google_linked, created_at, updated_at FROM members WHERE id = ? OR email = ? LIMIT 1");
         $stmt->execute([$singleId, $singleId]);
         $member = $stmt->fetch();
         if ($member) {
@@ -130,7 +130,7 @@ if ($method === 'GET') {
     }
 
     // 개발자 계정은 회원 명단에서 제외하고 7명 공식 회원 + 기타 승인 회원 조회
-    $sql = "SELECT id, email, name, name_en, avatar_url, provider, country_code, role, status, bio, phone, affiliation, facebook_account, telegram_chat_id, created_at, updated_at FROM members WHERE 1=1 AND role != 'developer' AND email != 'admin@aamen.net' AND name NOT LIKE '%개발자%'";
+    $sql = "SELECT id, email, name, name_en, avatar_url, provider, country_code, role, status, bio, phone, affiliation, facebook_account, telegram_chat_id, google_linked, created_at, updated_at FROM members WHERE 1=1 AND role != 'developer' AND email != 'admin@aamen.net' AND name NOT LIKE '%개발자%'";
     $params = [];
 
     if ($search) {
@@ -176,7 +176,7 @@ if ($method === 'GET') {
         $officialId = $official ? $official['id'] : null;
 
         // 2) DB에서 기존 회원 조회 (사용자 수정본 보존 최우선)
-        $stmt = $pdo->prepare("SELECT id, email, name, name_en, role, status, country_code, avatar_url, phone, affiliation, facebook_account, telegram_chat_id FROM members WHERE email = ? " . ($officialId ? "OR id = ?" : "") . " LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, email, name, name_en, role, status, country_code, avatar_url, phone, affiliation, facebook_account, telegram_chat_id, google_linked FROM members WHERE email = ? " . ($officialId ? "OR id = ?" : "") . " LIMIT 1");
         if ($officialId) {
             $stmt->execute([$email, $officialId]);
         } else {
@@ -186,13 +186,17 @@ if ($method === 'GET') {
 
         if ($memberInDb) {
             // 🛡️ 기존 회원이 존재하면: 사용자가 수정한 모든 정보(이름, 영문이름, 소속, 연락처, 소셜)를 100% 영구 보존!
-            // REPLACE INTO 절대 금지! 아바타가 없고 구글 프로필 사진이 있을 때만 안전하게 보완
-            if (empty($memberInDb['avatar_url']) && !empty($avatar_url)) {
-                try {
-                    $pdo->prepare("UPDATE members SET avatar_url = ? WHERE id = ?")->execute([$avatar_url, $memberInDb['id']]);
+            // 구글 로그인 성공 플래그(google_linked = 1)를 활성화하고, 아바타가 비어있을 때만 구글 프로필 사진 채우기
+            try {
+                $upSql = "UPDATE members SET google_linked = 1" . (!empty($avatar_url) ? ", avatar_url = COALESCE(NULLIF(avatar_url, ''), ?)" : "") . " WHERE id = ?";
+                $upParams = !empty($avatar_url) ? [$avatar_url, $memberInDb['id']] : [$memberInDb['id']];
+                $pdo->prepare($upSql)->execute($upParams);
+                if (!empty($avatar_url) && empty($memberInDb['avatar_url'])) {
                     $memberInDb['avatar_url'] = $avatar_url;
-                } catch (\Exception $e) {}
-            }
+                }
+                $memberInDb['google_linked'] = 1;
+            } catch (\Exception $e) {}
+
             $memberInDb['tierLevel'] = ($memberInDb['role'] === 'super_admin' || $memberInDb['role'] === 'developer') ? 5 : ($memberInDb['role'] === 'country_admin' ? 4 : 2);
             $memberInDb['provider'] = 'google';
 

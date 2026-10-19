@@ -162,6 +162,8 @@ export interface Member {
   provider?: string
   facebook_account?: string | null
   telegram_chat_id?: string | null
+  google_linked?: boolean | number
+  avatar_url?: string | null
 }
 
 // 배너 설정 정의 (이미지 또는 텍스트 배너)

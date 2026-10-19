@@ -255,13 +255,20 @@ try {
         "ALTER TABLE members ADD COLUMN name_en VARCHAR(100) NULL AFTER name",
         "ALTER TABLE members ADD COLUMN password VARCHAR(255) NULL AFTER affiliation",
         "ALTER TABLE members ADD COLUMN facebook_account VARCHAR(150) NULL AFTER affiliation",
-        "ALTER TABLE members ADD COLUMN telegram_chat_id VARCHAR(100) NULL AFTER facebook_account"
+        "ALTER TABLE members ADD COLUMN telegram_chat_id VARCHAR(100) NULL AFTER facebook_account",
+        "ALTER TABLE members ADD COLUMN google_linked TINYINT(1) DEFAULT 0 AFTER telegram_chat_id"
     ];
     foreach ($safe_migrations as $sm) {
         try {
             $pdo->exec($sm);
         } catch (\Exception $e) {}
     }
+
+    // 🔒 구글 1회 이상 로그인 성공 이력이 있는 회원만 google_linked = 1로 활성화
+    try {
+        $pdo->exec("UPDATE members SET google_linked = 1 WHERE (avatar_url IS NOT NULL AND avatar_url LIKE '%googleusercontent.com%') OR id = 'admin' OR id = 'Yongha'");
+        $pdo->exec("UPDATE members SET google_linked = 0 WHERE id IN ('Jeanette', 'Jeremiah', 'Paulus', 'Andi', 'Hiro', 'Bockki') AND (avatar_url IS NULL OR avatar_url NOT LIKE '%googleusercontent.com%')");
+    } catch (\Exception $e) {}
 
     $results['tables'] = 'Created or verified successfully (Production Safe Mode)';
 
