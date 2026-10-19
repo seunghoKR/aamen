@@ -57,6 +57,11 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 } catch (\Exception $e) {}
 
+// Enable prepared statement emulation to support multiple parameter reuse
+try {
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+} catch (\Exception $e) {}
+
 if ($method === 'GET') {
     $action = $_GET['action'] ?? 'inbox';
     $userId = $_GET['user_id'] ?? null;
@@ -71,18 +76,20 @@ if ($method === 'GET') {
     if ($action === 'unread_count') {
         $isCoord = in_array($role, ['country_admin', 'super_admin']) ? 1 : 0;
         $sql = "SELECT COUNT(*) FROM internal_messages m
-                LEFT JOIN message_receipts mr ON mr.message_id = m.id AND mr.user_id = :uid
-                WHERE m.sender_id != :uid
+                LEFT JOIN message_receipts mr ON mr.message_id = m.id AND mr.user_id = :uid1
+                WHERE m.sender_id != :uid2
                   AND COALESCE(mr.is_deleted, 0) = 0
                   AND (
-                      (m.target_type = 'individual' AND m.receiver_id = :uid AND m.deleted_by_receiver = 0 AND m.is_read = 0 AND COALESCE(mr.is_read, 0) = 0)
+                      (m.target_type = 'individual' AND m.receiver_id = :uid3 AND m.deleted_by_receiver = 0 AND m.is_read = 0 AND COALESCE(mr.is_read, 0) = 0)
                       OR (m.target_type = 'group_all' AND COALESCE(mr.is_read, 0) = 0)
                       OR (m.target_type = 'group_country' AND m.target_country = :country AND COALESCE(mr.is_read, 0) = 0)
                       OR (m.target_type = 'group_coordinators' AND :is_coord = 1 AND COALESCE(mr.is_read, 0) = 0)
                   )";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            ':uid' => $userId,
+            ':uid1' => $userId,
+            ':uid2' => $userId,
+            ':uid3' => $userId,
             ':country' => $country,
             ':is_coord' => $isCoord
         ]);
@@ -104,11 +111,11 @@ if ($method === 'GET') {
                         ELSE mr.read_at
                     END AS user_read_at
                 FROM internal_messages m
-                LEFT JOIN message_receipts mr ON mr.message_id = m.id AND mr.user_id = :uid
-                WHERE m.sender_id != :uid
+                LEFT JOIN message_receipts mr ON mr.message_id = m.id AND mr.user_id = :uid1
+                WHERE m.sender_id != :uid2
                   AND COALESCE(mr.is_deleted, 0) = 0
                   AND (
-                      (m.target_type = 'individual' AND m.receiver_id = :uid AND m.deleted_by_receiver = 0)
+                      (m.target_type = 'individual' AND m.receiver_id = :uid3 AND m.deleted_by_receiver = 0)
                       OR (m.target_type = 'group_all')
                       OR (m.target_type = 'group_country' AND m.target_country = :country)
                       OR (m.target_type = 'group_coordinators' AND :is_coord = 1)
@@ -117,7 +124,9 @@ if ($method === 'GET') {
                 LIMIT 100";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            ':uid' => $userId,
+            ':uid1' => $userId,
+            ':uid2' => $userId,
+            ':uid3' => $userId,
             ':country' => $country,
             ':is_coord' => $isCoord
         ]);
@@ -290,12 +299,12 @@ if ($method === 'POST') {
 
         // 대상 메시지들 영수증 등록
         $sql = "INSERT INTO message_receipts (message_id, user_id, is_read, read_at)
-                SELECT m.id, :uid, 1, NOW()
+                SELECT m.id, :uid1, 1, NOW()
                 FROM internal_messages m
-                LEFT JOIN message_receipts mr ON mr.message_id = m.id AND mr.user_id = :uid
-                WHERE m.sender_id != :uid
+                LEFT JOIN message_receipts mr ON mr.message_id = m.id AND mr.user_id = :uid2
+                WHERE m.sender_id != :uid3
                   AND (
-                      (m.target_type = 'individual' AND m.receiver_id = :uid)
+                      (m.target_type = 'individual' AND m.receiver_id = :uid4)
                       OR (m.target_type = 'group_all')
                       OR (m.target_type = 'group_country' AND m.target_country = :country)
                       OR (m.target_type = 'group_coordinators' AND :is_coord = 1)
@@ -304,7 +313,10 @@ if ($method === 'POST') {
                 ON DUPLICATE KEY UPDATE is_read = 1, read_at = NOW()";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            ':uid' => $userId,
+            ':uid1' => $userId,
+            ':uid2' => $userId,
+            ':uid3' => $userId,
+            ':uid4' => $userId,
             ':country' => $country,
             ':is_coord' => $isCoord
         ]);
