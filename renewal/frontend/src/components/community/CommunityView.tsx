@@ -41,7 +41,10 @@ import {
   ChevronRight,
   Paperclip,
   ArrowRight,
+  Edit2,
+  Pencil,
 } from 'lucide-react'
+import { useLocale } from 'next-intl'
 import {
   MemberLevel,
   MemberRole,
@@ -56,6 +59,8 @@ import {
   formatBytes,
   OptimizedResult,
 } from '@/lib/imageOptimizer'
+import { translateTitleTo15Languages } from '@/lib/gemini'
+import { getCommunityStrings, NATIONS_15 } from './communityI18n'
 
 interface Comment {
   id: string
@@ -88,19 +93,21 @@ interface Post {
 }
 
 const countryFlags: Record<string, string> = {
-  KR: '🇰🇷 대한민국',
-  MM: '🇲🇲 미얀마',
-  VN: '🇻🇳 베트남',
-  TH: '🇹🇭 태국',
-  ID: '🇮🇩 인도네시아',
-  JP: '🇯🇵 일본',
-  NP: '🇳🇵 네팔',
-  IN: '🇮🇳 인도',
-  KH: '🇰🇭 캄보디아',
-  LA: '🇱🇦 라오스',
-  MN: '🇲🇳 몽골',
-  TW: '🇹🇼 대만',
-  US: '🇺🇸 미국',
+  HK: '🇭🇰 홍콩 (Hong Kong)',
+  ID: '🇮🇩 인도네시아 (Indonesia)',
+  IN: '🇮🇳 인도 (India)',
+  JP: '🇯🇵 일본 (Japan)',
+  KH: '🇰🇭 캄보디아 (Cambodia)',
+  KR: '🇰🇷 대한민국 (Korea)',
+  LA: '🇱🇦 라오스 (Laos)',
+  MM: '🇲🇲 미얀마 (Myanmar)',
+  MN: '🇲🇳 몽골 (Mongolia)',
+  NP: '🇳🇵 네팔 (Nepal)',
+  PH: '🇵🇭 필리핀 (Philippines)',
+  TH: '🇹🇭 태국 (Thailand)',
+  TW: '🇹🇼 대만 (Taiwan)',
+  US: '🇺🇸 미국 (USA / Global)',
+  VN: '🇻🇳 베트남 (Vietnam)',
 }
 
 const resourceCategories: { id: string; label: string }[] = [
@@ -119,6 +126,9 @@ interface Props {
 }
 
 export default function CommunityView({ initialTab = 'announce' }: Props) {
+  const locale = useLocale()
+  const t = getCommunityStrings(locale)
+
   const normalizeTab = (t?: string): CommunityTab => {
     if (t === 'prayer') return 'prayer'
     if (t === 'photos' || t === 'photo') return 'photos'
@@ -131,10 +141,13 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
+  // 15개국 국가 필터 펼침메뉴 상태 ('ALL' 또는 2자리 국가코드 HK, ID, IN, ...)
+  const [selectedCountry, setSelectedCountry] = useState<string>('ALL')
+
   // 공지사항 한/영 필터 ('ALL' | 'KO' | 'EN')
   const [noticeLangFilter, setNoticeLangFilter] = useState<'ALL' | 'KO' | 'EN'>('ALL')
 
-  // 자료방 5대 카테고리 및 13개국 언어 필터
+  // 자료방 5대 카테고리 필터
   const [resourceCategory, setResourceCategory] = useState<string>('ALL')
   const [resourceLang, setResourceLang] = useState<string>('ALL')
 
@@ -151,11 +164,19 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // ✏️ 게시물 수정 모달 상태
+  const [editingPost, setEditingPost] = useState<Post | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editContent, setEditContent] = useState('')
+  const [editCategory, setEditCategory] = useState('')
+  const [editImageUrl, setEditImageUrl] = useState('')
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false)
+
   // 📢 공지사항 등록 모달 상태 (이미지 첨부 지원)
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false)
   const [noticeTitle, setNoticeTitle] = useState('')
   const [noticeContent, setNoticeContent] = useState('')
-  const [noticeCountry, setNoticeCountry] = useState('KR')
   const [noticeIsPinned, setNoticeIsPinned] = useState(false)
   const [noticeImageUrl, setNoticeImageUrl] = useState('')
   const [isUploadingNoticeImage, setIsUploadingNoticeImage] = useState(false)
@@ -178,11 +199,23 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false)
   const [photoTitle, setPhotoTitle] = useState('')
   const [photoDesc, setPhotoDesc] = useState('')
-  const [photoCountry, setPhotoCountry] = useState('KR')
   const [photoLocation, setPhotoLocation] = useState('Seoul, Korea')
   const [photoDate, setPhotoDate] = useState(new Date().toISOString().substring(0, 10))
   const [photoAttendees, setPhotoAttendees] = useState('')
   const [photoTags, setPhotoTags] = useState('')
+
+  // 🌐 언어별 게시물 제목 추출 헬퍼 (extra_json.titles[locale] 우선)
+  const getPostTitle = (p?: Post | null, langCode: string = locale): string => {
+    if (!p) return ''
+    let extra: any = {}
+    try {
+      extra = typeof p.extra_json === 'string' ? JSON.parse(p.extra_json) : p.extra_json || {}
+    } catch (e) {}
+    if (extra?.titles && typeof extra.titles === 'object' && extra.titles[langCode]) {
+      return extra.titles[langCode]
+    }
+    return p.title || ''
+  }
   const [photoImageUrl, setPhotoImageUrl] = useState('')
   const [photoImageUrls, setPhotoImageUrls] = useState<string[]>([])
   const [optimizedPreviews, setOptimizedPreviews] = useState<OptimizedResult[]>([])
@@ -304,7 +337,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         }),
       })
       if (res.ok) {
-        showToast('게시물이 성공적으로 삭제되었습니다.')
+        showToast(t.delete_success_toast)
         setPosts((prev) => prev.filter((p) => p.id !== postId))
         if (selectedPost?.id === postId) setSelectedPost(null)
         if (activeLightbox?.id === postId) setActiveLightbox(null)
@@ -317,7 +350,124 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     }
   }
 
-  // 📢 공지사항 등록
+  // ✏️ 게시물 수정 열기 핸들러
+  const handleOpenEdit = (post: Post) => {
+    setEditingPost(post)
+    setEditTitle(post.title)
+    setEditContent(post.content)
+    setEditCategory(post.category || '')
+    setEditImageUrl(post.image_url || '')
+    setIsEditModalOpen(true)
+  }
+
+  // ✏️ 게시물 수정 저장 핸들러
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingPost) return
+    if (!editTitle.trim() || !editContent.trim()) {
+      showToast('제목과 내용을 모두 입력해 주세요.')
+      return
+    }
+
+    setIsEditSubmitting(true)
+    showToast(t.translating_toast)
+
+    // 15개국 제목 번역 갱신
+    let titles: Record<string, string> = {}
+    try {
+      titles = await translateTitleTo15Languages(editTitle.trim())
+    } catch (err) {
+      console.warn('Translation error on edit:', err)
+    }
+
+    let extraData: any = {}
+    try {
+      extraData = typeof editingPost.extra_json === 'string' ? JSON.parse(editingPost.extra_json) : editingPost.extra_json || {}
+    } catch (err) {}
+    extraData.titles = titles
+    if (editImageUrl.trim()) {
+      extraData.image_url = editImageUrl.trim()
+    }
+
+    try {
+      const res = await fetch('/api/posts.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          id: editingPost.id,
+          title: editTitle.trim(),
+          content: editContent.trim(),
+          category: editCategory || null,
+          image_url: editImageUrl.trim() || null,
+          extra_json: JSON.stringify(extraData),
+        }),
+      })
+
+      if (res.ok) {
+        showToast(t.edit_success_toast)
+        setIsEditModalOpen(false)
+        const updatedTitle = editTitle.trim()
+        const updatedContent = editContent.trim()
+        const updatedCategory = editCategory || undefined
+        const updatedImg = editImageUrl.trim() || undefined
+        const updatedExtra = JSON.stringify(extraData)
+
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === editingPost.id
+              ? {
+                  ...p,
+                  title: updatedTitle,
+                  content: updatedContent,
+                  category: updatedCategory,
+                  image_url: updatedImg,
+                  extra_json: updatedExtra,
+                  updated_at: new Date().toISOString(),
+                }
+              : p
+          )
+        )
+        if (selectedPost?.id === editingPost.id) {
+          setSelectedPost((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  title: updatedTitle,
+                  content: updatedContent,
+                  category: updatedCategory,
+                  image_url: updatedImg,
+                  extra_json: updatedExtra,
+                }
+              : null
+          )
+        }
+        if (activeLightbox?.id === editingPost.id) {
+          setActiveLightbox((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  title: updatedTitle,
+                  content: updatedContent,
+                  image_url: updatedImg,
+                  extra_json: updatedExtra,
+                }
+              : null
+          )
+        }
+        setEditingPost(null)
+      } else {
+        showToast('게시물 수정 중 오류가 발생했습니다.')
+      }
+    } catch (e) {
+      console.error(e)
+      showToast('네트워크 오류가 발생했습니다.')
+    } finally {
+      setIsEditSubmitting(false)
+    }
+  }
+
+  // 📢 공지사항 등록 (15개국 제목 자동 번역 + 작성자 국가 자동 세팅)
   const handleCreateNotice = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!noticeTitle.trim() || !noticeContent.trim()) {
@@ -326,9 +476,20 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     }
 
     setIsSubmitting(true)
+    showToast(t.translating_toast)
     const user = getStoredUser()
+
+    // 15개국 제목 자동 번역 (Gemini 1차 -> Google Fallback)
+    let titles: Record<string, string> = {}
+    try {
+      titles = await translateTitleTo15Languages(noticeTitle.trim())
+    } catch (err) {
+      console.warn('Notice title auto-translation warning:', err)
+    }
+
     const extraData = {
       image_url: noticeImageUrl.trim() || undefined,
+      titles,
     }
 
     try {
@@ -341,8 +502,8 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
           content: noticeContent.trim(),
           author_id: user?.id || 'admin',
           author_name: user?.name || 'AAMEN 운영본부',
-          author_country: noticeCountry,
-          author_role: 'country_admin',
+          author_country: user?.country_code || 'KR',
+          author_role: user?.role || 'country_admin',
           is_pinned: noticeIsPinned ? 1 : 0,
           image_url: noticeImageUrl.trim() || undefined,
           extra_json: JSON.stringify(extraData),
@@ -350,7 +511,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
       })
 
       if (res.ok) {
-        showToast('✨ 새 공지사항이 등록되었습니다.')
+        showToast(t.create_success_toast)
         setNoticeTitle('')
         setNoticeContent('')
         setNoticeImageUrl('')
@@ -408,7 +569,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     }
   }
 
-  // 📚 자료 등록
+  // 📚 자료 등록 (15개국 제목 자동 번역 + 작성자 국가 자동 세팅)
   const handleCreateResource = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!resTitle.trim() || !resDesc.trim()) {
@@ -417,7 +578,17 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     }
 
     setIsSubmitting(true)
+    showToast(t.translating_toast)
     const user = getStoredUser()
+
+    // 15개국 제목 자동 번역
+    let titles: Record<string, string> = {}
+    try {
+      titles = await translateTitleTo15Languages(resTitle.trim())
+    } catch (err) {
+      console.warn('Resource title auto-translation warning:', err)
+    }
+
     const extraData = {
       lang: resLang,
       fileUrl: resFileUrl.trim() || '#',
@@ -425,6 +596,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
       fileSize: resFileSize,
       fileName: resFileName || resTitle.trim(),
       date: new Date().toISOString().substring(0, 10),
+      titles,
     }
 
     try {
@@ -438,15 +610,15 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
           content: resDesc.trim(),
           author_id: user?.id || 'worker',
           author_name: user?.name || '교육사역팀',
-          author_country: resLang === 'ALL' ? 'KR' : resLang,
-          author_role: 'level3_worker',
+          author_country: user?.country_code || 'KR',
+          author_role: user?.role || 'level3_worker',
           image_url: resFileUrl.trim(),
           extra_json: JSON.stringify(extraData),
         }),
       })
 
       if (res.ok) {
-        showToast('✨ 새 교육/예배 자료가 등록되었습니다.')
+        showToast(t.create_success_toast)
         setResTitle('')
         setResDesc('')
         setResFileUrl('')
@@ -590,7 +762,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     showToast('★ 대표 썸네일로 설정되었습니다.')
   }
 
-  // 📸 사진 등록 완료 처리
+  // 📸 사진 등록 완료 처리 (15개국 제목 자동 번역 + 작성자 국가 자동 세팅)
   const handleCreatePhoto = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!photoTitle.trim() || !photoDesc.trim()) {
@@ -599,7 +771,18 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     }
 
     setIsSubmitting(true)
+    showToast(t.translating_toast)
     const user = getStoredUser()
+    const userCountry = user?.country_code || 'KR'
+
+    // 15개국 제목 자동 번역
+    let titles: Record<string, string> = {}
+    try {
+      titles = await translateTitleTo15Languages(photoTitle.trim())
+    } catch (err) {
+      console.warn('Photo title auto-translation warning:', err)
+    }
+
     const parsedTags = photoTags
       .split(',')
       .map((t) => t.trim().replace(/^#/, ''))
@@ -616,8 +799,9 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
       date: photoDate,
       attendees: photoAttendees.trim() || '참석',
       tags: parsedTags,
-      flag: countryFlags[photoCountry]?.split(' ')[0] || '🌐',
+      flag: countryFlags[userCountry]?.split(' ')[0] || '🌐',
       images: allImages,
+      titles,
     }
 
     try {
@@ -630,15 +814,15 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
           content: photoDesc.trim(),
           author_id: user?.id || 'worker',
           author_name: user?.name || '현장사역자',
-          author_country: photoCountry,
-          author_role: 'level3_worker',
+          author_country: userCountry,
+          author_role: user?.role || 'level3_worker',
           image_url: primaryImg,
           extra_json: JSON.stringify(extraData),
         }),
       })
 
       if (res.ok) {
-        showToast('✨ 새 사역 현장 사진이 등록되었습니다.')
+        showToast(t.create_success_toast)
         setPhotoTitle('')
         setPhotoDesc('')
         setPhotoImageUrl('')
@@ -684,32 +868,45 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     return null
   }
 
-  // 공지사항 필터링
+  // 공지사항 필터링 (15개국 국가 필터 + 검색)
   const filteredNoticePosts = posts.filter((p) => {
-    if (noticeLangFilter === 'ALL') return true
-    if (noticeLangFilter === 'KO') return p.author_country === 'KR' || p.title.match(/[\uAC00-\uD7AF]/)
-    if (noticeLangFilter === 'EN') return p.author_country !== 'KR' || !p.title.match(/[\uAC00-\uD7AF]/)
-    return true
+    if (selectedCountry !== 'ALL' && p.author_country !== selectedCountry) return false
+    if (noticeLangFilter === 'KO' && !(p.author_country === 'KR' || p.title.match(/[\uAC00-\uD7AF]/))) return false
+    if (noticeLangFilter === 'EN' && !(p.author_country !== 'KR' || !p.title.match(/[\uAC00-\uD7AF]/))) return false
+    if (!searchTerm) return true
+    const displayTitle = getPostTitle(p, locale).toLowerCase()
+    return (
+      displayTitle.includes(searchTerm.toLowerCase()) ||
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.content.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   })
 
-  // 자료방 필터링
+  // 자료방 필터링 (15개국 국가 필터 + 5대 카테고리 + 검색)
   const filteredResources = posts.filter((p) => {
+    if (selectedCountry !== 'ALL' && p.author_country !== selectedCountry) return false
     const extra = parseExtra(p)
     const matchCat = resourceCategory === 'ALL' || (p.category || 'education') === resourceCategory
     const matchLang = resourceLang === 'ALL' || (extra.lang || p.author_country) === resourceLang || extra.lang === 'ALL'
-    const matchSearch =
-      !searchTerm ||
+    if (!matchCat || !matchLang) return false
+    if (!searchTerm) return true
+    const displayTitle = getPostTitle(p, locale).toLowerCase()
+    return (
+      displayTitle.includes(searchTerm.toLowerCase()) ||
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.content.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchCat && matchLang && matchSearch
+    )
   })
 
-  // 사진첩 필터링
+  // 사진첩 필터링 (15개국 국가 필터 + 검색)
   const filteredPhotos = posts.filter((p) => {
+    if (selectedCountry !== 'ALL' && p.author_country !== selectedCountry) return false
     const extra = parseExtra(p)
     const tagsStr = (extra.tags || []).join(' ')
+    if (!searchTerm) return true
+    const displayTitle = getPostTitle(p, locale).toLowerCase()
     return (
-      !searchTerm ||
+      displayTitle.includes(searchTerm.toLowerCase()) ||
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (extra.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -734,11 +931,11 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
           {/* 상단 타이틀 배너 */}
           <div className="bg-gradient-to-r from-teal-900 via-emerald-800 to-sky-900 text-white rounded-3xl p-8 sm:p-10 mb-8 shadow-md">
             <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-extrabold uppercase tracking-widest mb-3 backdrop-blur-sm">
-              AAMEN Asian Fellowship & Network
+              {t.banner_badge}
             </span>
-            <h1 className="text-3xl sm:text-4xl font-black mb-3 tracking-tight">소통 광장</h1>
+            <h1 className="text-3xl sm:text-4xl font-black mb-3 tracking-tight">{t.banner_title}</h1>
             <p className="text-white/85 text-sm sm:text-base max-w-2xl leading-relaxed">
-              공지사항, 교육 자료방, 13개국 실시간 기도의 벽, 생생한 사역 사진첩을 통해 아시아 메노나이트 평화 공동체가 하나로 이어집니다.
+              {t.banner_desc}
             </p>
           </div>
 
@@ -746,10 +943,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200">
             <div className="flex flex-wrap items-center gap-2">
               {[
-                { id: 'announce', label: '📢 공지사항 (Notice)' },
-                { id: 'resources', label: '📚 자료방 (Resources)' },
-                { id: 'prayer', label: '🙏 함께 기도해요 (Prayer)' },
-                { id: 'photos', label: '📸 사진첩 (Photos)' },
+                { id: 'announce', label: t.tab_announce },
+                { id: 'resources', label: t.tab_resources },
+                { id: 'prayer', label: t.tab_prayer },
+                { id: 'photos', label: t.tab_photos },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -785,7 +982,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 className="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-sm transition-all bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>공지사항 등록</span>
+                <span>{t.btn_new_notice}</span>
               </button>
             )}
 
@@ -805,7 +1002,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 className="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-sm transition-all bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>새 자료 등록</span>
+                <span>{t.btn_new_resource}</span>
               </button>
             )}
 
@@ -825,7 +1022,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 className="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-sm transition-all bg-purple-600 hover:bg-purple-700 text-white cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
-                <span>현장 사진 등록</span>
+                <span>{t.btn_new_photo}</span>
               </button>
             )}
           </div>
@@ -876,13 +1073,34 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </div>
               </div>
 
-              {/* 검색 및 새로고침 */}
-              <div className="flex gap-3 mb-6">
+              {/* 검색 및 15개국 국가 필터 펼침메뉴 */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                {/* 15개국 국가 필터 펼침메뉴 (드롭다운) */}
+                <div className="w-full sm:w-64 shrink-0">
+                  <div className="relative">
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      className="w-full pl-3.5 pr-8 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs appearance-none cursor-pointer"
+                    >
+                      <option value="ALL">🌐 {t.all_nations}</option>
+                      {NATIONS_15.map((n) => (
+                        <option key={n.code} value={n.code}>
+                          {n.flag} {n.name[locale as 'ko' | 'en'] || n.name.en} ({n.code})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
+                      ▼
+                    </div>
+                  </div>
+                </div>
+
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="공지사항 제목 또는 내용 검색..."
+                    placeholder={t.search_placeholder_notice}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
@@ -890,10 +1108,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </div>
                 <button
                   onClick={fetchPosts}
-                  className="px-4 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                  className="px-4 py-3 sm:py-0 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center justify-center gap-1.5 text-xs font-bold cursor-pointer"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">새로고침</span>
+                  <span>{t.btn_refresh}</span>
                 </button>
               </div>
 
@@ -901,12 +1119,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               {loading ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
                   <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mx-auto mb-3" />
-                  <p className="text-sm text-gray-500">공지사항을 불러오는 중입니다...</p>
+                  <p className="text-sm text-gray-500">{t.loading}</p>
                 </div>
               ) : filteredNoticePosts.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-2xs">
                   <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-700 font-bold text-sm mb-1">등록된 공지사항이 없습니다.</p>
+                  <p className="text-gray-700 font-bold text-sm mb-1">{t.empty_posts}</p>
                   <p className="text-xs text-gray-400 mb-4">공지사항 등록 버튼을 눌러 첫 번째 소식을 전해 보세요.</p>
                   {canWriteNotice && (
                     <button
@@ -914,7 +1132,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 shadow-xs cursor-pointer"
                     >
                       <PlusCircle size={14} />
-                      <span>공지사항 등록</span>
+                      <span>{t.btn_new_notice}</span>
                     </button>
                   )}
                 </div>
@@ -922,6 +1140,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 <div className="grid grid-cols-1 gap-4">
                   {filteredNoticePosts.map((post) => {
                     const postImg = getPostImageUrl(post)
+                    const currentUser = getStoredUser()
+                    const isAuthor = Boolean(post.author_id && currentUser?.id && post.author_id === currentUser.id)
+                    const canEdit = isAuthor || isLeaderOrAdmin
+
                     return (
                       <div
                         key={post.id}
@@ -948,7 +1170,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                           {post.is_pinned && (
                             <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-xs flex items-center gap-1">
                               <span>📌</span>
-                              <span>고정</span>
+                              <span>{t.pinned_badge}</span>
                             </span>
                           )}
                         </div>
@@ -959,7 +1181,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                             {/* 배지 & 일시 */}
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-black text-[10px]">
-                                {post.author_country === 'KR' ? '🇰🇷 KO 한국어' : '🇺🇸 EN English'}
+                                {countryFlags[post.author_country] || post.author_country}
                               </span>
                               <span className="text-xs text-gray-500 font-medium">
                                 {post.created_at.substring(0, 10)}
@@ -971,9 +1193,9 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               )}
                             </div>
 
-                            {/* 제목 */}
+                            {/* 15개국 자동 번역 제목 */}
                             <h4 className="font-extrabold text-base sm:text-lg text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 mb-2 leading-snug">
-                              {post.title}
+                              {getPostTitle(post, locale)}
                             </h4>
 
                             {/* 내용 */}
@@ -994,25 +1216,38 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  shareViaWhatsApp(post.title, post.content.substring(0, 80))
+                                  shareViaWhatsApp(getPostTitle(post, locale), post.content.substring(0, 80))
                                 }}
                                 className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                               >
                                 <Share2 size={13} />
                                 <span>WhatsApp</span>
                               </button>
-                              {isLeaderOrAdmin && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDeletePost(post.id, post.title)
-                                  }}
-                                  className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title="삭제"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                              {canEdit && (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleOpenEdit(post)
+                                    }}
+                                    className="p-1.5 rounded-xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+                                    title={t.btn_edit}
+                                  >
+                                    <Edit2 size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDeletePost(post.id, post.title)
+                                    }}
+                                    className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                    title={t.btn_delete}
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -1067,46 +1302,34 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </div>
               </div>
 
-              {/* 13개 참여국 필터 칩 바 */}
-              <div className="bg-white p-3.5 rounded-2xl border border-gray-200 mb-6 flex items-center gap-2 overflow-x-auto text-xs">
-                <span className="font-black text-gray-700 shrink-0 ml-1">국가 선택:</span>
-                {[
-                  { id: 'ALL', label: '전체 (ALL)' },
-                  { id: 'ID', label: '🇮🇩 인도네시아 (ID)' },
-                  { id: 'IN', label: '🇮🇳 인도 (IN)' },
-                  { id: 'JP', label: '🇯🇵 일본 (JP)' },
-                  { id: 'KH', label: '🇰🇭 캄보디아 (KH)' },
-                  { id: 'KR', label: '🇰🇷 대한민국 (KR)' },
-                  { id: 'LA', label: '🇱🇦 라오스 (LA)' },
-                  { id: 'MM', label: '🇲🇲 미얀마 (MM)' },
-                  { id: 'MN', label: '🇲🇳 몽골 (MN)' },
-                  { id: 'NP', label: '🇳🇵 네팔 (NP)' },
-                  { id: 'TH', label: '🇹🇭 태국 (TH)' },
-                  { id: 'TW', label: '🇹🇼 대만 (TW)' },
-                  { id: 'US', label: '🇺🇸 미국 (US)' },
-                  { id: 'VN', label: '🇻🇳 베트남 (VN)' },
-                ].map((l) => (
-                  <button
-                    key={l.id}
-                    onClick={() => setResourceLang(l.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
-                      resourceLang === l.id
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </div>
+              {/* 검색 및 15개국 국가 필터 펼침메뉴 */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                {/* 15개국 국가 필터 펼침메뉴 (드롭다운) */}
+                <div className="w-full sm:w-64 shrink-0">
+                  <div className="relative">
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      className="w-full pl-3.5 pr-8 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs appearance-none cursor-pointer"
+                    >
+                      <option value="ALL">🌐 {t.all_nations}</option>
+                      {NATIONS_15.map((n) => (
+                        <option key={n.code} value={n.code}>
+                          {n.flag} {n.name[locale as 'ko' | 'en'] || n.name.en} ({n.code})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
+                      ▼
+                    </div>
+                  </div>
+                </div>
 
-              {/* 검색 바 */}
-              <div className="flex gap-3 mb-6">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="교안 제목, 설명, 언어로 자료 검색..."
+                    placeholder={t.search_placeholder_resource}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs"
@@ -1114,10 +1337,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </div>
                 <button
                   onClick={fetchPosts}
-                  className="px-4 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                  className="px-4 py-3 sm:py-0 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center justify-center gap-1.5 text-xs font-bold cursor-pointer"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">새로고침</span>
+                  <span>{t.btn_refresh}</span>
                 </button>
               </div>
 
@@ -1125,12 +1348,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               {loading ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
                   <RefreshCw className="w-8 h-8 text-sky-600 animate-spin mx-auto mb-3" />
-                  <p className="text-sm text-gray-500">자료를 불러오는 중입니다...</p>
+                  <p className="text-sm text-gray-500">{t.loading}</p>
                 </div>
               ) : filteredResources.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-2xs">
                   <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-700 font-bold text-sm mb-1">등록된 교육 및 예배 자료가 없습니다.</p>
+                  <p className="text-gray-700 font-bold text-sm mb-1">{t.empty_posts}</p>
                   <p className="text-xs text-gray-400 mb-4">새 자료 등록 버튼을 눌러 교재와 예배 자료를 공유해 보세요.</p>
                   {canWriteResource && (
                     <button
@@ -1138,7 +1361,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 shadow-xs cursor-pointer"
                     >
                       <PlusCircle size={14} />
-                      <span>새 자료 등록</span>
+                      <span>{t.btn_new_resource}</span>
                     </button>
                   )}
                 </div>
@@ -1148,6 +1371,9 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     const extra = parseExtra(res)
                     const catLabel = resourceCategories.find((c) => c.id === res.category)?.label || res.category || '자료'
                     const langLabel = countryFlags[extra.lang || res.author_country] || extra.lang || res.author_country || '통합'
+                    const currentUser = getStoredUser()
+                    const isAuthor = Boolean(res.author_id && currentUser?.id && res.author_id === currentUser.id)
+                    const canEdit = isAuthor || isLeaderOrAdmin
 
                     return (
                       <div
@@ -1163,7 +1389,9 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               {langLabel} · {extra.fileType || 'PDF'}
                             </span>
                           </div>
-                          <h4 className="font-bold text-base text-gray-900 mb-1.5 leading-snug">{res.title}</h4>
+                          <h4 className="font-bold text-base text-gray-900 mb-1.5 leading-snug">
+                            {getPostTitle(res, locale)}
+                          </h4>
                           <p className="text-xs text-gray-600 leading-relaxed mb-4 line-clamp-2">{res.content}</p>
                         </div>
 
@@ -1173,7 +1401,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                           </span>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => shareViaWhatsApp(res.title, `[AAMEN 자료실] ${res.content}`)}
+                              onClick={() => shareViaWhatsApp(getPostTitle(res, locale), `[AAMEN 자료실] ${res.content}`)}
                               className="p-2 rounded-xl bg-gray-50 hover:bg-emerald-50 text-gray-500 hover:text-emerald-700 transition-colors"
                               title="WhatsApp으로 공유"
                             >
@@ -1198,14 +1426,23 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                                 <span>다운로드</span>
                               </button>
                             )}
-                            {isLeaderOrAdmin && (
-                              <button
-                                onClick={() => handleDeletePost(res.id, res.title)}
-                                className="p-1.5 rounded-xl text-gray-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                                title="삭제"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+                            {canEdit && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleOpenEdit(res)}
+                                  className="p-1.5 rounded-xl text-gray-300 hover:text-sky-600 hover:bg-sky-50 transition-colors cursor-pointer"
+                                  title={t.btn_edit}
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePost(res.id, res.title)}
+                                  className="p-1.5 rounded-xl text-gray-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title={t.btn_delete}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1266,7 +1503,28 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
 
               {/* 검색 바 */}
-              <div className="flex gap-3 mb-6">
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                {/* 15개국 국가 필터 드롭다운 (펼침메뉴) */}
+                <div className="w-full sm:w-56 shrink-0">
+                  <div className="relative">
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      className="w-full pl-3.5 pr-8 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs appearance-none cursor-pointer"
+                    >
+                      <option value="ALL">🌐 {t.all_nations}</option>
+                      {NATIONS_15.map((n) => (
+                        <option key={n.code} value={n.code}>
+                          {n.flag} {n.name[locale as 'ko' | 'en'] || n.name.en} ({n.code})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
+                      ▼
+                    </div>
+                  </div>
+                </div>
+
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   <input
@@ -1279,10 +1537,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </div>
                 <button
                   onClick={fetchPosts}
-                  className="px-4 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                  className="px-4 py-3 sm:py-0 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center justify-center gap-1.5 text-xs font-bold cursor-pointer"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">새로고침</span>
+                  <span>{t.btn_refresh}</span>
                 </button>
               </div>
 
@@ -1319,6 +1577,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     const tagsList: string[] = Array.isArray(extra.tags) ? extra.tags : []
 
                     const imagesList: string[] = Array.isArray(extra.images) && extra.images.length > 0 ? extra.images : [imgUrl]
+                    const currentUser = getStoredUser()
+                    const isAuthor = Boolean(photo.author_id && currentUser?.id && photo.author_id === currentUser.id)
+                    const canEdit = isAuthor || isLeaderOrAdmin
+                    const photoTitleText = getPostTitle(photo, locale)
 
                     return (
                       <div
@@ -1335,7 +1597,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={imgUrl}
-                              alt={photo.title}
+                              alt={photoTitleText}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                             <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-white text-[11px] font-bold flex items-center gap-1.5">
@@ -1362,7 +1624,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               <span>{dateText}</span>
                             </div>
                             <h4 className="font-black text-base text-gray-900 group-hover:text-purple-700 transition-colors mb-2 leading-snug">
-                              {photo.title}
+                              {photoTitleText}
                             </h4>
                             <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 mb-4">
                               {photo.content}
@@ -1394,13 +1656,26 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                shareViaWhatsApp(photo.title, `${locationText} · ${photo.content}`)
+                                shareViaWhatsApp(photoTitleText, `${locationText} · ${photo.content}`)
                               }}
                               className="p-1.5 rounded-lg bg-white border border-gray-200 hover:bg-emerald-50 hover:text-emerald-700 text-gray-500 transition-colors"
                               title="WhatsApp으로 사진 소식 전송"
                             >
                               <Share2 size={13} />
                             </button>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenEdit(photo)
+                                }}
+                                className="p-1.5 rounded-lg bg-white border border-gray-200 hover:bg-purple-50 text-gray-500 hover:text-purple-700 transition-colors"
+                                title={t.btn_edit}
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                            )}
                             {isLeaderOrAdmin && (
                               <button
                                 type="button"
@@ -1441,6 +1716,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         const dateText = extra.date || activeLightbox.created_at.substring(0, 10)
         const attendeesText = extra.attendees || ''
         const tagsList: string[] = Array.isArray(extra.tags) ? extra.tags : []
+        const photoTitleText = getPostTitle(activeLightbox, locale)
 
         return (
           <div
@@ -1456,7 +1732,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={currentImgUrl}
-                  alt={`${activeLightbox.title} (${currentImgIndex + 1}/${allImages.length})`}
+                  alt={`${photoTitleText} (${currentImgIndex + 1}/${allImages.length})`}
                   className="w-full h-full object-contain max-h-[55vh] md:max-h-[70vh] transition-all duration-300"
                 />
 
@@ -1541,7 +1817,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   </div>
 
                   <h3 className="text-lg font-black text-gray-900 mb-3 leading-snug">
-                    {activeLightbox.title}
+                    {photoTitleText}
                   </h3>
 
                   <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-6 whitespace-pre-line">
@@ -1561,12 +1837,32 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
                 <div className="pt-4 border-t border-gray-100 flex items-center gap-2">
                   <button
-                    onClick={() => shareViaWhatsApp(activeLightbox.title, activeLightbox.content)}
+                    onClick={() => shareViaWhatsApp(photoTitleText, activeLightbox.content)}
                     className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
                   >
                     <Share2 size={14} />
                     <span>WhatsApp으로 소식 전송</span>
                   </button>
+                  {(() => {
+                    const currentUser = getStoredUser()
+                    const isAuthor = Boolean(activeLightbox.author_id && currentUser?.id && activeLightbox.author_id === currentUser.id)
+                    const canEdit = isAuthor || isLeaderOrAdmin
+                    if (!canEdit) return null
+                    return (
+                      <button
+                        onClick={() => {
+                          const item = activeLightbox
+                          setActiveLightbox(null)
+                          handleOpenEdit(item)
+                        }}
+                        className="p-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                        title={t.btn_edit}
+                      >
+                        <Edit2 size={16} />
+                        <span>{t.btn_edit}</span>
+                      </button>
+                    )
+                  })()}
                   {isLeaderOrAdmin && (
                     <button
                       onClick={() => handleDeletePost(activeLightbox.id, activeLightbox.title)}
@@ -1598,7 +1894,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
                   📢 공지사항
                 </span>
-                <h3 className="text-xl font-black text-gray-900 mt-2 mb-1">{selectedPost.title}</h3>
+                <h3 className="text-xl font-black text-gray-900 mt-2 mb-1">{getPostTitle(selectedPost, locale)}</h3>
                 <div className="text-xs text-gray-400">
                   {selectedPost.author_name} · {selectedPost.created_at.substring(0, 10)}
                 </div>
@@ -1613,7 +1909,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               <div className="mb-5 rounded-2xl overflow-hidden max-h-96 bg-slate-50 border border-emerald-100 flex items-center justify-center">
                 <img
                   src={getPostImageUrl(selectedPost)!}
-                  alt={selectedPost.title}
+                  alt={getPostTitle(selectedPost, locale)}
                   className="w-full max-h-96 object-contain"
                 />
               </div>
@@ -1624,7 +1920,26 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
             </div>
 
             <div className="flex justify-between items-center gap-2">
-              <div>
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const currentUser = getStoredUser()
+                  const isAuthor = Boolean(selectedPost.author_id && currentUser?.id && selectedPost.author_id === currentUser.id)
+                  const canEdit = isAuthor || isLeaderOrAdmin
+                  if (!canEdit) return null
+                  return (
+                    <button
+                      onClick={() => {
+                        const item = selectedPost
+                        setSelectedPost(null)
+                        handleOpenEdit(item)
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Edit2 size={13} />
+                      <span>{t.btn_edit}</span>
+                    </button>
+                  )
+                })()}
                 {isLeaderOrAdmin && (
                   <button
                     onClick={() => handleDeletePost(selectedPost.id, selectedPost.title)}
@@ -1636,7 +1951,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => shareViaWhatsApp(selectedPost.title, selectedPost.content.substring(0, 80))}
+                  onClick={() => shareViaWhatsApp(getPostTitle(selectedPost, locale), selectedPost.content.substring(0, 80))}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Share2 size={13} />
@@ -1690,34 +2005,19 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">대상 국가/언어</label>
-                  <select
-                    value={noticeCountry}
-                    onChange={(e) => setNoticeCountry(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="KR">🇰🇷 한국어 (KR)</option>
-                    <option value="US">🇺🇸 English (US/International)</option>
-                    <option value="MM">🇲🇲 미얀마 (MM)</option>
-                    <option value="VN">🇻🇳 베트남 (VN)</option>
-                    <option value="TH">🇹🇭 태국 (TH)</option>
-                    <option value="ID">🇮🇩 인도네시아 (ID)</option>
-                    <option value="JP">🇯🇵 일본 (JP)</option>
-                  </select>
-                </div>
-                <div className="flex items-end pb-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={noticeIsPinned}
-                      onChange={(e) => setNoticeIsPinned(e.target.checked)}
-                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
-                    />
-                    <span>상단 고정 공지로 등록</span>
-                  </label>
-                </div>
+              <div className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                <span className="text-xs text-gray-600 font-medium">
+                  작성자 국가: <strong className="text-emerald-700">{countryFlags[getStoredUser()?.country_code || 'KR'] || getStoredUser()?.country_code || 'KR'}</strong> (계정 국가 자동 지정)
+                </span>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={noticeIsPinned}
+                    onChange={(e) => setNoticeIsPinned(e.target.checked)}
+                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>상단 고정 공지로 등록</span>
+                </label>
               </div>
 
               <div>
@@ -1838,7 +2138,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   <select
                     value={resCategory}
                     onChange={(e) => setResCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold"
                   >
                     <option value="curriculum">커리큘럼</option>
                     <option value="education">교육자료</option>
@@ -1848,26 +2148,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">해당 국가/언어</label>
-                  <select
-                    value={resLang}
-                    onChange={(e) => setResLang(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  >
-                    <option value="ALL">🌐 13개국 통합 (ALL)</option>
-                    <option value="KR">🇰🇷 대한민국 (KR)</option>
-                    <option value="US">🇺🇸 미국/영어 (US)</option>
-                    <option value="MM">🇲🇲 미얀마 (MM)</option>
-                    <option value="VN">🇻🇳 베트남 (VN)</option>
-                    <option value="TH">🇹🇭 태국 (TH)</option>
-                    <option value="ID">🇮🇩 인도네시아 (ID)</option>
-                    <option value="JP">🇯🇵 일본 (JP)</option>
-                    <option value="NP">🇳🇵 네팔 (NP)</option>
-                    <option value="KH">🇰🇭 캄보디아 (KH)</option>
-                    <option value="LA">🇱🇦 라오스 (LA)</option>
-                    <option value="MN">🇲🇳 몽골 (MN)</option>
-                    <option value="TW">🇹🇼 대만 (TW)</option>
-                  </select>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">작성자 국가 (자동 지정)</label>
+                  <div className="w-full px-3 py-2 text-xs rounded-xl bg-gray-100 border border-gray-200 text-gray-600 font-bold flex items-center gap-1.5">
+                    <span>{countryFlags[getStoredUser()?.country_code || 'KR'] || getStoredUser()?.country_code || 'KR'}</span>
+                  </div>
                 </div>
               </div>
 
@@ -2007,26 +2291,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">사역 국가</label>
-                  <select
-                    value={photoCountry}
-                    onChange={(e) => setPhotoCountry(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="KR">🇰🇷 대한민국 (KR)</option>
-                    <option value="MM">🇲🇲 미얀마 (MM)</option>
-                    <option value="TH">🇹🇭 태국 (TH)</option>
-                    <option value="VN">🇻🇳 베트남 (VN)</option>
-                    <option value="ID">🇮🇩 인도네시아 (ID)</option>
-                    <option value="JP">🇯🇵 일본 (JP)</option>
-                    <option value="NP">🇳🇵 네팔 (NP)</option>
-                    <option value="IN">🇮🇳 인도 (IN)</option>
-                    <option value="KH">🇰🇭 캄보디아 (KH)</option>
-                    <option value="LA">🇱🇦 라오스 (LA)</option>
-                    <option value="MN">🇲🇳 몽골 (MN)</option>
-                    <option value="TW">🇹🇼 대만 (TW)</option>
-                    <option value="US">🇺🇸 미국 (US)</option>
-                  </select>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">작성자 국가 (자동 지정)</label>
+                  <div className="w-full px-3 py-2 text-xs rounded-xl bg-gray-100 border border-gray-200 text-gray-600 font-bold flex items-center gap-1.5">
+                    <span>{countryFlags[getStoredUser()?.country_code || 'KR'] || getStoredUser()?.country_code || 'KR'}</span>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">지역 / 도시명</label>
@@ -2034,7 +2302,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     type="text"
                     value={photoLocation}
                     onChange={(e) => setPhotoLocation(e.target.value)}
-                    placeholder="예: Yangon, Myanmar"
+                    placeholder="예: Yangon, Myanmar 또는 서울, 방콕 등"
                     className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
@@ -2220,6 +2488,117 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? '등록 중...' : '사진 등록하기'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ✏️ 게시물 수정 모달 (15개국 자동 번역 탑재) */}
+      {isEditModalOpen && editingPost && (
+        <div
+          onClick={() => {
+            if (!isEditSubmitting) {
+              setIsEditModalOpen(false)
+              setEditingPost(null)
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+              <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                <Pencil className="text-emerald-600" size={18} />
+                <span>{t.btn_edit}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-mono">
+                  #{editingPost.id}
+                </span>
+              </h3>
+              <button
+                type="button"
+                disabled={isEditSubmitting}
+                onClick={() => {
+                  setIsEditModalOpen(false)
+                  setEditingPost(null)
+                }}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 rounded-2xl bg-emerald-50/80 border border-emerald-100 text-xs text-emerald-800 flex items-center gap-2">
+              <Sparkles className="shrink-0 text-emerald-600" size={16} />
+              <span>수정 완료 시 제목이 15개국 언어로 자동 재번역되어 전 세계 회원에게 반영됩니다.</span>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">제목 *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="제목을 입력하세요"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">본문 내용 *</label>
+                <textarea
+                  required
+                  rows={6}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  placeholder="내용을 입력하세요..."
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
+                />
+              </div>
+
+              {editingPost.image_url && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">이미지 / 파일 URL</label>
+                  <input
+                    type="text"
+                    value={editImageUrl}
+                    onChange={(e) => setEditImageUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  disabled={isEditSubmitting}
+                  onClick={() => {
+                    setIsEditModalOpen(false)
+                    setEditingPost(null)
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer disabled:opacity-50"
+                >
+                  {t.btn_cancel}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditSubmitting}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isEditSubmitting ? (
+                    <>
+                      <RefreshCw className="animate-spin" size={13} />
+                      <span>{t.translating_toast}</span>
+                    </>
+                  ) : (
+                    <span>{t.btn_save}</span>
+                  )}
                 </button>
               </div>
             </form>

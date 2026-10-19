@@ -216,6 +216,24 @@ if ($method === 'GET') {
         send_json(['success' => true, 'message' => 'Post deleted successfully']);
     }
 
+    // POST로 들어온 수정 액션 처리 (update)
+    if (($action === 'update' || $action === 'edit') && $id) {
+        $title = trim($input['title'] ?? '');
+        $content = trim($input['content'] ?? '');
+        if (empty($title) || empty($content)) {
+            send_json(['success' => false, 'error' => 'Title and content are required'], 400);
+        }
+
+        $category = $input['category'] ?? null;
+        $image_url = $input['image_url'] ?? $input['imageUrl'] ?? null;
+        $extra_json = isset($input['extra_json']) ? (is_array($input['extra_json']) ? json_encode($input['extra_json'], JSON_UNESCAPED_UNICODE) : $input['extra_json']) : (isset($input['extra']) ? json_encode($input['extra'], JSON_UNESCAPED_UNICODE) : null);
+
+        $stmt = $pdo->prepare("UPDATE posts SET title = ?, content = ?, category = ?, image_url = ?, extra_json = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$title, $content, $category, $image_url, $extra_json, $id]);
+
+        send_json(['success' => true, 'data' => ['id' => $id], 'message' => 'Post updated successfully']);
+    }
+
     // 신규 글 등록
     if (empty($input['title']) || empty($input['content'])) {
         send_json(['success' => false, 'error' => 'Title and content are required'], 400);

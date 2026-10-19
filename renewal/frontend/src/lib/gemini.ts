@@ -229,3 +229,140 @@ ${text}`
     return { success: false, translation: '', error: msg }
   }
 }
+
+/**
+ * 무료 Google Translate 단일 번역 헬퍼 (Gemini API 비상용 안전망 Fallback)
+ */
+async function translateSingleGoogle(text: string, targetLang: string): Promise<string> {
+  try {
+    const googleLang = targetLang === 'zh-HK' ? 'zh-TW' : targetLang
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${googleLang}&dt=t&q=${encodeURIComponent(text)}`
+    const res = await fetch(url)
+    if (res.ok) {
+      const data = await res.json()
+      if (Array.isArray(data) && Array.isArray(data[0])) {
+        return data[0].map((item: any) => item[0]).join('')
+      }
+    }
+  } catch (e) {
+    console.error('Google translate fallback error:', e)
+  }
+  return text
+}
+
+/**
+ * 15개국 언어로 게시물 제목 일괄 자동 번역
+ * (1차: 등록된 Gemini 1.5 Flash 전용 엔진, 2차: Google Translate 무료 안전망)
+ */
+export async function translateTitleTo15Languages(
+  title: string,
+  userApiKey?: string
+): Promise<Record<string, string>> {
+  const cleanTitle = title.trim()
+  if (!cleanTitle) return {}
+
+  const config = getGeminiConfig()
+  const apiKey = (userApiKey || config.apiKey || '').trim()
+
+  const allLangs = [
+    'zh-HK', 'id', 'hi', 'ja', 'km', 'ko', 'lo', 'my', 'mn', 'ne', 'tl', 'th', 'zh-TW', 'en', 'vi'
+  ]
+
+  const result: Record<string, string> = {}
+  allLangs.forEach((lang) => {
+    result[lang] = cleanTitle
+  })
+
+  // 1. Gemini AI를 활용한 일괄 번역 (API 키가 등록되어 있을 때)
+  if (apiKey) {
+    const prompt = `You are a professional Christian translator specializing in Asian Anabaptist-Mennonite peace fellowship (AAMEN).
+Translate the following short post title into all 15 official Asian languages:
+- zh-HK: Traditional Chinese (Hong Kong)
+- id: Bahasa Indonesia
+- hi: Hindi
+- ja: Japanese
+- km: Khmer
+- ko: Korean
+- lo: Lao
+- my: Burmese (Myanmar)
+- mn: Mongolian
+- ne: Nepali
+- tl: Tagalog / Filipino
+- th: Thai
+- zh-TW: Traditional Chinese (Taiwan)
+- en: English
+- vi: Vietnamese
+
+Original title: "${cleanTitle}"
+
+Return STRICTLY a single valid JSON object without markdown or code fences.
+Format:
+{
+  "zh-HK": "...",
+  "id": "...",
+  "hi": "...",
+  "ja": "...",
+  "km": "...",
+  "ko": "...",
+  "lo": "...",
+  "my": "...",
+  "mn": "...",
+  "ne": "...",
+  "tl": "...",
+  "th": "...",
+  "zh-TW": "...",
+  "en": "...",
+  "vi": "..."
+}`
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model || DEFAULT_GEMINI_MODEL}:generateContent?key=${apiKey}`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: 'application/json',
+          },
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+        if (text) {
+          const parsed = JSON.parse(text)
+          for (const k of allLangs) {
+            if (parsed[k] && typeof parsed[k] === 'string' && parsed[k].trim()) {
+              result[k] = parsed[k].trim()
+            }
+          }
+          return result
+        }
+      }
+    } catch (e) {
+      console.warn('Gemini 15-language title translation error, switching to fallback:', e)
+    }
+  }
+
+  // 2. Fallback: Google Translate 동시 번역
+  try {
+    const promises = allLangs.map(async (code) => {
+      const translated = await translateSingleGoogle(cleanTitle, code)
+      return { code, translated }
+    })
+    const entries = await Promise.allSettled(promises)
+    entries.forEach((entry) => {
+      if (entry.status === 'fulfilled' && entry.value.translated) {
+        result[entry.value.code] = entry.value.translated
+      }
+    })
+  } catch (err) {
+    console.error('All title translation fallbacks failed:', err)
+  }
+
+  return result
+}
+
