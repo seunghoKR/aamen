@@ -20,6 +20,8 @@ import {
   Trash2,
   Sliders,
   Save,
+  MessageSquare,
+  Send,
 } from 'lucide-react'
 
 // 등급 메타데이터 (0단계 비회원 ~ 5단계 총괄관리자)
@@ -158,6 +160,69 @@ const sampleEmails = new Set([
 const isSampleMember = (m: any) =>
   sampleIds.has(m.id) || (m.email && sampleEmails.has(m.email.toLowerCase()))
 
+interface MemberSnsStatus {
+  google: boolean
+  whatsapp: boolean
+  whatsappDetail?: string
+  facebook: boolean
+  facebookDetail?: string
+  telegram: boolean
+  telegramDetail?: string
+}
+
+function getMemberSnsStatus(member: Member): MemberSnsStatus {
+  const mId = member.id
+  // 1. Google (모든 가입 회원은 구글 계정 인증 기본)
+  const isGoogle = true
+
+  // 2. WhatsApp: 유효한 전화번호가 등록되어 있거나 localStorage에 연동 정보가 있는 경우
+  let phone = member.phone || ''
+  if (typeof window !== 'undefined') {
+    const savedWaPhone =
+      localStorage.getItem(`aamen_profile_phone_${mId}`) ||
+      (mId === 'admin' ? localStorage.getItem('aamen_profile_phone') : null)
+    if (savedWaPhone) phone = savedWaPhone
+  }
+  const hasValidPhone = Boolean(
+    phone && !phone.includes('000-0000') && !phone.includes('0000-0000') && phone.length > 7
+  )
+  const isWhatsapp = hasValidPhone
+
+  // 3. Facebook: 페이스북 계정 링크 또는 localStorage 연동 정보가 있는 경우
+  let fbAccount = member.facebook_account || null
+  if (typeof window !== 'undefined') {
+    const savedFb = localStorage.getItem(`aamen_facebook_${mId}`)
+    if (savedFb) fbAccount = savedFb
+  }
+  if (!fbAccount && mId.toLowerCase() === 'admin') {
+    fbAccount = 'https://www.facebook.com/leeshkr'
+  }
+  const isFacebook = Boolean(fbAccount)
+
+  // 4. Telegram: 텔레그램 Chat ID 또는 localStorage 연동 정보가 있는 경우
+  let tgId = member.telegram_chat_id || null
+  if (typeof window !== 'undefined') {
+    const savedTg =
+      localStorage.getItem(`aamen_telegram_${mId}`) ||
+      (mId === 'admin' ? localStorage.getItem('aamen_telegram_chat_id') : null)
+    if (savedTg) tgId = savedTg
+  }
+  if (!tgId && mId.toLowerCase() === 'admin') {
+    tgId = '5618137472'
+  }
+  const isTelegram = Boolean(tgId)
+
+  return {
+    google: isGoogle,
+    whatsapp: isWhatsapp,
+    whatsappDetail: hasValidPhone ? phone : undefined,
+    facebook: isFacebook,
+    facebookDetail: fbAccount || undefined,
+    telegram: isTelegram,
+    telegramDetail: tgId || undefined,
+  }
+}
+
 export default function AdminMembersPage() {
   const params = useParams()
   const currentLocale = (params?.locale as string) || 'ko'
@@ -251,6 +316,11 @@ export default function AdminMembersPage() {
               level: lvl,
               status: (m.status || 'active') as any,
               joinedDate: (m.created_at || '').substring(0, 10),
+              affiliation: m.affiliation || '',
+              phone: m.phone || '',
+              provider: m.provider || 'google',
+              facebook_account: m.facebook_account || null,
+              telegram_chat_id: m.telegram_chat_id || null,
             }
           })
           setMembers(formatted)
@@ -731,6 +801,7 @@ export default function AdminMembersPage() {
                     </th>
                     <th className="py-3.5 px-6">{isEn ? 'Member Info' : '회원 정보'}</th>
                     <th className="py-3.5 px-4">{isEn ? 'Country' : '국가'}</th>
+                    <th className="py-3.5 px-4 text-center">{isEn ? 'Connected SNS' : 'SNS 연동'}</th>
                     <th className="py-3.5 px-4">{isEn ? 'Tier Adjustment (5 Levels)' : '회원 등급 조정 (5단계)'}</th>
                     <th className="py-3.5 px-4">{isEn ? 'Account Status' : '계정 상태'}</th>
                     <th className="py-3.5 px-4">{isEn ? 'Joined Date' : '가입일'}</th>
@@ -779,6 +850,105 @@ export default function AdminMembersPage() {
                             <span className="text-base">{member.flag}</span>
                             <span>{countryDisplay}</span>
                           </div>
+                        </td>
+
+                        {/* SNS 연동 상태 아이콘 (Google, WhatsApp, Facebook, Telegram) */}
+                        <td className="py-4 px-4 whitespace-nowrap text-center">
+                          {(() => {
+                            const sns = getMemberSnsStatus(member)
+                            return (
+                              <div className="inline-flex items-center gap-1.5 p-1 bg-gray-50/80 rounded-xl border border-gray-100 shadow-2xs">
+                                {/* 1. Google 계정 (기본 인증 연동) */}
+                                <div
+                                  className="w-6 h-6 rounded-lg bg-white border border-gray-200/80 flex items-center justify-center shadow-2xs cursor-help hover:scale-110 transition-transform"
+                                  title={
+                                    isEn
+                                      ? `Google Authenticated (${member.email})`
+                                      : `Google 계정 인증 연동됨 (${member.email})`
+                                  }
+                                >
+                                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                                    <path
+                                      fill="#4285F4"
+                                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                    />
+                                    <path
+                                      fill="#34A853"
+                                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                    />
+                                    <path
+                                      fill="#FBBC05"
+                                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                                    />
+                                    <path
+                                      fill="#EA4335"
+                                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                                    />
+                                  </svg>
+                                </div>
+
+                                {/* 2. WhatsApp 메신저 */}
+                                <div
+                                  className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-help hover:scale-110 ${
+                                    sns.whatsapp
+                                      ? 'bg-emerald-600 text-white shadow-2xs ring-1 ring-emerald-500/30'
+                                      : 'bg-gray-200/60 text-gray-400 opacity-30 grayscale'
+                                  }`}
+                                  title={
+                                    sns.whatsapp
+                                      ? isEn
+                                        ? `WhatsApp Connected: ${sns.whatsappDetail}`
+                                        : `WhatsApp 연동 완료: ${sns.whatsappDetail}`
+                                      : isEn
+                                      ? 'WhatsApp Not Connected'
+                                      : 'WhatsApp 미연동'
+                                  }
+                                >
+                                  <MessageSquare size={12} />
+                                </div>
+
+                                {/* 3. Facebook 계정 */}
+                                <div
+                                  className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs transition-all cursor-help hover:scale-110 ${
+                                    sns.facebook
+                                      ? 'bg-[#1877F2] text-white shadow-2xs ring-1 ring-blue-500/30'
+                                      : 'bg-gray-200/60 text-gray-400 opacity-30 grayscale'
+                                  }`}
+                                  title={
+                                    sns.facebook
+                                      ? isEn
+                                        ? `Facebook Connected: ${sns.facebookDetail}`
+                                        : `Facebook 연동 완료: ${sns.facebookDetail}`
+                                      : isEn
+                                      ? 'Facebook Not Connected'
+                                      : 'Facebook 미연동'
+                                  }
+                                >
+                                  f
+                                </div>
+
+                                {/* 4. Telegram 계정 */}
+                                <div
+                                  className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-help hover:scale-110 ${
+                                    sns.telegram
+                                      ? 'bg-[#2AABEE] text-white shadow-2xs ring-1 ring-sky-500/30'
+                                      : 'bg-gray-200/60 text-gray-400 opacity-30 grayscale'
+                                  }`}
+                                  title={
+                                    sns.telegram
+                                      ? isEn
+                                        ? `Telegram Connected (ID: ${sns.telegramDetail})`
+                                        : `Telegram 연동 완료 (ID: ${sns.telegramDetail})`
+                                      : isEn
+                                      ? 'Telegram Not Connected'
+                                      : 'Telegram 미연동'
+                                  }
+                                >
+                                  <Send size={11} className="-translate-x-0.5 translate-y-0.5" />
+                                </div>
+                              </div>
+                            )
+                          })()}
                         </td>
 
                         {/* 회원 등급 선택 드롭다운 (5단계) */}
