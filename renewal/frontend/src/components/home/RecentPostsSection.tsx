@@ -19,7 +19,7 @@ import {
 
 interface PostSummary {
   id: string
-  category: 'announce' | 'board' | 'share' | 'album'
+  category: 'announce' | 'share' | 'album'
   title: string
   content: string
   author: string
@@ -56,12 +56,6 @@ const categoryInfo: Record<
     badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
     tabHref: '/community/announce',
   },
-  board: {
-    label: '열린 나눔터',
-    icon: MessageSquare,
-    badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
-    tabHref: '/community/board',
-  },
   share: {
     label: '자료 나눔방',
     icon: Share2,
@@ -92,7 +86,7 @@ export default function RecentPostsSection() {
   const locale = useLocale()
   const tHome = useTranslations('home')
   const tComm = useTranslations('community')
-  const [activeFilter, setActiveFilter] = useState<'all' | 'announce' | 'board' | 'share' | 'album'>('all')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'announce' | 'share' | 'album'>('all')
   const [posts, setPosts] = useState<PostSummary[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
@@ -115,7 +109,7 @@ export default function RecentPostsSection() {
         const data = await res.json()
         if (data.success && Array.isArray(data.data)) {
           const apiPosts: PostSummary[] = data.data
-            .filter((p: any) => p.board_type !== 'prayer')
+            .filter((p: any) => ['announce', 'photos', 'album', 'resources', 'share'].includes(p.board_type))
             .map((p: any) => {
               let images: string[] = []
               if (p.images) {
@@ -135,11 +129,10 @@ export default function RecentPostsSection() {
               const validImages = images.filter(isImageFile)
               const candidate = isImageFile(p.image_url) ? p.image_url : (validImages.length > 0 ? validImages[0] : undefined)
 
-              let cat: 'announce' | 'board' | 'share' | 'album' = 'board'
-              if (p.board_type === 'announce') cat = 'announce'
-              else if (p.board_type === 'photos' || p.board_type === 'album') cat = 'album'
+              let cat: 'announce' | 'share' | 'album' = 'announce'
+              if (p.board_type === 'photos' || p.board_type === 'album') cat = 'album'
               else if (p.board_type === 'resources' || p.board_type === 'share') cat = 'share'
-              else cat = 'board'
+              else cat = 'announce'
 
               return {
                 id: String(p.id),
@@ -262,7 +255,7 @@ export default function RecentPostsSection() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPosts.map((post) => {
-            const cat = categoryInfo[post.category] || categoryInfo.board
+            const cat = categoryInfo[post.category] || categoryInfo.announce
             const Icon = cat.icon
             const isAlbum = post.category === 'album'
 
@@ -274,7 +267,7 @@ export default function RecentPostsSection() {
                 <div>
                   {/* 포스트 썸네일 (실제 이미지 또는 흐릿한 대표 로고 워터마크 대표이미지) */}
                   <Link
-                    href={getLocalizedPath(isAlbum ? '/community/photos' : `/community/${post.category === 'announce' ? 'announce' : 'resources'}`)}
+                    href={getLocalizedPath(isAlbum ? '/community/photos' : post.category === 'share' ? '/community/resources' : '/community/announce')}
                     className="block relative h-48 w-full overflow-hidden group/thumb cursor-pointer select-none"
                   >
                     {post.imageUrl ? (
@@ -328,8 +321,6 @@ export default function RecentPostsSection() {
                         <span>
                           {post.category === 'announce'
                             ? tComm('announcements')
-                            : post.category === 'board'
-                            ? tComm('board')
                             : post.category === 'share'
                             ? tComm('share')
                             : tHome('tab_album')}
@@ -339,7 +330,7 @@ export default function RecentPostsSection() {
 
                     {/* 제목 */}
                     <Link
-                      href={getLocalizedPath(isAlbum ? '/community/photos' : `/community/${post.category === 'announce' ? 'announce' : 'resources'}`)}
+                      href={getLocalizedPath(isAlbum ? '/community/photos' : post.category === 'share' ? '/community/resources' : '/community/announce')}
                       className="block group-hover:text-emerald-700 transition-colors"
                     >
                       <h3 className="text-base sm:text-lg font-bold text-slate-900 line-clamp-2 leading-snug mb-2">

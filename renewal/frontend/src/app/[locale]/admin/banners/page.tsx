@@ -197,7 +197,7 @@ export default function AdminBannersPage() {
         ? 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80'
         : '',
       buttonText: '바로가기',
-      buttonLink: '/community/board',
+      buttonLink: '/community/announce',
       bgGradient: 'from-emerald-800 via-teal-900 to-slate-950',
       active: true,
       displayOrder: banners.length + 1,
