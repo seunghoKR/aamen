@@ -50,18 +50,16 @@ export default function HeroSection() {
     }
 
     // 2. 서버 API 동기화 (오프라인/로컬 환경 대응)
-    fetch('/api/banners')
-      .then((res) => {
-        if (!res.ok) return null
-        const contentType = res.headers.get('content-type')
-        if (contentType && contentType.includes('application/json')) {
-          return res.json()
+    const loadBannersFromApi = async () => {
+      try {
+        let res = await fetch('/api/banners.php')
+        if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+          res = await fetch('/api/banners')
         }
-        return null
-      })
-      .then((res) => {
-        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
-          const mapped: BannerConfig[] = res.data.map((b: any) => ({
+        if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return
+        const data = await res.json()
+        if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
+          const mapped: BannerConfig[] = data.data.map((b: any) => ({
             id: b.id,
             type: b.banner_type === 'image' ? 'image' : 'gradient_text',
             title: b.title,
@@ -79,10 +77,11 @@ export default function HeroSection() {
           setBanners(mapped)
           localStorage.setItem('aamen_banners_list', JSON.stringify(mapped))
         }
-      })
-      .catch(() => {
+      } catch (e) {
         // Fallback to local default banners cleanly
-      })
+      }
+    }
+    loadBannersFromApi()
 
     // 스토리지 변경 이벤트 리스너 (관리자 페이지 수정 실시간 반영)
     const handleStorage = (e: StorageEvent) => {
@@ -169,7 +168,7 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative overflow-hidden h-[540px] sm:h-[600px] lg:h-[620px] flex items-center justify-center select-none bg-slate-950 text-white"
+      className="relative overflow-hidden h-[500px] sm:h-[550px] lg:h-[580px] flex items-center justify-center select-none bg-slate-950 text-white"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
@@ -185,17 +184,28 @@ export default function HeroSection() {
           }`}
         />
 
-        {/* 이미지 배너 모드일 때 배경 사진 노출 */}
+        {/* 이미지 배너 모드일 때 배경 사진 노출 (밝고 화사한 사진 노출 + 부드러운 가독성 비네트) */}
         {isImageBanner && (
           <>
             <div
               key={currentBanner.imageUrl}
-              className="absolute inset-0 bg-cover bg-center transition-all duration-1000 scale-105 animate-in fade-in"
+              className="absolute inset-0 bg-cover bg-center transition-all duration-1000 scale-105 animate-in fade-in brightness-[1.06] contrast-[1.03]"
               style={{ backgroundImage: `url(${currentBanner.imageUrl})` }}
             />
-            {/* 어두운 가독성 그라디언트 오버레이 */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-slate-950/50" />
-            <div className="absolute inset-0 bg-emerald-950/20 mix-blend-multiply" />
+            {/* 1) 맑고 투명한 기본 틴트 오버레이 (어두운 먹구름 효과 제거) */}
+            <div className="absolute inset-0 bg-slate-950/35" />
+
+            {/* 2) 상/하단 은은한 엣지 비네트 (헤더 및 섹션 하단 자연스러운 연결) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-slate-950/40" />
+
+            {/* 3) 중앙 텍스트 포커스 앰비언트 비네트: 사진의 인물과 배경은 살리면서 텍스트 영역의 가독성을 최상으로 확보 */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  'radial-gradient(ellipse at center, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.15) 55%, transparent 80%)',
+              }}
+            />
           </>
         )}
 
@@ -222,7 +232,7 @@ export default function HeroSection() {
       <div className="relative z-20 max-w-5xl mx-auto px-4 py-8 text-center w-full flex flex-col justify-center items-center h-full">
         {/* 배너 유형 배지 & 슬라이드 넘버 */}
         <div className="h-[32px] flex items-center justify-center mb-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-bold text-emerald-300 shadow-inner">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/60 backdrop-blur-md border border-white/25 text-xs font-bold text-emerald-300 shadow-lg">
             {isImageBanner ? (
               <ImageIcon size={13} className="text-emerald-300" />
             ) : (
@@ -236,7 +246,7 @@ export default function HeroSection() {
               )}
             </span>
             <span className="w-1 h-1 rounded-full bg-white/40 mx-0.5" />
-            <span className="text-white/75 font-mono text-[11px]">
+            <span className="text-white/80 font-mono text-[11px]">
               {String(currentIndex + 1).padStart(2, '0')} / {String(totalSlides).padStart(2, '0')}
             </span>
           </div>
@@ -246,7 +256,10 @@ export default function HeroSection() {
         <div className="h-[84px] sm:h-[100px] flex items-center justify-center w-full mb-3">
           <h1
             key={`title-${currentBanner?.id}`}
-            className="text-2xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight text-white drop-shadow-md max-w-4xl line-clamp-2 animate-in fade-in duration-300"
+            className="text-2xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] drop-shadow-[0_4px_24px_rgba(0,0,0,0.95)] max-w-4xl line-clamp-2 animate-in fade-in duration-300"
+            style={{
+              textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 4px 16px rgba(0,0,0,0.6)',
+            }}
           >
             {getBannerField(currentBanner?.id, 'title', currentBanner?.title)}
           </h1>
@@ -256,18 +269,21 @@ export default function HeroSection() {
         <div className="h-[52px] sm:h-[60px] flex items-center justify-center w-full mb-6">
           <p
             key={`sub-${currentBanner?.id}`}
-            className="text-xs sm:text-base text-white/90 max-w-2xl leading-relaxed font-normal line-clamp-2 animate-in fade-in duration-300"
+            className="text-xs sm:text-base text-white/95 max-w-2xl leading-relaxed font-medium line-clamp-2 animate-in fade-in duration-300 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]"
+            style={{
+              textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+            }}
           >
             {getBannerField(currentBanner?.id, 'subtitle', currentBanner?.subtitle)}
           </p>
         </div>
 
         {/* CTA 액션 버튼 (고정 영역) */}
-        <div className="h-[48px] flex items-center justify-center gap-3 sm:gap-4 mb-6">
+        <div className="h-[48px] flex items-center justify-center gap-3 sm:gap-4">
           {currentBanner?.buttonText && (
             <Link
               href={getLocalizedPath(currentBanner.buttonLink || '/community/prayer')}
-              className="px-7 sm:px-9 py-3 sm:py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-full hover:shadow-xl hover:shadow-emerald-500/20 hover:-translate-y-0.5 transition-all text-xs sm:text-sm flex items-center gap-2"
+              className="px-7 sm:px-9 py-3 sm:py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-full shadow-lg shadow-emerald-950/40 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all text-xs sm:text-sm flex items-center gap-2"
             >
               <span>{getBannerField(currentBanner?.id, 'buttonText', currentBanner.buttonText)}</span>
               <span className="text-base">→</span>
@@ -277,29 +293,11 @@ export default function HeroSection() {
           {currentBanner?.secondaryButtonText && (
             <Link
               href={getLocalizedPath(currentBanner.secondaryButtonLink || '/convictions')}
-              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full border border-white/25 hover:border-white/40 backdrop-blur-md transition-all text-xs sm:text-sm"
+              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-slate-900/60 hover:bg-slate-900/80 text-white font-semibold rounded-full border border-white/30 hover:border-white/50 backdrop-blur-md transition-all text-xs sm:text-sm shadow-lg"
             >
               <span>{getBannerField(currentBanner?.id, 'secondaryButtonText', currentBanner.secondaryButtonText)}</span>
             </Link>
           )}
-        </div>
-
-        {/* 15개국 글로벌 통계 배지 (고정 하단 바) */}
-        <div className="pt-3 border-t border-white/10 flex items-center justify-center gap-6 sm:gap-14 text-white/85 max-w-3xl w-full">
-          <div className="text-center">
-            <div className="text-lg sm:text-2xl font-black text-white">13</div>
-            <div className="text-[10px] sm:text-xs text-white/70">{t('stat_nations')}</div>
-          </div>
-          <div className="w-px h-6 bg-white/15" />
-          <div className="text-center">
-            <div className="text-lg sm:text-2xl font-black text-white">7</div>
-            <div className="text-[10px] sm:text-xs text-white/70">{t('stat_lessons')}</div>
-          </div>
-          <div className="w-px h-6 bg-white/15" />
-          <div className="text-center">
-            <div className="text-lg sm:text-2xl font-black text-white">∞</div>
-            <div className="text-[10px] sm:text-xs text-white/70">{t('stat_connections')}</div>
-          </div>
         </div>
       </div>
 
