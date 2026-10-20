@@ -1321,7 +1321,7 @@ export default function LivePrayerWall() {
             return (
               <div
                 key={item.id}
-                className="flex flex-col justify-between p-5 rounded-2xl bg-gradient-to-br from-gray-50/80 to-emerald-50/25 border border-gray-100 hover:border-emerald-300 hover:shadow-lg transition-all h-[275px] sm:h-[285px] overflow-hidden"
+                className="flex flex-col justify-between p-5 rounded-2xl bg-gradient-to-br from-gray-50/80 to-emerald-50/25 border border-gray-100 hover:border-emerald-300 hover:shadow-lg transition-all h-[305px] sm:h-[315px]"
               >
                 <div>
                   {/* 카드 상단: 작성자 및 국가 정보 */}
@@ -1400,7 +1400,7 @@ export default function LivePrayerWall() {
                   </div>
 
                   {/* 기도 본문 내용 (0단계 비회원 블러 / 1단계 준회원 1줄 / 2단계 이상 전문) */}
-                  <div className="text-gray-800 text-xs sm:text-sm leading-relaxed mb-4 min-h-[60px]">
+                  <div className="text-gray-800 text-xs sm:text-sm leading-relaxed mb-2">
                     {isGuest ? (
                       <div className="relative overflow-hidden rounded-2xl p-4 bg-gray-50/80 border border-gray-200">
                         <p className="blur-[3px] select-none opacity-40 text-gray-500 text-xs leading-relaxed">
@@ -1422,7 +1422,7 @@ export default function LivePrayerWall() {
                         onClick={() => setSelectedPrayer(item)}
                         className="cursor-pointer group/read"
                       >
-                        <p className="line-clamp-4 text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-line group-hover/read:text-gray-900 transition-colors">
+                        <p className="line-clamp-3 text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-line group-hover/read:text-gray-900 transition-colors">
                           {cardContent}
                         </p>
                         {cardContent && cardContent.length > 70 && (
@@ -1447,7 +1447,7 @@ export default function LivePrayerWall() {
                 </div>
 
                 {/* 하단 인터랙션 바: 저도 기도할께요(아멘) & 공유 */}
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between shrink-0 mt-auto">
                   <button
                     onClick={() => handlePray(item.id)}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
