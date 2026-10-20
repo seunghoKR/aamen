@@ -69,7 +69,7 @@ const PRESET_MEMBERS: PresetMember[] = [
     email: 'leeshkr@gmail.com',
     passwords: ['seungho0409!', 'aamen2026!', '1234', 'seungho', 'seungho0409', 'aamen1234', 'a14241425', 'admin', 'admin1234', 'aamen!'],
     role: 'developer',
-    tierLevel: 5,
+    tierLevel: 6,
     country_code: 'KR',
     flag: '🇰🇷',
     roleTitle: '시스템 개발자 (Developer)',
@@ -505,7 +505,7 @@ export default function LoginPage() {
       if (res.ok && data.status === 'success' && data.member) {
         const m = data.member
         const userRole = m.role as AuthUser['role']
-        const tierLvl = m.role === 'developer' || m.role === 'super_admin' ? 5 : m.tierLevel || 2
+        const tierLvl = m.role === 'developer' ? 6 : m.role === 'super_admin' ? 5 : m.tierLevel || 2
 
         const authUser: AuthUser = {
           id: m.id,

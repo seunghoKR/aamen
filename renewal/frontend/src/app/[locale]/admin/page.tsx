@@ -86,9 +86,8 @@ export default function AdminDashboardPage() {
   const countRegular = members.filter((m) => m.role === 'regular').length
   const countAssociate = members.filter((m) => m.role === 'associate').length
 
-  // 권한테스트 레벨이 5단계 이상일 때만 개발자 전용 메뉴/카드 노출 (레벨을 낮추면 즉각 숨김)
-
-  const isDeveloper = (currentUser?.role === 'developer' || currentUser?.role === 'super_admin') && currentLevel >= 5
+  // 권한테스트 레벨이 6단계(개발자)일 때만 개발자 전용 메뉴/카드 노출 (5단계 사이트 관리자 모드에서는 운영 메뉴만 노출)
+  const isDeveloper = currentLevel >= 6
 
   return (
     <div className="space-y-8">

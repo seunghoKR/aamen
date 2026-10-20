@@ -138,14 +138,15 @@ export interface MyPageTexts {
 }
 
 // 1. 등급 정보 (14개국어)
-const TIERS_BY_LOCALE: Record<string, Record<MemberLevel, LocalizedTierInfo>> = {
+const TIERS_BY_LOCALE: Record<string, Partial<Record<MemberLevel, LocalizedTierInfo>>> = {
   ko: {
     0: { name: "0단계: 비회원 (손님)", desc: "로그인하지 않은 일반 방문자 (사역자 정보 및 기도제목 비공개/마스킹)" },
     1: { name: "1단계: 준회원", desc: "가입 대기 및 기본 열람 (게시글 읽기 가능, 글/댓글 작성 제한)" },
     2: { name: "2단계: 정회원", desc: "인증된 공식 정회원 (기도제목 작성, 교육 자료 다운로드)" },
     3: { name: "3단계: 사역자/간사", desc: "공동체 사역자 (공지 작성 및 기도 승인)" },
     4: { name: "4단계: 국가관리자 (코디네이터)", desc: "15개국 각국 대표 리더 (국가별 자료 승인 및 회원 관리)" },
-    5: { name: "5단계: 총괄관리자", desc: "총괄 사이트 관리자 (모든 시스템 및 회원/게시판 총괄)" },
+    5: { name: "5단계: 사이트 관리자 (총괄관리자)", desc: "사이트 총괄 운영 관리자 (배너, 회원 승인, 코디네이터, 협력단체, 팝업 등 운영 총괄)" },
+    6: { name: "6단계: 개발자 (Developer)", desc: "시스템 최고 개발자 (5단계 사이트 운영 전체 + 7대 신념 교안 관리 + 제미나이 AI 엔진 제어)" },
   },
   en: {
     0: { name: "Level 0: Guest (Visitor)", desc: "General visitor not logged in (leader info & prayer requests masked)" },
@@ -153,7 +154,8 @@ const TIERS_BY_LOCALE: Record<string, Record<MemberLevel, LocalizedTierInfo>> = 
     2: { name: "Level 2: Regular Member", desc: "Verified regular member (post prayer requests, download resources)" },
     3: { name: "Level 3: Ministry Worker", desc: "Community ministry worker (publish notices, approve prayers)" },
     4: { name: "Level 4: Country Coordinator", desc: "Official leader for 15 nations (approve country resources & members)" },
-    5: { name: "Level 5: Super Administrator", desc: "Master site admin (oversee all systems, members, & boards)" },
+    5: { name: "Level 5: Site Administrator", desc: "Site operations administrator (banners, members, coordinators, partners, popups)" },
+    6: { name: "Level 6: Developer", desc: "System master developer (Level 5 site operations + Convictions curriculum + Gemini AI engine)" },
   },
   ja: {
     0: { name: "レベル0: ゲスト (訪問者)", desc: "ログインしていない一般訪問者 (リーダー情報および祈りのリクエスト非公開)" },
@@ -2182,7 +2184,7 @@ export function getLocalizedTierInfo(level: MemberLevel, locale: string): Locali
     }
   }
 
-  return tiers?.[level] || TIERS_BY_LOCALE.ko[level]
+  return tiers?.[level] || TIERS_BY_LOCALE.ko[level] || TIERS_BY_LOCALE.ko[0]!
 }
 
 export function getLocalizedCountryList(locale: string): LocalizedCountry[] {

@@ -25,7 +25,7 @@ export function getStoredTierLevel(): MemberLevel {
   try {
     // 1. 권한 시뮬레이터(테스트 레벨) 우선 적용
     const val = localStorage.getItem(TIER_STORAGE_KEY)
-    if (val && ['0', '1', '2', '3', '4', '5'].includes(val)) {
+    if (val && ['0', '1', '2', '3', '4', '5', '6'].includes(val)) {
       return Number(val) as MemberLevel
     }
 
@@ -33,7 +33,8 @@ export function getStoredTierLevel(): MemberLevel {
     const userRaw = localStorage.getItem('aamen_current_user')
     if (userRaw) {
       const user = JSON.parse(userRaw)
-      if (user.role === 'developer' || user.role === 'super_admin') return 5
+      if (user.role === 'developer') return 6
+      if (user.role === 'super_admin') return 5
       if (user.role === 'country_admin') return 4
       if (user.role === 'regular') return 2
       if (user.role === 'associate') return 1
@@ -41,7 +42,8 @@ export function getStoredTierLevel(): MemberLevel {
       if (typeof user.tierLevel === 'number') return user.tierLevel as MemberLevel
     }
     const role = localStorage.getItem('aamen_auth_role')
-    if (role === 'developer' || role === 'super_admin') return 5
+    if (role === 'developer') return 6
+    if (role === 'super_admin') return 5
     if (role === 'country_admin') return 4
     if (role === 'regular') return 2
     if (role === 'associate') return 1
@@ -54,7 +56,8 @@ export function setStoredTierLevel(level: MemberLevel) {
   if (typeof window === 'undefined') return
   try {
     localStorage.setItem(TIER_STORAGE_KEY, String(level))
-    if (level === 5) localStorage.setItem('aamen_auth_role', 'super_admin')
+    if (level === 6) localStorage.setItem('aamen_auth_role', 'developer')
+    else if (level === 5) localStorage.setItem('aamen_auth_role', 'super_admin')
     else if (level === 4) localStorage.setItem('aamen_auth_role', 'country_admin')
     else if (level === 3 || level === 2) localStorage.setItem('aamen_auth_role', 'regular')
     else if (level === 1) localStorage.setItem('aamen_auth_role', 'associate')
@@ -361,9 +364,9 @@ export default function GlobalTierSimulator() {
             </div>
           </div>
 
-          {/* 등급 목록 (0단계 비회원 ~ 5단계 총괄관리자) */}
-          <div className="p-3 space-y-2 max-h-[55vh] overflow-y-auto">
-            {([0, 1, 2, 3, 4, 5] as MemberLevel[]).map((lvl) => {
+          {/* 등급 목록 (0단계 비회원 ~ 5단계 사이트 관리자 ~ 6단계 개발자) */}
+          <div className="p-3 space-y-2 max-h-[58vh] overflow-y-auto">
+            {([0, 1, 2, 3, 4, 5, 6] as MemberLevel[]).map((lvl) => {
               const info = defaultTierSettings[lvl]
               const isSelected = currentLevel === lvl
 
@@ -375,6 +378,8 @@ export default function GlobalTierSimulator() {
                     isSelected
                       ? lvl === 0
                         ? 'bg-gray-100 border-gray-400 ring-2 ring-gray-400/20 shadow-xs'
+                        : lvl === 6
+                        ? 'bg-indigo-50/90 border-indigo-400 ring-2 ring-indigo-500/20 shadow-xs'
                         : 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-500/20 shadow-xs'
                       : 'bg-white hover:bg-gray-50/80 border-gray-100'
                   }`}
@@ -384,6 +389,8 @@ export default function GlobalTierSimulator() {
                       isSelected
                         ? lvl === 0
                           ? 'bg-gray-700 text-white'
+                          : lvl === 6
+                          ? 'bg-indigo-600 text-white'
                           : 'bg-emerald-600 text-white'
                         : 'bg-gray-100 text-gray-600'
                     }`}
@@ -397,7 +404,9 @@ export default function GlobalTierSimulator() {
                         {info.name}
                       </span>
                       {isSelected && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full shrink-0">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
+                          lvl === 6 ? 'text-indigo-800 bg-indigo-100/90' : 'text-emerald-700 bg-emerald-100/80'
+                        }`}>
                           <Check size={11} /> 현재 적용중
                         </span>
                       )}
@@ -435,7 +444,12 @@ export default function GlobalTierSimulator() {
                       )}
                       {lvl === 5 && (
                         <span className="text-[9px] bg-purple-50 text-purple-800 px-1.5 py-0.5 rounded font-medium border border-purple-200">
-                          👑 총괄 관리자: 사이트 시스템 및 전체 회원/게시판 총괄 제어
+                          👑 5단계 사이트 관리자: 배너, 회원 등급 승인, 코디네이터, 협력단체, 팝업 등 운영 총괄
+                        </span>
+                      )}
+                      {lvl === 6 && (
+                        <span className="text-[9px] bg-indigo-50 text-indigo-900 px-1.5 py-0.5 rounded font-medium border border-indigo-200">
+                          🛠️ 6단계 개발자: 5단계 운영 권한 전체 + 7대 신념 교안 관리 + 제미나이 AI 엔진 제어
                         </span>
                       )}
                     </div>
@@ -468,8 +482,12 @@ export default function GlobalTierSimulator() {
         } ${
           currentLevel === 0
             ? 'bg-gray-900 border-gray-400'
-            : currentLevel >= 4
+            : currentLevel >= 6
+            ? 'bg-indigo-950/90 border-indigo-400'
+            : currentLevel === 5
             ? 'bg-purple-950/90 border-purple-400'
+            : currentLevel === 4
+            ? 'bg-sky-950/90 border-sky-400'
             : 'bg-gray-900/90 border-emerald-400/90'
         }`}
         title="클릭하여 권한을 변경하거나, 드래그하여 화면 원하는 곳으로 옮기세요!"
@@ -482,12 +500,28 @@ export default function GlobalTierSimulator() {
         <span className="relative flex h-2.5 w-2.5">
           <span
             className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-              currentLevel === 0 ? 'bg-gray-400' : currentLevel >= 4 ? 'bg-purple-400' : 'bg-emerald-400'
+              currentLevel === 0
+                ? 'bg-gray-400'
+                : currentLevel >= 6
+                ? 'bg-indigo-400'
+                : currentLevel === 5
+                ? 'bg-purple-400'
+                : currentLevel === 4
+                ? 'bg-sky-400'
+                : 'bg-emerald-400'
             }`}
           ></span>
           <span
             className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-              currentLevel === 0 ? 'bg-gray-400' : currentLevel >= 4 ? 'bg-purple-400' : 'bg-emerald-400'
+              currentLevel === 0
+                ? 'bg-gray-400'
+                : currentLevel >= 6
+                ? 'bg-indigo-400'
+                : currentLevel === 5
+                ? 'bg-purple-400'
+                : currentLevel === 4
+                ? 'bg-sky-400'
+                : 'bg-emerald-400'
             }`}
           ></span>
         </span>
@@ -495,7 +529,15 @@ export default function GlobalTierSimulator() {
         <Shield
           size={14}
           className={
-            currentLevel === 0 ? 'text-gray-300' : currentLevel >= 4 ? 'text-purple-300' : 'text-emerald-400'
+            currentLevel === 0
+              ? 'text-gray-300'
+              : currentLevel >= 6
+              ? 'text-indigo-300'
+              : currentLevel === 5
+              ? 'text-purple-300'
+              : currentLevel === 4
+              ? 'text-sky-300'
+              : 'text-emerald-400'
           }
         />
 

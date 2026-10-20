@@ -82,8 +82,9 @@ export default function AdminLayout({
   const targetPathKo = `/ko${basePath.startsWith('/') ? basePath : `/${basePath}`}`
   const targetPathEn = `/en${basePath.startsWith('/') ? basePath : `/${basePath}`}`
 
-  // 개발자 계정이면서 권한테스트 레벨이 5단계 이상일 때만 개발자 전용 메뉴 표시 (레벨을 낮추면 즉시 숨김)
-  const isDeveloper = (currentUser?.role === 'developer' || currentUser?.role === 'super_admin') && currentLevel >= 5
+  // 6단계(개발자)일 때만 개발자 전용 메뉴(7대 신념 교안 관리, 제미나이 AI 엔진 관리) 표시!
+  // 5단계(사이트 관리자)는 사이트 운영 메뉴만 관리하며 개발자 메뉴는 숨겨집니다.
+  const isDeveloper = currentLevel >= 6
 
   // 최상단 공통 메뉴 (대시보드 홈)
   const topMenuItem = {
@@ -476,7 +477,33 @@ export default function AdminLayout({
       {/* 3. 우측 메인 콘텐츠 영역 (Right Content Area) */}
       {/* ========================================================================= */}
       <main className="flex-1 min-w-0 p-4 sm:p-8 lg:p-10 max-w-[1400px]">
-        {children}
+        {(basePath.startsWith('/admin/convictions') || basePath.startsWith('/admin/ai-settings')) && !isDeveloper ? (
+          <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-md text-center max-w-xl mx-auto my-12">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center mx-auto mb-5 text-3xl">
+              🛠️
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-3">
+              {isEn ? 'Developer Only Access' : '개발자(6단계) 전용 관리 페이지'}
+            </h2>
+            <p className="text-sm text-slate-600 leading-relaxed mb-6">
+              {isEn
+                ? 'This section (7 Convictions Curriculum / Gemini AI Engine) is reserved exclusively for Level 6 Developers. Site Administrators (Level 5) manage operational items.'
+                : '이 메뉴(7대 신념 교안 관리 및 제미나이 AI 엔진 관리)는 시스템 최고 권한인 [6단계: 개발자] 전용 영역입니다. 5단계 사이트 관리자는 배너, 회원, 코디네이터, 협력단체, 팝업 등 운영 항목을 관리합니다.'}
+            </p>
+            <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl mb-6 text-xs text-indigo-950 font-bold">
+              💡 {isEn ? 'To test this page, switch to "Level 6: Developer" in the floating Permission Simulator.' : '해당 메뉴를 테스트하시려면 화면의 권한 테스트 시뮬레이터에서 [6단계: 개발자]를 선택해 주세요.'}
+            </div>
+            <Link
+              href={localePath('/admin')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors shadow-sm"
+            >
+              <span>←</span>
+              <span>{isEn ? 'Return to Dashboard' : '대시보드로 돌아가기'}</span>
+            </Link>
+          </div>
+        ) : (
+          children
+        )}
       </main>
     </div>
   )

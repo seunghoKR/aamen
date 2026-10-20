@@ -1,5 +1,5 @@
 // 회원 등급 정의 (0단계 비회원 ~ 5단계 총괄관리자)
-export type MemberLevel = 0 | 1 | 2 | 3 | 4 | 5
+export type MemberLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6
 export type MemberRole =
   | 'guest'
   | 'level1_associate'
@@ -11,6 +11,7 @@ export type MemberRole =
   | 'country_admin'
   | 'regular'
   | 'associate'
+  | 'developer'
 
 export interface MemberPermissions {
   canWritePost: boolean
@@ -121,9 +122,26 @@ export const defaultTierSettings: Record<MemberLevel, MemberTierInfo> = {
   5: {
     level: 5,
     roleKey: 'super_admin',
-    name: '5단계: 총괄관리자',
+    name: '5단계: 사이트 관리자 (총괄관리자)',
     badgeClass: 'bg-purple-100 text-purple-900 border-purple-200',
-    desc: '총괄 사이트 관리자 (모든 시스템 및 회원/게시판 총괄)',
+    desc: '사이트 총괄 운영 관리자 (배너, 회원 등급 승인, 코디네이터, 협력단체, 팝업, 운영 매뉴얼 등 운영 전체 총괄)',
+    permissions: {
+      canWritePost: true,
+      canWriteComment: true,
+      canEditOwn: true,
+      canDeleteOwn: true,
+      canManageBoard: true,
+      canWriteNotice: true,
+      canDownloadFiles: true,
+      canAccessAdmin: true,
+    },
+  },
+  6: {
+    level: 6,
+    roleKey: 'developer',
+    name: '6단계: 개발자 (Developer)',
+    badgeClass: 'bg-indigo-100 text-indigo-900 border-indigo-200',
+    desc: '시스템 최고 개발자 (5단계 사이트 운영 전체 + 7대 신념 교안 관리 + 제미나이 AI 엔진 및 API 키 제어)',
     permissions: {
       canWritePost: true,
       canWriteComment: true,
@@ -138,6 +156,7 @@ export const defaultTierSettings: Record<MemberLevel, MemberTierInfo> = {
 }
 
 export function getMemberLevel(role: MemberRole): MemberLevel {
+  if (role === 'developer') return 6
   if (role === 'super_admin' || role === 'level5_super_admin') return 5
   if (role === 'country_admin' || role === 'level4_leader') return 4
   if (role === 'level3_worker') return 3
