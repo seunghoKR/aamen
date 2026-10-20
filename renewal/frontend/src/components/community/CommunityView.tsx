@@ -1542,23 +1542,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    if (currentLevel === 0) {
-                      showToast('🚫 비회원은 사진을 등록할 수 없습니다. 로그인 후 이용해 주세요.')
-                      return
-                    }
-                    if (!canWritePhoto) {
-                      showToast('🔒 사진첩 등록은 3단계 사역자/선교사 이상 승인이 필요합니다.')
-                      return
-                    }
-                    setIsPhotoModalOpen(true)
-                  }}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                >
-                  <Camera size={14} />
-                  <span>현장 사진 등록</span>
-                </button>
+
               </div>
 
               {/* 검색 바 */}
@@ -1613,14 +1597,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-2xs">
                   <Camera className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-700 font-bold text-sm mb-1">등록된 사역 현장 사진이 없습니다.</p>
-                  <p className="text-xs text-gray-400 mb-4">현장 사진 등록 버튼을 눌러 은혜로운 사역 현장을 공유해 보세요.</p>
+                  <p className="text-xs text-gray-400 mb-4">사진등록 버튼을 눌러 은혜로운 사역 현장을 공유해 보세요.</p>
                   {canWritePhoto && (
                     <button
                       onClick={() => setIsPhotoModalOpen(true)}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 shadow-xs cursor-pointer"
                     >
                       <Camera size={14} />
-                      <span>현장 사진 등록</span>
+                      <span>사진등록</span>
                     </button>
                   )}
                 </div>

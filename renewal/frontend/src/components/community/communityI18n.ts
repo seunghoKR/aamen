@@ -65,7 +65,7 @@ export const COMMUNITY_I18N: Record<string, CommunityStrings> = {
     btn_refresh: '새로고침',
     btn_new_notice: '공지사항 등록',
     btn_new_resource: '새 자료 등록',
-    btn_new_photo: '현장 사진 등록',
+    btn_new_photo: '사진등록',
     btn_edit: '수정',
     btn_delete: '삭제',
     btn_cancel: '취소',
