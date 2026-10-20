@@ -702,13 +702,13 @@ export default function AdminMembersPage() {
           }`}
         >
           <Sliders size={16} />
-          <span>{isEn ? '6-Tier Permission Matrix' : '6단계 등급별 권한 매트릭스 설정'}</span>
+          <span>{isEn ? '5-Tier Permission Matrix' : '5단계 등급별 권한 매트릭스 설정'}</span>
         </button>
       </div>
 
-      {/* 6단계 등급 통계 카드 (1단계 ~ 6단계) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        {([1, 2, 3, 4, 5, 6] as MemberLevel[]).map((lvl) => {
+      {/* 5단계 등급 통계 카드 (1단계 ~ 5단계) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        {([1, 2, 3, 4, 5] as MemberLevel[]).map((lvl) => {
           const info = tierLabels[lvl]
           const count = members.filter((m) => (m.level || getMemberLevel(m.role)) === lvl).length
           return (
@@ -998,7 +998,6 @@ export default function AdminMembersPage() {
                               tierMeta.badgeClass
                             }`}
                           >
-                            <option value={6}>{tierLabels[6].name}</option>
                             <option value={5}>{tierLabels[5].name}</option>
                             <option value={4}>{tierLabels[4].name}</option>
                             <option value={3}>{tierLabels[3].name}</option>
@@ -1099,7 +1098,7 @@ export default function AdminMembersPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600">
                     <th className="py-4 px-6 w-1/3">{isEn ? 'Permission Item' : '권한 항목'}</th>
-                    {([1, 2, 3, 4, 5, 6] as MemberLevel[]).map((lvl) => (
+                    {([1, 2, 3, 4, 5] as MemberLevel[]).map((lvl) => (
                       <th key={lvl} className="py-4 px-3 text-center">
                         <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-black border ${tierLabels[lvl].badgeClass}`}>
                           {tierLabels[lvl].name}
@@ -1119,7 +1118,7 @@ export default function AdminMembersPage() {
                         </div>
                         <div className="text-[11px] text-gray-400 mt-0.5">{perm.desc}</div>
                       </td>
-                      {([1, 2, 3, 4, 5, 6] as MemberLevel[]).map((lvl) => {
+                      {([1, 2, 3, 4, 5] as MemberLevel[]).map((lvl) => {
                         const isGranted = Boolean(tierSettings[lvl]?.permissions?.[perm.key as keyof MemberTierInfo['permissions']])
                         return (
                           <td key={lvl} className="py-3.5 px-3 text-center">
@@ -1213,7 +1212,7 @@ export default function AdminMembersPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">
-                    {isEn ? 'Member Tier (6 Levels)' : '회원 등급 (6단계)'}
+                    {isEn ? 'Member Tier (5 Levels)' : '회원 등급 (5단계)'}
                   </label>
                   <select
                     value={newMember.level}
@@ -1225,7 +1224,6 @@ export default function AdminMembersPage() {
                     <option value={3}>{tierLabels[3].name}</option>
                     <option value={4}>{tierLabels[4].name}</option>
                     <option value={5}>{tierLabels[5].name}</option>
-                    <option value={6}>{tierLabels[6].name}</option>
                   </select>
                 </div>
               </div>
