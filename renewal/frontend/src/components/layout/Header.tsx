@@ -65,7 +65,7 @@ const navMenuStructure: NavItem[] = [
     subItems: [
       { key: 'history', href: '/history' },
       { key: 'church_intro', href: '/history#churches' },
-      { key: 'photo', href: '/history#photos' },
+      { key: 'history_photos', href: '/history/photos' },
     ],
   },
   {
@@ -93,7 +93,7 @@ const navMenuStructure: NavItem[] = [
       { key: 'announce', href: '/community/announce' },
       { key: 'resources', href: '/community/resources' },
       { key: 'prayer_wall', href: '/community/prayer' },
-      { key: 'photo', href: '/community/photos' },
+      { key: 'community_photos', href: '/community/photos' },
     ],
   },
 ]

@@ -39,7 +39,9 @@
       "board": "Board ng Komunidad",
       "share": "Pagbabahagi",
       "announce": "Mga Patalastas",
-      "resources": "Mga Yaman"
+      "resources": "Mga Yaman",
+      "history_photos": "Larawan ng Kasaysayan at Simbahan",
+      "community_photos": "Mga Larawan ng Komunidad"
     },
     "admin": "Admin",
     "dev_console": "Developer"

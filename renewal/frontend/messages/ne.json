@@ -40,7 +40,9 @@
       "board": "खुला मञ्च",
       "share": "स्रोत बाँडफाँड",
       "announce": "सूचनाहरू",
-      "resources": "स्रोत सामग्री"
+      "resources": "स्रोत सामग्री",
+      "history_photos": "इतिहास र मण्डली फोटोहरू",
+      "community_photos": "समुदाय फोटोहरू"
     },
     "admin": "प्रशासक",
     "dev_console": "विकासकर्ता"

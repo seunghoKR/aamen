@@ -40,7 +40,9 @@
       "board": "ກະດານສົນທະນາ",
       "share": "ແບ່ງປັນເອກະສານ",
       "announce": "ແຈ້ງການ",
-      "resources": "ຊັບພະຍາກອນ"
+      "resources": "ຊັບພະຍາກອນ",
+      "history_photos": "ຮູບພາບປະຫວັດສາດ ແລະ ຄຣິສຕະຈັກ",
+      "community_photos": "ຮູບພາບຊຸມຊົນ"
     },
     "admin": "ຜູ້ດູແລ",
     "dev_console": "ຜູ້ພັດທະນາ"

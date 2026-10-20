@@ -1531,7 +1531,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   </div>
                   <div>
                     <h3 className="font-extrabold text-sm text-purple-950 flex items-center gap-2">
-                      <span>아시아 사역 현장 사진첩 (Ministry Photo Gallery)</span>
+                      <span>커뮤니티 사진첩 (Community Photo Gallery)</span>
                       <span className="px-2 py-0.5 rounded-full bg-purple-200 text-purple-900 text-[10px] font-black">
                         생생한 현장
                       </span>
@@ -2332,47 +2332,6 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">작성자 국가 (자동 지정)</label>
-                  <div className="w-full px-3 py-2 text-xs rounded-xl bg-gray-100 border border-gray-200 text-gray-600 font-bold flex items-center gap-1.5">
-                    <span>{countryFlags[getStoredUser()?.country_code || 'KR'] || getStoredUser()?.country_code || 'KR'}</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">지역 / 도시명</label>
-                  <input
-                    type="text"
-                    value={photoLocation}
-                    onChange={(e) => setPhotoLocation(e.target.value)}
-                    placeholder="예: Yangon, Myanmar 또는 서울, 방콕 등"
-                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">사역 일자</label>
-                  <input
-                    type="date"
-                    value={photoDate}
-                    onChange={(e) => setPhotoDate(e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">참석 인원 (선택)</label>
-                  <input
-                    type="text"
-                    value={photoAttendees}
-                    onChange={(e) => setPhotoAttendees(e.target.value)}
-                    placeholder="예: 42명 참석"
-                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-              </div>
-
               {/* 📸 사진 다중 첨부 & 자동 리사이징 업로더 */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -2394,12 +2353,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   className="hidden"
                 />
 
-                <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                <div className="mb-3">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploadingImage}
-                    className="flex-1 py-3 px-4 bg-purple-50 hover:bg-purple-100 text-purple-700 border-2 border-dashed border-purple-200 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                    className="w-full py-3.5 px-4 bg-purple-50 hover:bg-purple-100 text-purple-700 border-2 border-dashed border-purple-200 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
                   >
                     <Upload size={16} />
                     <span>
@@ -2408,16 +2367,6 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                         : '📷 사진 여러 장 선택하기 (자동 리사이즈)'}
                     </span>
                   </button>
-
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={photoImageUrl}
-                      onChange={(e) => setPhotoImageUrl(e.target.value)}
-                      placeholder="https://... 이미지 URL 직접 입력"
-                      className="w-full sm:w-60 px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-[11px]"
-                    />
-                  </div>
                 </div>
 
                 {/* 최적화 요약 안내 */}

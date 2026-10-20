@@ -40,7 +40,9 @@
       "board": "Open Forum",
       "share": "Resource Sharing",
       "announce": "Announcements",
-      "resources": "Resources"
+      "resources": "Resources",
+      "history_photos": "History & Church Photos",
+      "community_photos": "Community Photos"
     },
     "admin": "Admin",
     "dev_console": "Dev Console"

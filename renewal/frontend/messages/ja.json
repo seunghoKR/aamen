@@ -40,7 +40,9 @@
       "board": "交流掲示板",
       "share": "資料共有室",
       "announce": "お知らせ",
-      "resources": "資料室"
+      "resources": "資料室",
+      "history_photos": "歴史と教会写真帖",
+      "community_photos": "コミュニティ写真帖"
     },
     "admin": "管理者",
     "dev_console": "開発者"

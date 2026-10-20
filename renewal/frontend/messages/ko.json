@@ -40,7 +40,9 @@
       "board": "열린 나눔터",
       "share": "자료 나눔방",
       "announce": "공지사항",
-      "resources": "자료실"
+      "resources": "자료실",
+      "history_photos": "역사와 교회 사진첩",
+      "community_photos": "커뮤니티 사진첩"
     },
     "admin": "관리자",
     "dev_console": "개발자 콘솔"

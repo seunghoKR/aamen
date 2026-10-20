@@ -40,7 +40,9 @@
       "board": "खुला मंच",
       "share": "सामग्री साझा करें",
       "announce": "सूचनाएं",
-      "resources": "संसाधन"
+      "resources": "संसाधन",
+      "history_photos": "इतिहास और चर्च तस्वीरें",
+      "community_photos": "समुदाय तस्वीरें"
     },
     "admin": "प्रशासक",
     "dev_console": "डेवलपर"

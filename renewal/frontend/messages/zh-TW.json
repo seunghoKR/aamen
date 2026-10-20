@@ -40,7 +40,9 @@
       "board": "交流廣場",
       "share": "資源互通",
       "announce": "重要公告",
-      "resources": "資料室"
+      "resources": "資料室",
+      "history_photos": "歷史與教會相冊",
+      "community_photos": "團契社區相冊"
     },
     "admin": "管理員",
     "dev_console": "開發者"

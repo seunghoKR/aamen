@@ -40,7 +40,9 @@
       "board": "Diễn đàn mở",
       "share": "Chia sẻ tài liệu",
       "announce": "Thông báo",
-      "resources": "Tài liệu"
+      "resources": "Tài liệu",
+      "history_photos": "Hình ảnh Lịch sử & Giáo hội",
+      "community_photos": "Hình ảnh Cộng đồng"
     },
     "admin": "Quản trị",
     "dev_console": "Nhà phát triển"

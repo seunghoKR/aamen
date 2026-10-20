@@ -40,7 +40,9 @@
       "board": "Forum Terbuka",
       "share": "Berbagi Materi",
       "announce": "Pengumuman",
-      "resources": "Pusat Sumber Daya"
+      "resources": "Pusat Sumber Daya",
+      "history_photos": "Foto Sejarah & Gereja",
+      "community_photos": "Foto Komunitas"
     },
     "admin": "Admin",
     "dev_console": "Pengembang"
