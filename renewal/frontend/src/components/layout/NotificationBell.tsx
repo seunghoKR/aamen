@@ -257,18 +257,21 @@ export default function NotificationBell({ locale, userId, userRole, className =
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      {/* 🔔 벨 버튼 */}
+      {/* 🔔 벨 버튼 (새 쪽지/알림 시 노란 느낌표 표시) */}
       <button
         type="button"
         onClick={handleToggle}
-        title={isKo ? `알림 (${unreadCount}개의 안 읽은 알림)` : `Notifications (${unreadCount} unread)`}
+        title={isKo ? (unreadCount > 0 ? `새로운 알림 및 쪽지가 있습니다 (${unreadCount}개)` : '알림 센터') : (unreadCount > 0 ? `New notifications & messages (${unreadCount})` : 'Notifications')}
         className="relative p-2 text-gray-600 hover:text-emerald-700 hover:bg-emerald-50/70 rounded-full transition-all focus:outline-none"
         aria-label="Notifications"
       >
-        <Bell size={19} className={unreadCount > 0 ? 'text-emerald-700 animate-bounce' : 'text-gray-600'} />
+        <Bell size={19} className={unreadCount > 0 ? 'text-amber-600' : 'text-gray-600'} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
-            {unreadCount > 99 ? '99+' : unreadCount}
+          <span
+            className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-400 text-amber-950 text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-pulse leading-none"
+            title={isKo ? `새로운 쪽지/알림 (${unreadCount}개)` : `New notifications (${unreadCount})`}
+          >
+            !
           </span>
         )}
       </button>

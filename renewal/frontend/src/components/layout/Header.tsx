@@ -424,14 +424,7 @@ export default function Header() {
               />
 
               <div className="hidden sm:flex items-center gap-1.5">
-                <Link
-                  href={localePath(locale, '/member/mypage?tab=messages')}
-                  title={locale === 'en' ? 'Messages' : '쪽지함'}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-2xs text-emerald-900 bg-white border-emerald-300 hover:bg-emerald-50"
-                >
-                  <Mail size={13} className="text-emerald-600" />
-                  <span>{locale === 'en' ? 'Messages' : '쪽지함'}</span>
-                </Link>
+
 
                 <Link
                   href={localePath(locale, '/member/mypage')}
