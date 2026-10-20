@@ -58,7 +58,12 @@ export default function Footer() {
 
         {/* 하단 바 */}
         <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-500">
-          <span>{t('rights')}</span>
+          <div className="flex items-center gap-2">
+            <span>{t('rights')}</span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-950/70 text-emerald-400 font-mono text-[11px] font-bold border border-emerald-800/60 shadow-xs">
+              v1.5.5
+            </span>
+          </div>
           <div className="flex gap-4">
             <Link href={getLocalizedPath('/terms')} className="hover:text-gray-300 transition-colors">
               {t('terms')}
