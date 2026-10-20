@@ -20,6 +20,8 @@ import { Member, BannerConfig, defaultBanner, initialMembers, initialPartnerOrgs
 import { getStoredUser, type AuthUser } from '@/lib/auth'
 import { getAdminTexts } from '@/lib/adminI18n'
 import AdminSiteManual from '@/components/admin/AdminSiteManual'
+import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
+import { MemberLevel } from '@/lib/store'
 
 export default function AdminDashboardPage() {
   const params = useParams()
@@ -30,12 +32,33 @@ export default function AdminDashboardPage() {
   const localePath = (p: string) => `/${currentLocale}${p.startsWith('/') ? p : `/${p}`}`
 
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
+  const [currentLevel, setCurrentLevel] = useState<MemberLevel>(5)
   const [members, setMembers] = useState<Member[]>(initialMembers)
   const [banner, setBanner] = useState<BannerConfig>(defaultBanner)
   const [partnerCount, setPartnerCount] = useState<number>(initialPartnerOrgs.length)
 
   useEffect(() => {
     setCurrentUser(getStoredUser())
+    setCurrentLevel(getStoredTierLevel())
+
+    const handleTier = (e: Event) => {
+      const customEvent = e as CustomEvent<{ level: MemberLevel }>
+      if (customEvent.detail && typeof customEvent.detail.level === 'number') {
+        setCurrentLevel(customEvent.detail.level)
+      } else {
+        setCurrentLevel(getStoredTierLevel())
+      }
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === TIER_STORAGE_KEY || e.key === 'aamen_current_user') {
+        setCurrentLevel(getStoredTierLevel())
+        setCurrentUser(getStoredUser())
+      }
+    }
+
+    window.addEventListener(TIER_EVENT_NAME, handleTier)
+    window.addEventListener('storage', handleStorage)
     try {
       const savedMembers = localStorage.getItem('aamen_members')
       if (savedMembers) setMembers(JSON.parse(savedMembers))
@@ -51,6 +74,10 @@ export default function AdminDashboardPage() {
     } catch (e) {
       console.error(e)
     }
+    return () => {
+      window.removeEventListener(TIER_EVENT_NAME, handleTier)
+      window.removeEventListener('storage', handleStorage)
+    }
   }, [])
 
   // 등급별 회원 수 집계
@@ -59,7 +86,9 @@ export default function AdminDashboardPage() {
   const countRegular = members.filter((m) => m.role === 'regular').length
   const countAssociate = members.filter((m) => m.role === 'associate').length
 
-  const isDeveloper = currentUser?.role === 'developer'
+  // 권한테스트 레벨이 5단계 이상일 때만 개발자 전용 메뉴/카드 노출 (레벨을 낮추면 즉각 숨김)
+
+  const isDeveloper = (currentUser?.role === 'developer' || currentUser?.role === 'super_admin') && currentLevel >= 5
 
   return (
     <div className="space-y-8">

@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 import { getStoredUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
 import { getAdminTexts } from '@/lib/adminI18n'
+import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
+import { MemberLevel } from '@/lib/store'
 
 export default function AdminLayout({
   children,
@@ -36,16 +38,43 @@ export default function AdminLayout({
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
+  const [currentLevel, setCurrentLevel] = useState<MemberLevel>(5)
 
   useEffect(() => {
     setCurrentUser(getStoredUser())
+    setCurrentLevel(getStoredTierLevel())
+
     const handleAuth = (e: Event) => {
       const customEvent = e as CustomEvent<{ user: AuthUser | null }>
       if (customEvent.detail) setCurrentUser(customEvent.detail.user)
       else setCurrentUser(getStoredUser())
+      setCurrentLevel(getStoredTierLevel())
     }
+
+    const handleTier = (e: Event) => {
+      const customEvent = e as CustomEvent<{ level: MemberLevel }>
+      if (customEvent.detail && typeof customEvent.detail.level === 'number') {
+        setCurrentLevel(customEvent.detail.level)
+      } else {
+        setCurrentLevel(getStoredTierLevel())
+      }
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === TIER_STORAGE_KEY || e.key === 'aamen_current_user') {
+        setCurrentLevel(getStoredTierLevel())
+        setCurrentUser(getStoredUser())
+      }
+    }
+
     window.addEventListener(AUTH_EVENT_NAME, handleAuth)
-    return () => window.removeEventListener(AUTH_EVENT_NAME, handleAuth)
+    window.addEventListener(TIER_EVENT_NAME, handleTier)
+    window.addEventListener('storage', handleStorage)
+    return () => {
+      window.removeEventListener(AUTH_EVENT_NAME, handleAuth)
+      window.removeEventListener(TIER_EVENT_NAME, handleTier)
+      window.removeEventListener('storage', handleStorage)
+    }
   }, [])
 
   // 상대 경로 추출
@@ -53,8 +82,8 @@ export default function AdminLayout({
   const targetPathKo = `/ko${basePath.startsWith('/') ? basePath : `/${basePath}`}`
   const targetPathEn = `/en${basePath.startsWith('/') ? basePath : `/${basePath}`}`
 
-  // 오직 개발자 계정('developer')일 때만 개발자 전용 메뉴 표시
-  const isDeveloper = currentUser?.role === 'developer'
+  // 개발자 계정이면서 권한테스트 레벨이 5단계 이상일 때만 개발자 전용 메뉴 표시 (레벨을 낮추면 즉시 숨김)
+  const isDeveloper = (currentUser?.role === 'developer' || currentUser?.role === 'super_admin') && currentLevel >= 5
 
   // 최상단 공통 메뉴 (대시보드 홈)
   const topMenuItem = {

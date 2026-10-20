@@ -23,6 +23,13 @@ const SIMULATOR_POS_KEY = 'aamen_simulator_pos'
 export function getStoredTierLevel(): MemberLevel {
   if (typeof window === 'undefined') return 0
   try {
+    // 1. 권한 시뮬레이터(테스트 레벨) 우선 적용
+    const val = localStorage.getItem(TIER_STORAGE_KEY)
+    if (val && ['0', '1', '2', '3', '4', '5'].includes(val)) {
+      return Number(val) as MemberLevel
+    }
+
+    // 2. 시뮬레이터 설정이 없을 때 기본 로그인 사용자 정보 적용
     const userRaw = localStorage.getItem('aamen_current_user')
     if (userRaw) {
       const user = JSON.parse(userRaw)
@@ -32,11 +39,6 @@ export function getStoredTierLevel(): MemberLevel {
       if (user.role === 'associate') return 1
       if (user.role === 'guest') return 0
       if (typeof user.tierLevel === 'number') return user.tierLevel as MemberLevel
-    }
-
-    const val = localStorage.getItem(TIER_STORAGE_KEY)
-    if (val && ['0', '1', '2', '3', '4', '5'].includes(val)) {
-      return Number(val) as MemberLevel
     }
     const role = localStorage.getItem('aamen_auth_role')
     if (role === 'developer' || role === 'super_admin') return 5
