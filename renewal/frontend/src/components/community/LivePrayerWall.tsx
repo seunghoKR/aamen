@@ -66,6 +66,9 @@ interface PrayerI18nStrings {
   btn_first_submit: string
   btn_amen: string
   btn_pray: string
+  read_more?: string
+  modal_detail_title?: string
+  btn_close?: string
 }
 
 const PRAYER_I18N: Record<string, PrayerI18nStrings> = {
@@ -788,6 +791,7 @@ export default function LivePrayerWall() {
   const [prayedSet, setPrayedSet] = useState<Record<string, boolean>>({})
   const [translatedSet, setTranslatedSet] = useState<Record<string, boolean>>({})
   const [shareModalItem, setShareModalItem] = useState<PrayerItem | null>(null)
+  const [selectedPrayer, setSelectedPrayer] = useState<PrayerItem | null>(null)
   const [copyFeedback, setCopyFeedback] = useState(false)
 
   // 기도제목 등록 모달 상태
@@ -811,6 +815,14 @@ export default function LivePrayerWall() {
   const [currentLevel, setCurrentLevel] = useState<MemberLevel>(4)
   const [mounted, setMounted] = useState(false)
   const [noticeToast, setNoticeToast] = useState<string | null>(null)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedPrayer(null)
+    }
+    if (selectedPrayer) window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedPrayer])
+
 
   const fetchPrayers = async () => {
     try {
@@ -1309,7 +1321,7 @@ export default function LivePrayerWall() {
             return (
               <div
                 key={item.id}
-                className="flex flex-col justify-between p-5 rounded-2xl bg-gradient-to-br from-gray-50/70 to-emerald-50/20 border border-gray-100 hover:border-emerald-300 hover:shadow-lg transition-all"
+                className="flex flex-col justify-between p-5 rounded-2xl bg-gradient-to-br from-gray-50/80 to-emerald-50/25 border border-gray-100 hover:border-emerald-300 hover:shadow-lg transition-all h-[275px] sm:h-[285px] overflow-hidden"
               >
                 <div>
                   {/* 카드 상단: 작성자 및 국가 정보 */}
@@ -1375,7 +1387,13 @@ export default function LivePrayerWall() {
                           🚨 {pI18n.badge_urgent}
                         </span>
                       )}
-                      <h4 className="font-extrabold text-sm sm:text-base text-gray-900 tracking-tight leading-snug">
+                      <h4
+                        onClick={() => isRegularOrAbove && setSelectedPrayer(item)}
+                        className={`font-extrabold text-sm sm:text-base text-gray-900 tracking-tight leading-snug line-clamp-2 ${
+                          isRegularOrAbove ? 'cursor-pointer hover:text-emerald-700 transition-colors' : ''
+                        }`}
+                        title={item.title || item.rawTitle}
+                      >
                         {item.title || item.rawTitle}
                       </h4>
                     </div>
@@ -1400,7 +1418,20 @@ export default function LivePrayerWall() {
                         </div>
                       </div>
                     ) : isRegularOrAbove ? (
-                      <p className="whitespace-pre-line text-gray-700">{cardContent}</p>
+                      <div
+                        onClick={() => setSelectedPrayer(item)}
+                        className="cursor-pointer group/read"
+                      >
+                        <p className="line-clamp-4 text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-line group-hover/read:text-gray-900 transition-colors">
+                          {cardContent}
+                        </p>
+                        {cardContent && cardContent.length > 70 && (
+                          <div className="mt-2 flex items-center gap-1 text-[11px] font-bold text-emerald-600 group-hover/read:text-emerald-700">
+                            <span>{pI18n.read_more || '전체 읽기'}</span>
+                            <ArrowRight size={11} />
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div>
                         <p className="line-clamp-1 font-medium text-gray-700">
@@ -1443,6 +1474,15 @@ export default function LivePrayerWall() {
                     >
                       <Share2 size={14} />
                     </button>
+                    {isRegularOrAbove && (
+                      <button
+                        onClick={() => setSelectedPrayer(item)}
+                        className="p-1.5 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors cursor-pointer"
+                        title={pI18n.read_more || '전체 읽기'}
+                      >
+                        <ArrowRight size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1765,6 +1805,114 @@ export default function LivePrayerWall() {
           </div>
         </div>
       )}
+      {/* 4. 기도제목 상세 보기 팝업 모달 (Prayer Detail Modal) */}
+      {selectedPrayer && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setSelectedPrayer(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 모달 상단 헤더 */}
+            <div className="px-6 py-4.5 bg-gradient-to-r from-emerald-50/80 via-teal-50/40 to-white border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🙏</span>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm sm:text-base text-gray-900">
+                      {isGuest ? '🔒 [사역자 비공개]' : selectedPrayer.author}
+                    </span>
+                    <span className="text-xs text-gray-400 font-medium">·</span>
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                      {selectedPrayer.countryName}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-gray-500 mt-0.5 font-medium">
+                    {selectedPrayer.date}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPrayer(null)}
+                className="p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* 모달 본문 영역 (스크롤 가능) */}
+            <div className="p-6 overflow-y-auto space-y-4">
+              {/* 긴급 뱃지 및 메인 제목 */}
+              <div>
+                {selectedPrayer.isUrgent && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-black tracking-wide shadow-2xs mb-2">
+                    🚨 {pI18n.badge_urgent}
+                  </span>
+                )}
+                <h3 className="text-base sm:text-xl font-black text-gray-950 leading-snug">
+                  {selectedPrayer.title || selectedPrayer.rawTitle}
+                </h3>
+              </div>
+
+              {/* 기도 내용 전문 */}
+              <div className="bg-gray-50/90 rounded-2xl p-5 border border-gray-100">
+                <p className="whitespace-pre-line text-sm sm:text-base text-gray-800 leading-relaxed font-normal">
+                  {selectedPrayer.content || selectedPrayer.originalText}
+                </p>
+              </div>
+
+              {/* 원문(영문/현지어) 등이 별도로 있을 경우 */}
+              {selectedPrayer.originalText && selectedPrayer.content && selectedPrayer.originalText !== selectedPrayer.content && (
+                <div className="text-xs text-gray-500 bg-gray-100/60 p-3.5 rounded-xl border border-gray-200">
+                  <div className="font-semibold text-gray-600 mb-1">🌐 Original Prayer Text:</div>
+                  <p className="whitespace-pre-line leading-relaxed">{selectedPrayer.originalText}</p>
+                </div>
+              )}
+            </div>
+
+            {/* 모달 하단 푸터 액션 바 */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between shrink-0">
+              <button
+                onClick={() => handlePray(selectedPrayer.id)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  prayedSet[selectedPrayer.id]
+                    ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                }`}
+              >
+                <Heart
+                  size={14}
+                  className={prayedSet[selectedPrayer.id] ? 'fill-rose-500 text-rose-500' : 'text-white'}
+                />
+                <span>{prayedSet[selectedPrayer.id] ? pI18n.btn_amen : pI18n.btn_pray}</span>
+                <span className="font-mono text-xs opacity-90 ml-1">
+                  {selectedPrayer.prayCount}
+                </span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShareModalItem(selectedPrayer)}
+                  className="px-3.5 py-2 bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Share2 size={13} />
+                  <span>공유</span>
+                </button>
+                <button
+                  onClick={() => setSelectedPrayer(null)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {pI18n.btn_close || '닫기'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
