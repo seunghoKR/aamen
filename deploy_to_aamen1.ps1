@@ -60,6 +60,8 @@ RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # 2. Clean API routes FIRST (e.g. /api/posts -> api/posts.php)
+RewriteRule ^api/([a-zA-Z0-9_-]+)\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^api/([a-zA-Z0-9_-]+)/?$ api/$1.php [L,QSA]
 
 # 3. Existing files and directories directly served

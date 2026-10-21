@@ -294,7 +294,8 @@ export default function AdminMembersPage() {
 
     async function loadMembers() {
       try {
-        const res = await fetch('/api/members')
+        let res = await fetch('/api/members.php')
+        if (!res.ok) res = await fetch('/api/members')
         if (!res.ok) return
         const contentType = res.headers.get('content-type')
         if (!contentType || !contentType.includes('application/json')) return

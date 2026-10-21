@@ -78,7 +78,8 @@ export default function AdminDashboardPage() {
     // 🌟 서버 DB로부터 최신 회원 목록 및 권한/등급 실시간 동기화 (회원관리와 100% 일치)
     async function loadServerMembers() {
       try {
-        const res = await fetch('/api/members')
+        let res = await fetch('/api/members.php')
+        if (!res.ok) res = await fetch('/api/members')
         if (!res.ok) return
         const contentType = res.headers.get('content-type')
         if (!contentType || !contentType.includes('application/json')) return
@@ -348,9 +349,9 @@ export default function AdminDashboardPage() {
               {t.cardMembersDesc}
             </p>
 
-            {/* 회원 목록 간략 뷰 */}
-            <div className="space-y-2">
-              {members.slice(0, 3).map((m) => (
+            {/* 회원 목록 간략 뷰 (회원관리 7명 전체 실시간 동기화) */}
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+              {members.slice(0, 7).map((m) => (
                 <div
                   key={m.id}
                   className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs"
