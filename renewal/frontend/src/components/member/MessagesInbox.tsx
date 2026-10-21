@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocale } from 'next-intl'
 import {
   Send,
@@ -21,8 +21,11 @@ import {
   X,
   Search,
   Sparkles,
+  ChevronDown,
 } from 'lucide-react'
 import { translateTitleTo15Languages } from '@/lib/gemini'
+import { getFuzzyMatchScore } from '@/lib/fuzzySearch'
+import { initialMembers } from '@/lib/store'
 
 interface MessageItem {
   id: string
@@ -47,10 +50,83 @@ interface MessageItem {
 interface MemberOption {
   id: string
   name: string
+  raw_name: string
+  name_ko?: string
   name_en?: string
+  email?: string
   country_code: string
+  country_flag: string
   role?: string
   affiliation?: string
+  avatar_url?: string | null
+  aliases: string[]
+}
+
+// 🌟 공식 7명 회원 다국어 매핑 및 풍부한 별칭(Aliases) 사전
+const OFFICIAL_MEMBER_METAS: Record<string, {
+  nameKo: string
+  nameEn: string
+  aliases: string[]
+  affiliation: string
+  countryNameKo: string
+  countryNameEn: string
+}> = {
+  Yongha: {
+    nameKo: '배용하',
+    nameEn: 'Bae Yongha',
+    aliases: ['배용하', '배', '용하', 'Bae', 'Yongha', 'bea', 'byh1424', 'gimac1424', 'MCSK', '한국', '대한민국', 'Korea', 'South Korea'],
+    affiliation: 'MCSK',
+    countryNameKo: '대한민국',
+    countryNameEn: 'South Korea'
+  },
+  Bockki: {
+    nameKo: '김복기',
+    nameEn: 'Kim Bockki',
+    aliases: ['김복기', '김', '복기', 'Kim', 'Bockki', 'bockkikim', 'MCSK', '한국', '대한민국', 'Korea', 'South Korea'],
+    affiliation: 'MCSK',
+    countryNameKo: '대한민국',
+    countryNameEn: 'South Korea'
+  },
+  Jeanette: {
+    nameKo: '지넷 한슨',
+    nameEn: 'Jeanette Hanson',
+    aliases: ['지넷 한슨', '지넷', '한슨', 'Jeanette', 'Hanson', 'MWC', '미국', 'USA', 'United States'],
+    affiliation: 'MWC',
+    countryNameKo: '미국',
+    countryNameEn: 'United States'
+  },
+  Jeremiah: {
+    nameKo: '최제레마이어',
+    nameEn: 'Jeremiah',
+    aliases: ['최제레마이어', '제레마이어', '예레미야', 'Jeremiah', 'hkjerechoi', '홍콩', 'Hong Kong'],
+    affiliation: 'HK Anabaptist',
+    countryNameKo: '홍콩',
+    countryNameEn: 'Hong Kong'
+  },
+  Paulus: {
+    nameKo: '파울루스 위자야',
+    nameEn: 'Paulus S. Widjaja',
+    aliases: ['파울루스 위자야', '파울루스', '위자야', 'Paulus', 'Widjaja', 'psw.dosen', 'GKMI', '인도네시아', 'Indonesia'],
+    affiliation: 'GKMI',
+    countryNameKo: '인도네시아',
+    countryNameEn: 'Indonesia'
+  },
+  Andi: {
+    nameKo: '안디 산토소',
+    nameEn: 'Andi Santoso',
+    aliases: ['안디 산토소', '안디', '산토소', 'Andi', 'Santoso', 'andiospeace', 'MNN', '미국', 'USA', 'Indonesia'],
+    affiliation: 'MNN',
+    countryNameKo: '미국',
+    countryNameEn: 'United States'
+  },
+  Hiro: {
+    nameKo: '카타노 히로',
+    nameEn: 'Hiro Katano',
+    aliases: ['카타노 히로', '히로', '카타노', 'Hiro', 'Katano', '片野', 'ヒロ', 'h98484435', '일본', 'Japan'],
+    affiliation: 'Japan Mennonite',
+    countryNameKo: '일본',
+    countryNameEn: 'Japan'
+  }
 }
 
 const COUNTRY_FLAGS: Record<string, string> = {
@@ -69,6 +145,52 @@ const COUNTRY_FLAGS: Record<string, string> = {
   HK: '🇭🇰 홍콩',
   PH: '🇵🇭 필리핀',
   US: '🇺🇸 미국',
+}
+
+function formatMemberOption(m: any, locale: string): MemberOption {
+  const meta = OFFICIAL_MEMBER_METAS[m.id]
+  const isKo = locale === 'ko'
+  const cCode = m.country_code || m.countryCode || 'KR'
+  const flagInfo = COUNTRY_FLAGS[cCode] || '🌐'
+  const flagEmoji = flagInfo.split(' ')[0]
+
+  let displayName = m.name || m.id
+  const nameEn = m.name_en || m.nameEn || meta?.nameEn || m.name || m.id
+  const nameKo = meta?.nameKo
+
+  if (isKo && meta?.nameKo) {
+    displayName = `${meta.nameKo} (${meta.nameEn})`
+  } else if (!isKo && meta?.nameEn) {
+    displayName = meta.nameEn
+  }
+
+  const aliases: string[] = [
+    m.name,
+    nameEn,
+    m.id,
+    m.email || '',
+    m.affiliation || meta?.affiliation || '',
+    cCode,
+    flagInfo,
+    meta?.countryNameKo || '',
+    meta?.countryNameEn || '',
+    ...(meta?.aliases || [])
+  ].filter(Boolean)
+
+  return {
+    id: m.id,
+    name: displayName,
+    raw_name: m.name || m.id,
+    name_ko: nameKo,
+    name_en: nameEn,
+    email: m.email || '',
+    country_code: cCode,
+    country_flag: flagEmoji,
+    role: m.role || 'regular',
+    affiliation: m.affiliation || meta?.affiliation || '',
+    avatar_url: m.avatar_url || null,
+    aliases: Array.from(new Set(aliases))
+  }
 }
 
 interface Props {
@@ -101,6 +223,8 @@ export default function MessagesInbox({ currentUser, currentLevel, onUnreadChang
   const [isSending, setIsSending] = useState(false)
   const [membersList, setMembersList] = useState<MemberOption[]>([])
   const [memberSearchTerm, setMemberSearchTerm] = useState('')
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // 토스트
   const [toastMsg, setToastMsg] = useState<string | null>(null)
@@ -114,6 +238,17 @@ export default function MessagesInbox({ currentUser, currentLevel, onUnreadChang
   const userRole = currentUser?.role || 'regular'
   const canSend = currentLevel >= 2
   const canSendGroup = currentLevel >= 4
+
+  // 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // 안읽은 메시지 수 조회
   const fetchUnreadCount = useCallback(async () => {
@@ -158,7 +293,7 @@ export default function MessagesInbox({ currentUser, currentLevel, onUnreadChang
     fetchMessages()
   }, [fetchMessages])
 
-  // 회원 목록 조회 (1:1 쪽지 수신자 선택용)
+  // 회원 목록 조회 (1:1 쪽지 수신자 선택용 - 실시간 다국어 & Fallback 완비)
   useEffect(() => {
     async function loadMembers() {
       try {
@@ -166,14 +301,27 @@ export default function MessagesInbox({ currentUser, currentLevel, onUnreadChang
         if (!res.ok) res = await fetch('/api/members')
         if (res.ok) {
           const json = await res.json()
-          if (json.success && Array.isArray(json.data)) {
-            setMembersList(json.data.filter((m: any) => m.id !== userId))
+          const raw = Array.isArray(json) ? json : (json.data || json.members || [])
+          if (Array.isArray(raw) && raw.length > 0) {
+            const formatted = raw
+              .filter((m: any) => m.id !== userId && m.role !== 'developer' && !m.name?.includes('개발자'))
+              .map((m: any) => formatMemberOption(m, locale))
+            setMembersList(formatted)
+            return
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Failed to load server members, using initialMembers fallback', e)
+      }
+
+      // 서버 연결 실패 또는 빈 데이터 시 fallback
+      const fallback = initialMembers
+        .filter((m) => m.id !== userId && m.role !== 'developer' && !m.name?.includes('개발자'))
+        .map((m) => formatMemberOption(m, locale))
+      setMembersList(fallback)
     }
     loadMembers()
-  }, [userId])
+  }, [userId, locale])
 
   // 상세 모달 열기 & 자동 읽음 처리
   const handleOpenDetail = async (msg: MessageItem) => {
@@ -377,16 +525,15 @@ export default function MessagesInbox({ currentUser, currentLevel, onUnreadChang
     }
   }
 
-  const filteredMembers = membersList.filter((m) => {
-    if (!memberSearchTerm) return true
-    const term = memberSearchTerm.toLowerCase()
-    return (
-      m.name.toLowerCase().includes(term) ||
-      (m.name_en && m.name_en.toLowerCase().includes(term)) ||
-      (m.affiliation && m.affiliation.toLowerCase().includes(term)) ||
-      m.country_code.toLowerCase().includes(term)
-    )
-  })
+  // 실시간 다국어 & 오타 허용 퍼지 검색 필터링 및 연관도 순 정렬
+  const filteredMembers = membersList
+    .map((m) => {
+      const score = getFuzzyMatchScore(memberSearchTerm, m.aliases)
+      return { member: m, score }
+    })
+    .filter((item) => (!memberSearchTerm.trim() ? true : item.score >= 50))
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.member)
 
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm space-y-6">
@@ -783,64 +930,169 @@ export default function MessagesInbox({ currentUser, currentLevel, onUnreadChang
                 </div>
               )}
 
-              {/* 1:1 수신자 선택 */}
+              {/* 1:1 수신자 선택 (실시간 다국어 자동완성 & 드롭다운) */}
               {targetType === 'individual' && (
-                <div>
-                  <label className="block text-xs font-extrabold text-gray-700 mb-1.5">
-                    {isEn ? 'Select Recipient' : '수신 회원 선택'} *
-                  </label>
-                  <div className="relative mb-2">
-                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder={isEn ? 'Search member by name or country...' : '이름, 영문명, 국가로 회원 검색...'}
-                      value={memberSearchTerm}
-                      onChange={(e) => setMemberSearchTerm(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
+                <div className="relative" ref={dropdownRef}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-extrabold text-gray-700">
+                      {isEn ? 'Select Recipient' : '수신 회원 선택'} *
+                    </label>
+                    <span className="text-[10px] text-emerald-600 font-medium">
+                      {isEn ? '⚡ Real-time multi-lingual autocomplete' : '⚡ 실시간 다국어·초성 자동완성'}
+                    </span>
                   </div>
 
-                  <div className="max-h-36 overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-100 bg-white">
-                    {filteredMembers.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-gray-400">
-                        {isEn ? 'No members found.' : '검색된 회원이 없습니다.'}
-                      </div>
-                    ) : (
-                      filteredMembers.map((m) => {
-                        const isSelected = selectedReceiverId === m.id
-                        return (
-                          <div
-                            key={m.id}
-                            onClick={() => {
-                              setSelectedReceiverId(m.id)
-                              setSelectedReceiverName(m.name)
-                            }}
-                            className={`p-2.5 text-xs flex items-center justify-between cursor-pointer hover:bg-emerald-50/50 ${
-                              isSelected ? 'bg-emerald-50 text-emerald-900 font-bold' : 'text-gray-700'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span>{COUNTRY_FLAGS[m.country_code]?.split(' ')[0] || '🌐'}</span>
-                              <span>{m.name}</span>
-                              {m.name_en && m.name_en !== m.name && (
-                                <span className="text-[11px] text-gray-400">({m.name_en})</span>
-                              )}
-                              {m.affiliation && (
-                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-gray-100 text-gray-500 font-semibold">
-                                  {m.affiliation}
-                                </span>
-                              )}
-                            </div>
-                            {isSelected && <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />}
+                  {/* 이미 회원이 선택된 경우: 카드 칩 표시 */}
+                  {selectedReceiverId ? (
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-teal-50/60 border border-emerald-300 rounded-2xl shadow-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-black shadow-xs">
+                          {selectedReceiverName.substring(0, 1)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black text-gray-900">{selectedReceiverName}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-200/70 text-emerald-900 font-bold">
+                              {isEn ? 'Selected' : '수신자 선택됨'}
+                            </span>
                           </div>
-                        )
-                      })
-                    )}
-                  </div>
-                  {selectedReceiverName && (
-                    <p className="text-xs text-emerald-700 font-extrabold mt-1">
-                      ✓ {isEn ? 'Selected' : '선택됨'}: {selectedReceiverName}
-                    </p>
+                          <p className="text-[11px] text-emerald-700 font-medium">
+                            {isEn ? 'Ready to receive your message.' : '이 회원에게 1:1 쪽지가 안전하게 전달됩니다.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedReceiverId('')
+                          setSelectedReceiverName('')
+                          setMemberSearchTerm('')
+                          setIsDropdownOpen(true)
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-white border border-gray-200 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 text-xs font-bold text-gray-600 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <X size={13} />
+                        <span>{isEn ? 'Change' : '수신자 변경'}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    /* 회원 미선택 시: 실시간 자동완성 검색 인풋 */
+                    <div className="relative">
+                      <div className="relative">
+                        <Search className="w-4 h-4 text-emerald-600 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder={
+                            isEn
+                              ? 'Type name, English, Korean, or affiliation (e.g. Bae, MCSK)...'
+                              : '이름, 영문(Bae), 초성(ㅂㅇㅎ), 소속(MCSK)으로 검색...'
+                          }
+                          value={memberSearchTerm}
+                          onFocus={() => setIsDropdownOpen(true)}
+                          onChange={(e) => {
+                            setMemberSearchTerm(e.target.value)
+                            setIsDropdownOpen(true)
+                          }}
+                          className="w-full pl-10 pr-10 py-3 bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 focus:border-emerald-500 rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/15 transition-all shadow-2xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsDropdownOpen((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                        >
+                          <ChevronDown
+                            size={16}
+                            className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-emerald-600' : ''}`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* 실시간 드롭다운 결과창 */}
+                      {isDropdownOpen && (
+                        <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-emerald-300 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                          <div className="px-3.5 py-1.5 bg-emerald-50/70 border-b border-emerald-100 flex items-center justify-between text-[11px] text-emerald-900 font-bold">
+                            <span>
+                              {memberSearchTerm
+                                ? isEn
+                                  ? `Search results for "${memberSearchTerm}"`
+                                  : `'${memberSearchTerm}' 실시간 매칭 결과`
+                                : isEn
+                                  ? 'All Members (Click to select)'
+                                  : '회원 목록 (클릭하여 수신자 선택)'}
+                            </span>
+                            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-extrabold">
+                              {filteredMembers.length} {isEn ? 'found' : '명'}
+                            </span>
+                          </div>
+
+                          <div className="max-h-56 overflow-y-auto divide-y divide-gray-100">
+                            {filteredMembers.length === 0 ? (
+                              <div className="p-6 text-center text-xs text-gray-400 space-y-1">
+                                <p className="font-bold text-gray-500">
+                                  {isEn ? 'No matching members found.' : '일치하는 회원을 찾지 못했습니다.'}
+                                </p>
+                                <p className="text-[11px]">
+                                  {isEn
+                                    ? 'Try typing an English name (e.g. Bae, Kim, Jeanette) or affiliation.'
+                                    : '영문명(Bae, Kim), 한글(배용하), 또는 소속(MCSK)으로 검색해 보세요.'}
+                                </p>
+                              </div>
+                            ) : (
+                              filteredMembers.map((m) => (
+                                <div
+                                  key={m.id}
+                                  onClick={() => {
+                                    setSelectedReceiverId(m.id)
+                                    setSelectedReceiverName(m.name)
+                                    setIsDropdownOpen(false)
+                                    setMemberSearchTerm('')
+                                  }}
+                                  className="p-3 text-xs flex items-center justify-between cursor-pointer hover:bg-emerald-50/60 transition-colors group"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-xs shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                      {m.avatar_url ? (
+                                        <img
+                                          src={m.avatar_url}
+                                          alt={m.name}
+                                          className="w-full h-full rounded-full object-cover"
+                                        />
+                                      ) : (
+                                        m.raw_name?.substring(0, 1) || '👤'
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-base leading-none">{m.country_flag}</span>
+                                        <span className="font-bold text-gray-900 group-hover:text-emerald-900 text-xs sm:text-sm">
+                                          {m.name}
+                                        </span>
+                                        {m.affiliation && (
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-semibold">
+                                            {m.affiliation}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-[11px] text-gray-400 flex items-center gap-2 mt-0.5">
+                                        {m.email && <span>{m.email}</span>}
+                                        <span className="text-[10px] text-emerald-600 font-medium">
+                                          ID: {m.id}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <span className="px-2.5 py-1 rounded-xl bg-gray-100 text-gray-600 group-hover:bg-emerald-600 group-hover:text-white text-[11px] font-bold transition-all shrink-0">
+                                    {isEn ? 'Select' : '선택'}
+                                  </span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

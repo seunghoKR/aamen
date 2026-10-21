@@ -1,7 +1,7 @@
 <?php
 // ============================================================================
 // AAMEN Database Initializer & Migration for MariaDB 10.X
-// Version: v1.5.0
+// Version: v1.5.1
 // ============================================================================
 
 require_once __DIR__ . '/db.php';
@@ -212,16 +212,16 @@ $members_v150 = [
         'phone' => '+82 10-4069-2739',
         'affiliation' => '누리오 (개발자)'
     ],
-    // 2) Jeanette Hanson (Boss / MWC)
+    // 2) Jeanette Hanson (Coordinator / MWC)
     [
         'id' => 'Jeanette',
         'email' => 'Jeanette.m.hanson@gmail.com',
         'name' => 'Jeanette Hanson',
         'provider' => 'google',
         'country_code' => 'US',
-        'role' => 'super_admin',
+        'role' => 'country_admin',
         'status' => 'active',
-        'bio' => 'MWC Boss / 총괄 리더십',
+        'bio' => 'MWC Leader / 국가 코디네이터',
         'phone' => '+1 000-000-0000',
         'affiliation' => 'MWC'
     ],
@@ -383,10 +383,77 @@ try {
         }
     } catch (\Exception $e) {}
 
+    // 🔒 역사와교회 사진첩 초기 시드 (board_type = 'history_photos' 게시물이 없을 때만 초기 주입)
+    try {
+        $hpStmt = $pdo->prepare("SELECT COUNT(*) FROM posts WHERE board_type = 'history_photos'");
+        $hpStmt->execute();
+        $hpCount = (int)$hpStmt->fetchColumn();
+        if ($hpCount === 0) {
+            $stmtHP = $pdo->prepare("INSERT INTO posts (id, board_type, category, title, content, author_id, author_name, author_country, author_role, views, likes, is_pinned, amen_count, image_url, extra_json, created_at) VALUES (?, 'history_photos', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $initialHistoryPhotos = [
+                [
+                    'hp_seed_01', '컨퍼런스', '제1회 아시아 아나밥티스트 평화 교육 컨퍼런스',
+                    "아시아 15개국 교회 지도자들과 평화 사역자들이 한자리에 모여 AAMEN의 공식 출범을 선포하고 평화 교육 헌장을 채택했습니다.\n분쟁과 갈등이 깊은 아시아 땅에서 화해의 제자도를 살아내기로 결단한 역사적인 순간이었습니다.",
+                    'admin', 'AAMEN 총괄위원회', 'TH', 'super_admin', 245, 48, 1, 35,
+                    'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
+                    json_encode(['location' => '방콕 (Bangkok, Thailand)', 'flag' => '🇹🇭', 'attendees' => '15개국 대표단 120명', 'tags' => ['AAMEN출범', '평화컨퍼런스', '15개국연합']], JSON_UNESCAPED_UNICODE),
+                    '2018-11-15 10:00:00'
+                ],
+                [
+                    'hp_seed_02', '교육워크숍', '15개국 대표단 7대 레슨 플랜 집필 및 감수 워크숍',
+                    "MWC 7대 확신을 아시아 청소년과 성도들이 이해하기 쉬운 12주 교안으로 집필하기 위해 각국 신학자와 교사들이 5일간 합숙하며 교재의 초안을 완성하고 다국어 번역 기준을 세웠습니다.",
+                    'Yongha', 'Bae Yongha', 'KR', 'country_admin', 198, 36, 1, 28,
+                    'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80',
+                    json_encode(['location' => '서울 (Seoul, Korea)', 'flag' => '🇰🇷', 'attendees' => '각국 교육분과 위원 35명', 'tags' => ['교재집필', '레슨플랜', '신학교육']], JSON_UNESCAPED_UNICODE),
+                    '2022-06-20 14:00:00'
+                ],
+                [
+                    'hp_seed_03', '청년캠프', '아시아 청년 메노나이트 평화 캠프 & 제자도 훈련',
+                    "인도네시아, 미얀마, 베트남, 필리핀 등 아시아 청년들이 모여 문화와 언어를 뛰어넘는 그리스도의 한 가족 됨을 체험했습니다.\n밤마다 각국의 평화와 교회를 위해 눈물로 중보기도하는 뜨거운 은혜가 있었습니다.",
+                    'Paulus', 'Paulus S. Widjaja', 'ID', 'country_admin', 312, 59, 0, 42,
+                    'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
+                    json_encode(['location' => '자바 (Java, Indonesia)', 'flag' => '🇮🇩', 'attendees' => '청년 리더 150명', 'tags' => ['청년평화캠프', '제자도훈련', '인도네시아']], JSON_UNESCAPED_UNICODE),
+                    '2023-08-10 16:30:00'
+                ],
+                [
+                    'hp_seed_04', '기념행사', '아나뱁티스트 500주년 기념 아시아 연합 포럼 & 찬양 집회',
+                    "종교개혁과 아나뱁티스트 태동 500주년을 맞아 아시아 성도들이 순교자들의 신앙 유산을 기리며 비폭력 평화와 화해의 복음을 미래 세대에 계승할 것을 선포했습니다.",
+                    'Hiro', 'Hiro Katano', 'JP', 'country_admin', 280, 52, 0, 39,
+                    'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80',
+                    json_encode(['location' => '도쿄 (Tokyo, Japan)', 'flag' => '🇯🇵', 'attendees' => '아시아 성도 200명', 'tags' => ['500주년', '아나뱁티스트', '평화증언']], JSON_UNESCAPED_UNICODE),
+                    '2025-05-12 11:00:00'
+                ]
+            ];
+            foreach ($initialHistoryPhotos as $row) {
+                $stmtHP->execute($row);
+            }
+            $results['history_photos_seeded'] = true;
+        }
+    } catch (\Exception $e) {}
+
+    // 🔒 배너 테이블 보존 및 복원 (비어있을 때만 관리자 복원 배너 주입)
+    try {
+        $bCount = (int)$pdo->query("SELECT COUNT(*) FROM banners")->fetchColumn();
+        if ($bCount === 0) {
+            $stmtB = $pdo->prepare("INSERT INTO banners (id, banner_type, title, subtitle, image_url, link_url, badge_text, bg_gradient, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            $adminBannersSeed = [
+                ['banner_01', 'image', '아시아 아나뱁티스트/메노나이트를 잇는 평화와 교육의 공동체', '언어와 국경을 넘어 그리스도의 비폭력 평화와 제자도를 함께 배웁니다', '/uploads/banners/banner_20261015_013510_dc5fd4.jpeg', '/community/prayer', 'AAMEN GLOBAL NETWORK', 'from-emerald-700 via-teal-800 to-sky-900', 1, 1],
+                ['banner_03', 'image', '아시아 언어로 완역된 공통의 신앙고백 교안', '하나님, 예수 그리스도, 성령, 평화와 화해 등 교회 주일학교와 신학교를 위한 교육 자료', 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1600&q=80', '/resources', 'CURRICULUM & RESOURCES', 'from-teal-800 via-emerald-800 to-cyan-900', 2, 1],
+                ['banner_04', 'text', '“평화를 만드는 사람은 복이 있나니”', '마태복음 5:9 — 갈등과 분쟁 속에서 평화의 도구로 부르심 받은 아시아 성도들의 고백', '', '/community/board', 'SCRIPTURE OF PEACE', 'from-emerald-800 via-teal-900 to-green-950', 3, 1],
+                ['banner_05', 'image', '함께 손잡고 드리는 기도의 벽 (Live Prayer Wall)', '미얀마, 베트남, 인도, 네팔, 남한, 일본, 홍통 등 아시아 각 나라에서 실시간으로 올라오는 기도의 제목에 \'아멘\'으로 응답하세요', '/uploads/banners/banner_20261015_013820_d6f696.jpeg', '/community/prayer', 'FELLOWSHIP & PRAYER', 'from-purple-900 via-indigo-900 to-sky-900', 4, 1],
+                ['banner_02', 'text', 'MWC 아시아 아나밥티스트/메노나이트 연합 컨퍼런스', '“화해의 복음, 하나 된 아시아” — 각국 코디네이터 및 청년 리더십과 함께 하는 컨퍼런스', '', '/community/announcements', 'UPCOMING EVENT ASIA CONFERENCE', 'from-blue-900 via-indigo-900 to-slate-900', 5, 1]
+            ];
+            foreach ($adminBannersSeed as $row) {
+                $stmtB->execute($row);
+            }
+            $results['banners_seeded'] = true;
+        }
+    } catch (\Exception $e) {}
+
     send_json([
         'status' => 'success',
-        'version' => 'v1.5.0-prod',
-        'message' => 'Database schema verified successfully in Production Safe Mode. No data was deleted or overwritten.',
+        'version' => 'v1.5.1-prod-safe',
+        'message' => 'Database schema verified successfully in Strict Production Safe Mode. No existing board posts or user data will ever be initialized or deleted.',
         'details' => $results
     ]);
 } catch (Exception $e) {

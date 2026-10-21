@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 chcp 65001 > nul
 title [출근/시작] 개발 환경 자동 동기화 & 실행
 color 0B
@@ -17,6 +17,7 @@ if %errorlevel% neq 0 (
 echo.
 
 echo [2/3] 📦 라이브러리 상태를 점검합니다...
+cd renewal\frontend
 if not exist "node_modules" (
     echo    ⚠️ node_modules가 없습니다. 자동으로 패키지를 설치합니다...
     call npm install

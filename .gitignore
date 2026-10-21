@@ -22,3 +22,16 @@ __pycache__/
 # Operating System files
 .DS_Store
 Thumbs.db
+
+# Legacy backups & binaries
+public_html/
+backup/
+source/
+uploads/
+renewal/backend/uploads/
+.vscode/
+*.cdr
+*.xlsx
+*.cvs
+*.jpg
+관리자_의견.txt

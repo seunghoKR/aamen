@@ -3,7 +3,7 @@
 # Executed from C:\Dev\AAMEN
 # ==============================================================================
 $ErrorActionPreference = "Stop"
-$root = "C:\Dev\AAMEN"
+$root = if ($PSScriptRoot) { $PSScriptRoot } else { "C:\Dev\AAMEN" }
 $deployDir = "$root\deploy"
 $outDir = "$root\renewal\frontend\out"
 $backendDir = "$root\renewal\backend"

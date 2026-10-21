@@ -17,14 +17,14 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 } catch (\Exception $e) {}
 
-// 기본 5개 배너 프리셋 (이미지 - 텍스트 - 이미지 - 텍스트 - 이미지)
+// 기본 5개 배너 프리셋 (관리자 업로드 복원: 이미지 - 텍스트 - 이미지 - 텍스트 - 이미지)
 $default_preset_banners = [
     [
         'id' => 'banner_01',
         'banner_type' => 'image',
-        'title' => '아시아 13개국을 잇는 평화와 교육의 공동체',
+        'title' => '아시아 아나뱁티스트/메노나이트를 잇는 평화와 교육의 공동체',
         'subtitle' => '언어와 국경을 넘어 그리스도의 비폭력 평화와 제자도를 함께 배웁니다',
-        'image_url' => 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80',
+        'image_url' => '/uploads/banners/banner_20261015_013510_dc5fd4.jpeg',
         'link_url' => '/community/prayer',
         'badge_text' => 'AAMEN GLOBAL NETWORK',
         'bg_gradient' => 'from-emerald-700 via-teal-800 to-sky-900',
@@ -32,27 +32,15 @@ $default_preset_banners = [
         'is_active' => 1
     ],
     [
-        'id' => 'banner_02',
-        'banner_type' => 'text',
-        'title' => '2026 MWC 아시아 아나밥티스트 연합 컨퍼런스',
-        'subtitle' => '“화해의 복음, 하나 된 아시아” — 각국 코디네이터 및 청년 리더십 참가 신청 접수 중',
-        'image_url' => '',
-        'link_url' => '/community/announcements',
-        'badge_text' => 'UPCOMING EVENT 2026',
-        'bg_gradient' => 'from-blue-900 via-indigo-900 to-slate-900',
-        'display_order' => 2,
-        'is_active' => 1
-    ],
-    [
         'id' => 'banner_03',
         'banner_type' => 'image',
-        'title' => '13개 언어로 완역된 7대 신념 교안 자료실',
-        'subtitle' => '하나님, 예수 그리스도, 성령, 평화와 화해 등 교회 주일학교와 신학교를 위한 무료 교육 자료',
+        'title' => '아시아 언어로 완역된 공통의 신앙고백 교안',
+        'subtitle' => '하나님, 예수 그리스도, 성령, 평화와 화해 등 교회 주일학교와 신학교를 위한 교육 자료',
         'image_url' => 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1600&q=80',
         'link_url' => '/resources',
         'badge_text' => 'CURRICULUM & RESOURCES',
         'bg_gradient' => 'from-teal-800 via-emerald-800 to-cyan-900',
-        'display_order' => 3,
+        'display_order' => 2,
         'is_active' => 1
     ],
     [
@@ -64,18 +52,30 @@ $default_preset_banners = [
         'link_url' => '/community/board',
         'badge_text' => 'SCRIPTURE OF PEACE',
         'bg_gradient' => 'from-emerald-800 via-teal-900 to-green-950',
-        'display_order' => 4,
+        'display_order' => 3,
         'is_active' => 1
     ],
     [
         'id' => 'banner_05',
         'banner_type' => 'image',
         'title' => '함께 손잡고 드리는 기도의 벽 (Live Prayer Wall)',
-        'subtitle' => '미얀마, 베트남, 인도, 네팔... 13개국에서 실시간으로 올라오는 기도의 제목에 \'아멘\'으로 응답하세요',
-        'image_url' => 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1600&q=80',
+        'subtitle' => '미얀마, 베트남, 인도, 네팔, 남한, 일본, 홍통 등 아시아 각 나라에서 실시간으로 올라오는 기도의 제목에 \'아멘\'으로 응답하세요',
+        'image_url' => '/uploads/banners/banner_20261015_013820_d6f696.jpeg',
         'link_url' => '/community/prayer',
         'badge_text' => 'FELLOWSHIP & PRAYER',
         'bg_gradient' => 'from-purple-900 via-indigo-900 to-sky-900',
+        'display_order' => 4,
+        'is_active' => 1
+    ],
+    [
+        'id' => 'banner_02',
+        'banner_type' => 'text',
+        'title' => 'MWC 아시아 아나밥티스트/메노나이트 연합 컨퍼런스',
+        'subtitle' => '“화해의 복음, 하나 된 아시아” — 각국 코디네이터 및 청년 리더십과 함께 하는 컨퍼런스',
+        'image_url' => '',
+        'link_url' => '/community/announcements',
+        'badge_text' => 'UPCOMING EVENT ASIA CONFERENCE',
+        'bg_gradient' => 'from-blue-900 via-indigo-900 to-slate-900',
         'display_order' => 5,
         'is_active' => 1
     ]

@@ -74,6 +74,64 @@ export default function AdminDashboardPage() {
     } catch (e) {
       console.error(e)
     }
+
+    // 🌟 서버 DB로부터 최신 회원 목록 및 권한/등급 실시간 동기화 (회원관리와 100% 일치)
+    async function loadServerMembers() {
+      try {
+        const res = await fetch('/api/members')
+        if (!res.ok) return
+        const contentType = res.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) return
+        const data = await res.json()
+        const list = Array.isArray(data) ? data : data.data || []
+        if (list.length > 0) {
+          const countryMap: Record<string, { name: string; flag: string }> = {
+            KR: { name: '대한민국', flag: '🇰🇷' },
+            US: { name: '미국', flag: '🇺🇸' },
+            MM: { name: '미얀마', flag: '🇲🇲' },
+            VN: { name: '베트남', flag: '🇻🇳' },
+            TH: { name: '태국', flag: '🇹🇭' },
+            ID: { name: '인도네시아', flag: '🇮🇩' },
+            JP: { name: '일본', flag: '🇯🇵' },
+            NP: { name: '네팔', flag: '🇳🇵' },
+            IN: { name: '인도', flag: '🇮🇳' },
+            KH: { name: '캄보디아', flag: '🇰🇭' },
+            LA: { name: '라오스', flag: '🇱🇦' },
+            MN: { name: '몽골', flag: '🇲🇳' },
+            TW: { name: '대만', flag: '🇹🇼' },
+            HK: { name: '홍콩', flag: '🇭🇰' },
+          }
+
+          // 개발자 계정 제외
+          const filteredList = list.filter(
+            (m: any) => m.role !== 'developer' && !m.name?.includes('개발자') && m.email !== 'admin@aamen.net'
+          )
+
+          const formatted: Member[] = filteredList.map((m: any) => {
+            const cInfo = countryMap[m.country_code] || { name: m.country_code, flag: '🌐' }
+            return {
+              id: m.id,
+              name: m.name,
+              email: m.email,
+              countryCode: m.country_code,
+              countryName: cInfo.name,
+              flag: cInfo.flag,
+              role: m.role,
+              status: m.status || 'active',
+              joinedDate: (m.created_at || '').substring(0, 10),
+              affiliation: m.affiliation || '',
+              phone: m.phone || '',
+              provider: m.provider || 'google',
+              avatar_url: m.avatar_url || null,
+            }
+          })
+          setMembers(formatted)
+        }
+      } catch (e) {
+        console.error('Failed to load server members in admin dashboard', e)
+      }
+    }
+    loadServerMembers()
     return () => {
       window.removeEventListener(TIER_EVENT_NAME, handleTier)
       window.removeEventListener('storage', handleStorage)
@@ -308,6 +366,8 @@ export default function AdminDashboardPage() {
                         ? 'bg-purple-100 text-purple-800'
                         : m.role === 'country_admin'
                         ? 'bg-sky-100 text-sky-800'
+                        : m.role === 'level3_worker'
+                        ? 'bg-teal-100 text-teal-800'
                         : m.role === 'regular'
                         ? 'bg-emerald-100 text-emerald-800'
                         : 'bg-amber-100 text-amber-800'
@@ -317,6 +377,8 @@ export default function AdminDashboardPage() {
                       ? t.roleSuper
                       : m.role === 'country_admin'
                       ? t.roleCountry
+                      : m.role === 'level3_worker'
+                      ? (isEn ? 'Worker/Missionary' : '사역자/선교사')
                       : m.role === 'regular'
                       ? t.roleRegular
                       : t.roleAssociate}
