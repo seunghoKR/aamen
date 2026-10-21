@@ -22,6 +22,9 @@ import {
   Save,
   MessageSquare,
   Send,
+  AlertCircle,
+  X,
+  RotateCcw,
 } from 'lucide-react'
 
 // 등급 메타데이터 (0단계 비회원 ~ 5단계 총괄관리자)
@@ -269,6 +272,26 @@ export default function AdminMembersPage() {
   const [filterCountry, setFilterCountry] = useState<string>('ALL')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
+  // 🌟 수동 저장 상태: 아직 서버에 저장되지 않은 회원별 등급 변경 임시 상태
+  const [pendingLevels, setPendingLevels] = useState<Record<string, MemberLevel>>({})
+  const [savingMemberIds, setSavingMemberIds] = useState<Record<string, boolean>>({})
+
+  // 🌟 변경 후 다른 페이지로 이동 시 이탈 방지 경고 문구
+  useEffect(() => {
+    const hasUnsaved = Object.keys(pendingLevels).length > 0
+    if (!hasUnsaved) return
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = isEn
+        ? 'You have unsaved member tier changes. Are you sure you want to leave?'
+        : '저장되지 않은 회원 등급 수정사항이 있습니다. 저장하지 않고 페이지를 이동하시겠습니까?'
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [pendingLevels, isEn])
+
   // 5단계 권한 설정 상태 (localStorage 및 기본값 연동)
   const [tierSettings, setTierSettings] = useState<Record<MemberLevel, MemberTierInfo>>(defaultTierSettings)
 
@@ -405,28 +428,116 @@ export default function AdminMembersPage() {
     setTimeout(() => setToastMessage(null), 2500)
   }
 
-  // 5단계 등급 변경 (서버 DB 실시간 동기화)
-  const handleLevelChange = async (id: string, newLevel: MemberLevel) => {
+  // 🌟 1) 등급 드롭다운 임시 선택 (실시간 저장이 아닌 수동 저장 대기)
+  const handleSelectLevelPending = (id: string, newLevel: MemberLevel) => {
+    const member = members.find((m) => m.id === id)
+    const originalLevel = member ? (member.level || getMemberLevel(member.role)) : 2
+
+    setPendingLevels((prev) => {
+      const next = { ...prev }
+      if (newLevel === originalLevel) {
+        delete next[id]
+      } else {
+        next[id] = newLevel
+      }
+      return next
+    })
+  }
+
+  // 🌟 2) 단일 회원 등급 수동 저장
+  const handleSaveMemberLevel = async (id: string) => {
+    const newLevel = pendingLevels[id]
+    if (newLevel === undefined) return
+
+    setSavingMemberIds((prev) => ({ ...prev, [id]: true }))
     const targetTier = tierLabels[newLevel]
     const updated = members.map((m) =>
       m.id === id ? { ...m, level: newLevel, role: targetTier.roleKey } : m
     )
-    persistMembers(
-      updated,
-      isEn
-        ? `Member tier changed to [${targetTier.name}].`
-        : `회원 등급이 [${targetTier.name}]으로 변경되었습니다.`
-    )
 
     try {
-      await fetch('/api/members', {
+      let res = await fetch('/api/members.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update_role', id, role: targetTier.roleKey }),
       })
+      if (!res.ok) {
+        res = await fetch('/api/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update_role', id, role: targetTier.roleKey }),
+        })
+      }
+
+      persistMembers(
+        updated,
+        isEn
+          ? `Saved: Member tier updated to [${targetTier.name}].`
+          : `저장 완료: 회원 등급이 [${targetTier.name}]으로 안전하게 반영되었습니다.`
+      )
+
+      // 저장 완료 후 pending 목록에서 제거
+      setPendingLevels((prev) => {
+        const next = { ...prev }
+        delete next[id]
+      })
     } catch (e) {
       console.error('Role update error:', e)
+      alert(isEn ? 'Failed to save member tier.' : '회원 등급 저장 중 오류가 발생했습니다.')
+    } finally {
+      setSavingMemberIds((prev) => ({ ...prev, [id]: false }))
     }
+  }
+
+  // 🌟 3) 단일 회원 등급 변경 취소
+  const handleCancelMemberLevel = (id: string) => {
+    setPendingLevels((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+  }
+
+  // 🌟 4) 변경된 전체 회원 등급 일괄 저장
+  const handleSaveAllPending = async () => {
+    const pendingIds = Object.keys(pendingLevels)
+    if (pendingIds.length === 0) return
+
+    let currentUpdated = [...members]
+    for (const id of pendingIds) {
+      const newLvl = pendingLevels[id]
+      const targetTier = tierLabels[newLvl]
+      currentUpdated = currentUpdated.map((m) =>
+        m.id === id ? { ...m, level: newLvl, role: targetTier.roleKey } : m
+      )
+      try {
+        await fetch('/api/members.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update_role', id, role: targetTier.roleKey }),
+        })
+      } catch (e) {}
+    }
+
+    persistMembers(
+      currentUpdated,
+      isEn
+        ? `All ${pendingIds.length} member tiers saved successfully.`
+        : `수정된 ${pendingIds.length}명의 회원 등급이 모두 안전하게 저장되었습니다.`
+    )
+    setPendingLevels({})
+  }
+
+  // 🌟 5) 변경사항 모두 취소
+  const handleCancelAllPending = () => {
+    if (confirm(isEn ? 'Discard all unsaved tier changes?' : '저장되지 않은 모든 등급 수정을 취소하시겠습니까?')) {
+      setPendingLevels({})
+    }
+  }
+
+  // 하위 호환용 래퍼
+  const handleLevelChange = async (id: string, newLevel: MemberLevel) => {
+    handleSelectLevelPending(id, newLevel)
   }
 
   // 회원 상태 변경 (active / pending / suspended)
@@ -815,6 +926,46 @@ export default function AdminMembersPage() {
             </div>
           )}
 
+          {/* 🌟 미저장 회원 등급 변경사항 플로팅 알림 바 */}
+          {Object.keys(pendingLevels).length > 0 && (
+            <div className="sticky top-4 z-40 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 px-5 py-3.5 rounded-2xl shadow-xl border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in slide-in-from-top-2">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle size={20} className="text-slate-950 shrink-0" />
+                <div>
+                  <span className="font-black text-xs sm:text-sm block">
+                    {isEn
+                      ? `You have ${Object.keys(pendingLevels).length} unsaved tier change(s).`
+                      : `저장되지 않은 회원 등급 수정사항이 ${Object.keys(pendingLevels).length}건 있습니다.`}
+                  </span>
+                  <span className="text-[11px] text-amber-950 font-semibold">
+                    {isEn
+                      ? 'Click [Save] next to the dropdown or [Save All] below to apply changes to the server.'
+                      : '각 회원 우측의 [저장] 버튼이나 우측의 [전체 일괄 저장]을 클릭해야 최종 서버에 반영됩니다.'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleCancelAllPending}
+                  className="px-3 py-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1"
+                >
+                  <RotateCcw size={12} />
+                  <span>{isEn ? 'Discard All' : '모두 취소'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAllPending}
+                  className="px-4 py-1.5 bg-slate-950 hover:bg-slate-900 text-white text-xs font-black rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <Save size={13} className="text-emerald-400" />
+                  <span>{isEn ? 'Save All' : '전체 일괄 저장'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* 회원 테이블 */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
@@ -841,7 +992,10 @@ export default function AdminMembersPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map((member) => {
-                    const currentLvl = member.level || getMemberLevel(member.role)
+                    const pendingLvl = pendingLevels[member.id]
+                    const currentLvl = pendingLvl !== undefined ? pendingLvl : (member.level || getMemberLevel(member.role))
+                    const isTierChanged = pendingLvl !== undefined
+                    const isSaving = Boolean(savingMemberIds[member.id])
                     const tierMeta = tierLabels[currentLvl]
                     const countryDisplay = isEn ? (countryNameMapEn[member.countryCode] || member.countryName) : member.countryName
                     const isSelected = selectedMemberIds.includes(member.id)
@@ -990,21 +1144,50 @@ export default function AdminMembersPage() {
                           })()}
                         </td>
 
-                        {/* 회원 등급 선택 드롭다운 (5단계) */}
+                        {/* 회원 등급 선택 드롭다운 (5단계) 및 수동 저장 버튼 */}
                         <td className="py-4 px-4 whitespace-nowrap">
-                          <select
-                            value={currentLvl}
-                            onChange={(e) => handleLevelChange(member.id, Number(e.target.value) as MemberLevel)}
-                            className={`text-xs font-extrabold px-3 py-1.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer ${
-                              tierMeta.badgeClass
-                            }`}
-                          >
-                            <option value={5}>{tierLabels[5].name}</option>
-                            <option value={4}>{tierLabels[4].name}</option>
-                            <option value={3}>{tierLabels[3].name}</option>
-                            <option value={2}>{tierLabels[2].name}</option>
-                            <option value={1}>{tierLabels[1].name}</option>
-                          </select>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={currentLvl}
+                              onChange={(e) => handleSelectLevelPending(member.id, Number(e.target.value) as MemberLevel)}
+                              className={`text-xs font-extrabold px-3 py-1.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition-all ${
+                                isTierChanged
+                                  ? 'ring-2 ring-amber-400 border-amber-500 bg-amber-50 text-amber-950 font-black'
+                                  : tierMeta.badgeClass
+                              }`}
+                            >
+                              <option value={5}>{tierLabels[5].name}</option>
+                              <option value={4}>{tierLabels[4].name}</option>
+                              <option value={3}>{tierLabels[3].name}</option>
+                              <option value={2}>{tierLabels[2].name}</option>
+                              <option value={1}>{tierLabels[1].name}</option>
+                            </select>
+
+                            {/* 변경 시에만 우측에 수동 [저장] 및 [취소] 버튼 노출 */}
+                            {isTierChanged && (
+                              <div className="flex items-center gap-1 animate-in fade-in zoom-in-95">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveMemberLevel(member.id)}
+                                  disabled={isSaving}
+                                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black rounded-xl text-[11px] shadow-sm flex items-center gap-1 transition-all cursor-pointer animate-pulse"
+                                  title={isEn ? 'Save Tier Change' : '변경한 등급 저장하기'}
+                                >
+                                  <Save size={12} />
+                                  <span>{isSaving ? (isEn ? 'Saving...' : '저장중...') : (isEn ? '저장' : '저장')}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCancelMemberLevel(member.id)}
+                                  disabled={isSaving}
+                                  className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-all cursor-pointer"
+                                  title={isEn ? 'Cancel' : '취소'}
+                                >
+                                  <X size={13} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
 
                         {/* 계정 상태 */}
