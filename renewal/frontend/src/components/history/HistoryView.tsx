@@ -17,16 +17,8 @@ import {
   ExternalLink,
   Layers,
   ArrowRight,
-  Globe,
   CheckCircle2,
 } from 'lucide-react'
-import {
-  nationOrderedLocales,
-  localeNames,
-  localeFlags,
-  localeCountryNames,
-  Locale,
-} from '@/config/locales'
 import { getHistoryData, HistoryLocaleData } from '@/data/historyData'
 
 const churchProfiles = [
@@ -139,41 +131,6 @@ export default function HistoryView({
           {/* 1. 📜 AAMEN 역사 및 타임라인 섹션 */}
           {(activeTab === 'all' || activeTab === 'history') && (
             <div id="history" className="space-y-8 mb-12 scroll-mt-24">
-              {/* 🌍 15개국 모국어 번역 퀵 셀렉터 툴바 */}
-              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-emerald-100 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-emerald-600" />
-                    <span className="font-bold text-gray-900 text-sm sm:text-base">
-                      15개국 모국어 번역 선택 (Select 15-Nation Language)
-                    </span>
-                  </div>
-                  <span className="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-semibold border border-emerald-200/60 self-start sm:self-auto">
-                    현재 언어: {localeNames[currentLocale as Locale] || currentLocale}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {nationOrderedLocales.map((loc) => {
-                    const isSelected = currentLocale === loc
-                    return (
-                      <button
-                        key={loc}
-                        onClick={() => setCurrentLocale(loc)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 ring-2 ring-emerald-500 scale-105'
-                            : 'bg-gray-50 text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200'
-                        }`}
-                      >
-                        <span className="text-base">{localeFlags[loc]}</span>
-                        <span>{localeCountryNames[loc]}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
               {/* 📖 서사 스토리 카드 1: 필요를 인식하다 (Recognizing the Need) */}
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-xs hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
