@@ -50,7 +50,7 @@ if (Test-Path $sourceDir) {
 
 # 4. .htaccess creation
 Write-Host ">>> [4/7] Generating production .htaccess..." -ForegroundColor Cyan
-$htaccessContent = @"
+$htaccessContent = @'
 Options -MultiViews
 RewriteEngine On
 RewriteBase /
@@ -81,7 +81,7 @@ RewriteRule ^(.*)$ $1.html [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^.*$ index.html [L]
-"@
+'@
 Set-Content -Path "$deployDir\.htaccess" -Value $htaccessContent -Encoding ascii
 
 # 5. Zip packaging using ultra-fast and Linux-compatible tar.exe

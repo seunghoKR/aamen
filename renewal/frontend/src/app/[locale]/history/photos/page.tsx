@@ -9,5 +9,5 @@ export default async function HistoryPhotosPage({
   const { locale } = await params
   setRequestLocale(locale)
 
-  return <HistoryView initialTab="photos" />
+  return <HistoryView initialTab="photos" initialLocale={locale} />
 }

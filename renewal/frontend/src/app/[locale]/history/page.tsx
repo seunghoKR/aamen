@@ -9,5 +9,5 @@ export default async function HistoryPage({
   const { locale } = await params
   setRequestLocale(locale)
 
-  return <HistoryView />
+  return <HistoryView initialLocale={locale} />
 }
