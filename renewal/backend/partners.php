@@ -119,19 +119,20 @@ function get_default_partners() {
     ];
 }
 
-// 초기 데이터 확인 및 테이블 최초 생성 시에만 1회 채우기
-$checkInit = $pdo->query("SELECT COUNT(*) FROM partners")->fetchColumn();
-// 테이블이 완전히 비어있고 테이블이 방금 생성된 상태인지 확인 (초기화 플래그 파일 검사)
+// 초기 데이터 1회 시딩 (.partners_initialized 플래그 파일이 없을 때만 최초 1회 실행, 관리자 삭제 후 재증식 방지)
 $initFlagFile = __DIR__ . '/.partners_initialized';
-if ($checkInit == 0 && !file_exists($initFlagFile)) {
-    $insertStmt = $pdo->prepare("INSERT INTO partners (id, name_ko, name_en, category, website_url, headquarters, established, contact_email, phone, desc_ko, desc_en, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    foreach (get_default_partners() as $p) {
-        $insertStmt->execute([
-            $p['id'], $p['name_ko'], $p['name_en'], $p['category'],
-            $p['website_url'], $p['headquarters'], $p['established'],
-            $p['contact_email'], $p['phone'], $p['desc_ko'], $p['desc_en'],
-            $p['display_order']
-        ]);
+if (!file_exists($initFlagFile)) {
+    $checkInit = $pdo->query("SELECT COUNT(*) FROM partners")->fetchColumn();
+    if ($checkInit == 0) {
+        $insertStmt = $pdo->prepare("INSERT IGNORE INTO partners (id, name_ko, name_en, category, website_url, headquarters, established, contact_email, phone, desc_ko, desc_en, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        foreach (get_default_partners() as $p) {
+            $insertStmt->execute([
+                $p['id'], $p['name_ko'], $p['name_en'], $p['category'],
+                $p['website_url'], $p['headquarters'], $p['established'],
+                $p['contact_email'], $p['phone'], $p['desc_ko'], $p['desc_en'],
+                $p['display_order']
+            ]);
+        }
     }
     @file_put_contents($initFlagFile, date('Y-m-d H:i:s'));
 }
@@ -183,18 +184,16 @@ if ($method === 'GET') {
     $action = $input['action'] ?? null;
     $id = $_GET['id'] ?? $input['id'] ?? null;
 
-    // 1. 삭제 액션
+    // 1. 삭제 액션 (관리자 요청 시 모든 단체 삭제 허용)
     if ($action === 'delete' && $id) {
         $stmt = $pdo->prepare("DELETE FROM partners WHERE id = ?");
         $stmt->execute([$id]);
-        @file_put_contents($initFlagFile, date('Y-m-d H:i:s'));
         send_json(['success' => true, 'message' => 'Partner deleted successfully']);
     }
 
-    // 2. 전체 초기화 (기본값 복원) 액션
+    // 2. 기본값 보정 액션 (기존 데이터를 삭제하지 않고 누락된 기본 6개 단체만 안전 복원)
     if ($action === 'reset') {
-        $pdo->exec("DELETE FROM partners");
-        $insertStmt = $pdo->prepare("INSERT INTO partners (id, name_ko, name_en, category, website_url, headquarters, established, contact_email, phone, desc_ko, desc_en, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $insertStmt = $pdo->prepare("INSERT IGNORE INTO partners (id, name_ko, name_en, category, website_url, headquarters, established, contact_email, phone, desc_ko, desc_en, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         foreach (get_default_partners() as $p) {
             $insertStmt->execute([
                 $p['id'], $p['name_ko'], $p['name_en'], $p['category'],
@@ -203,8 +202,7 @@ if ($method === 'GET') {
                 $p['display_order']
             ]);
         }
-        @file_put_contents($initFlagFile, date('Y-m-d H:i:s'));
-        send_json(['success' => true, 'message' => 'Restored default partner organizations']);
+        send_json(['success' => true, 'message' => 'Default partners preserved']);
     }
 
     // 3. 신규 등록 및 수정
@@ -242,6 +240,5 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare("DELETE FROM partners WHERE id = ?");
     $stmt->execute([$id]);
-    @file_put_contents($initFlagFile, date('Y-m-d H:i:s'));
     send_json(['success' => true, 'message' => 'Partner deleted successfully']);
 }

@@ -20,6 +20,8 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Edit2,
+  Pencil,
 } from 'lucide-react'
 import { getStoredUser, type AuthUser } from '@/lib/auth'
 import { getStoredTierLevel, TIER_EVENT_NAME } from '@/components/common/GlobalTierSimulator'
@@ -209,6 +211,19 @@ export default function HistoryPhotoBoard() {
   const [optimizationSummary, setOptimizationSummary] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 사진 수정 모달 상태
+  const [editingPost, setEditingPost] = useState<HistoryPhotoPost | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editTags, setEditTags] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editImageUrls, setEditImageUrls] = useState<string[]>([])
+  const [editPrimaryImageUrl, setEditPrimaryImageUrl] = useState('')
+  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false)
+  const [editOptimizationSummary, setEditOptimizationSummary] = useState<string | null>(null)
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false)
+  const editFileInputRef = useRef<HTMLInputElement>(null)
 
   // 라이트박스 (상세보기) 상태
   const [activeLightbox, setActiveLightbox] = useState<HistoryPhotoPost | null>(null)
@@ -425,6 +440,189 @@ export default function HistoryPhotoBoard() {
     setPhotoImageUrls(nextList)
     if (photoImageUrl === target) {
       setPhotoImageUrl(nextList[0] || '')
+    }
+  }
+
+  // ✏️ 사진첩 게시글 수정 열기
+  const handleOpenEdit = (post: HistoryPhotoPost) => {
+    const extra = parseExtra(post)
+    const allImages: string[] =
+      Array.isArray(extra.images) && extra.images.length > 0
+        ? extra.images
+        : post.image_url
+        ? [post.image_url]
+        : []
+    const tagsList: string[] = Array.isArray(extra.tags) ? extra.tags : []
+
+    setEditingPost(post)
+    setEditTitle(post.title || '')
+    setEditDesc(post.content || '')
+    setEditTags(tagsList.join(', '))
+    setEditImageUrls(allImages)
+    setEditPrimaryImageUrl(post.image_url || allImages[0] || '')
+    setEditOptimizationSummary(null)
+    setIsEditModalOpen(true)
+  }
+
+  // ✏️ 수정 중 추가 이미지 업로드
+  const handleEditFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setIsUploadingEditImage(true)
+    setEditOptimizationSummary('사진 해상도 및 용량 자동 최적화 중...')
+
+    try {
+      const optimized = await optimizeMultipleImages(files, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
+      })
+
+      const totalOrig = optimized.reduce((s, it) => s + it.originalSize, 0)
+      const totalComp = optimized.reduce((s, it) => s + it.compressedSize, 0)
+      const ratio = totalOrig > 0 ? Math.round((1 - totalComp / totalOrig) * 100) : 0
+      setEditOptimizationSummary(
+        `✨ ${optimized.length}장 최적화 완료: ${formatBytes(totalOrig)} ➡️ ${formatBytes(totalComp)} (${ratio}% 경량화)`
+      )
+
+      const formData = new FormData()
+      formData.append('type', 'posts')
+      optimized.forEach((opt) => {
+        formData.append('images[]', opt.file)
+      })
+
+      let res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      if (!res.ok) {
+        res = await fetch('/api/posts.php', { method: 'POST', body: formData })
+      }
+
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success) {
+          const uploadedUrls: string[] = json.image_urls || (json.image_url ? [json.image_url] : [])
+          if (uploadedUrls.length > 0) {
+            setEditImageUrls((prev) => [...prev, ...uploadedUrls])
+            if (!editPrimaryImageUrl) {
+              setEditPrimaryImageUrl(uploadedUrls[0])
+            }
+            showToast(`📸 ${uploadedUrls.length}장의 사진이 추가되었습니다.`)
+          }
+        } else {
+          alert(json.error || '사진 업로드 실패')
+        }
+      } else {
+        alert('서버 업로드에 실패했습니다. (HTTP ' + res.status + ')')
+      }
+    } catch (err: any) {
+      console.error(err)
+      alert('사진 최적화 중 오류가 발생했습니다: ' + (err?.message || err))
+    } finally {
+      setIsUploadingEditImage(false)
+      if (editFileInputRef.current) editFileInputRef.current.value = ''
+    }
+  }
+
+  // ✏️ 수정 중 대표 사진 설정
+  const handleSetEditPrimaryPhoto = (url: string) => {
+    setEditPrimaryImageUrl(url)
+    showToast('★ 대표 썸네일로 설정되었습니다.')
+  }
+
+  // ✏️ 수정 중 사진 삭제
+  const handleRemoveEditPhotoItem = (index: number) => {
+    const target = editImageUrls[index]
+    const nextList = editImageUrls.filter((_, i) => i !== index)
+    setEditImageUrls(nextList)
+    if (editPrimaryImageUrl === target) {
+      setEditPrimaryImageUrl(nextList[0] || '')
+    }
+  }
+
+  // ✏️ 사진첩 게시글 수정 저장
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingPost) return
+
+    if (!editTitle.trim() || !editDesc.trim()) {
+      alert('사진 제목과 사역 스토리를 모두 입력해 주세요.')
+      return
+    }
+
+    if (editImageUrls.length === 0 && !editPrimaryImageUrl) {
+      alert('최소 1장 이상의 사진을 유지해 주세요.')
+      return
+    }
+
+    setIsEditSubmitting(true)
+    showToast('사진첩 수정 및 다국어 번역 반영 중...')
+
+    let titles: Record<string, string> = {}
+    try {
+      titles = await translateTitleTo15Languages(editTitle.trim())
+    } catch (err) {
+      console.warn('Title translation warning on edit:', err)
+    }
+
+    const parsedTags = editTags
+      .split(',')
+      .map((t) => t.trim().replace(/^#/, ''))
+      .filter(Boolean)
+
+    const allImages = editImageUrls.length > 0 ? editImageUrls : [editPrimaryImageUrl]
+    const primaryImg = editPrimaryImageUrl || allImages[0] || ''
+
+    const prevExtra = parseExtra(editingPost)
+    const extraData = {
+      ...prevExtra,
+      tags: parsedTags,
+      images: allImages,
+      titles: { ...(prevExtra.titles || {}), ...titles },
+    }
+
+    try {
+      const res = await fetch('/api/posts.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          id: editingPost.id,
+          title: editTitle.trim(),
+          content: editDesc.trim(),
+          image_url: primaryImg,
+          extra_json: JSON.stringify(extraData),
+        }),
+      })
+
+      if (res.ok) {
+        showToast('🎉 사진첩 게시글이 성공적으로 수정되었습니다!')
+        const updatedPost: HistoryPhotoPost = {
+          ...editingPost,
+          title: editTitle.trim(),
+          content: editDesc.trim(),
+          image_url: primaryImg,
+          extra_json: JSON.stringify(extraData),
+        }
+
+        setPosts((prev) =>
+          prev.map((p) => (p.id === editingPost.id ? updatedPost : p))
+        )
+
+        if (activeLightbox?.id === editingPost.id) {
+          setActiveLightbox(updatedPost)
+        }
+
+        setIsEditModalOpen(false)
+        setEditingPost(null)
+      } else {
+        const data = await res.json()
+        alert(data.error || '수정 중 오류가 발생했습니다.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('네트워크 오류가 발생했습니다.')
+    } finally {
+      setIsEditSubmitting(false)
     }
   }
 
@@ -758,6 +956,38 @@ export default function HistoryPhotoBoard() {
                         <Share2 size={13} className="text-emerald-600" />
                         <span className="hidden sm:inline">WhatsApp 공유</span>
                       </button>
+
+                      {(() => {
+                        const isAuthorCard = Boolean(
+                          currentUser && (
+                            (item.author_id && currentUser.id === item.author_id) ||
+                            (currentUser.name && item.author_name && currentUser.name === item.author_name)
+                          )
+                        )
+                        const canEditCard =
+                          isAuthorCard ||
+                          currentLevel >= 3 ||
+                          currentUser?.role === 'super_admin' ||
+                          currentUser?.role === 'country_admin' ||
+                          currentUser?.role === 'developer' ||
+                          currentLevel >= 4
+
+                        if (!canEditCard) return null
+                        return (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenEdit(item)
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+                            title="수정"
+                          >
+                            <Edit2 size={12} />
+                            <span>수정</span>
+                          </button>
+                        )
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -979,9 +1209,27 @@ export default function HistoryPhotoBoard() {
         const dateStr = extra.date || (activeLightbox.created_at ? activeLightbox.created_at.substring(0, 10) : '')
         const tags: string[] = Array.isArray(extra.tags) ? extra.tags : []
 
+        const isAuthor = Boolean(
+          currentUser && (
+            (activeLightbox.author_id && currentUser.id === activeLightbox.author_id) ||
+            (currentUser.name && activeLightbox.author_name && currentUser.name === activeLightbox.author_name)
+          )
+        )
+        const canEdit =
+          isAuthor ||
+          currentLevel >= 3 ||
+          currentUser?.role === 'super_admin' ||
+          currentUser?.role === 'country_admin' ||
+          currentUser?.role === 'developer' ||
+          currentLevel >= 4
+
         const canDelete =
-          currentLevel >= 4 ||
-          (currentUser && currentUser.id === activeLightbox.author_id)
+          isAuthor ||
+          currentLevel >= 3 ||
+          currentUser?.role === 'super_admin' ||
+          currentUser?.role === 'country_admin' ||
+          currentUser?.role === 'developer' ||
+          currentLevel >= 4
 
         return (
           <div
@@ -1136,7 +1384,7 @@ export default function HistoryPhotoBoard() {
                   </div>
                 </div>
 
-                {/* 하단 바: 좋아요 & 공유 & 삭제 */}
+                {/* 하단 바: 좋아요 & 공유 & 수정 & 삭제 */}
                 <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <button
@@ -1158,22 +1406,251 @@ export default function HistoryPhotoBoard() {
                     </button>
                   </div>
 
-                  {canDelete && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePost(activeLightbox.id)}
-                      className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-500 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={13} />
-                      <span>삭제</span>
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(activeLightbox)}
+                        className="px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="수정"
+                      >
+                        <Edit2 size={13} />
+                        <span>수정</span>
+                      </button>
+                    )}
+
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePost(activeLightbox.id)}
+                        className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-500 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        title="삭제"
+                      >
+                        <Trash2 size={13} />
+                        <span>삭제</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )
       })()}
+
+      {/* =========================================================================
+          6. ✏️ 역사와 교회 사진첩 수정 모달 (15개국 자동 재번역 및 다중 사진 관리)
+         ========================================================================= */}
+      {isEditModalOpen && editingPost && (
+        <div
+          onClick={() => {
+            if (!isEditSubmitting) {
+              setIsEditModalOpen(false)
+              setEditingPost(null)
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+              <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                <Pencil className="text-purple-600" size={18} />
+                <span>역사와 교회 사진 수정</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-mono">
+                  #{editingPost.id}
+                </span>
+              </h3>
+              <button
+                type="button"
+                disabled={isEditSubmitting}
+                onClick={() => {
+                  setIsEditModalOpen(false)
+                  setEditingPost(null)
+                }}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 rounded-2xl bg-purple-50/80 border border-purple-100 text-xs text-purple-800 flex items-center gap-2">
+              <Sparkles className="shrink-0 text-purple-600" size={16} />
+              <span>수정 완료 시 제목이 15개국 언어로 자동 재번역되어 전 세계에 반영됩니다.</span>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              {/* 1) 사진 제목 * */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">사진 제목 *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="사진 제목을 입력하세요"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                />
+              </div>
+
+              {/* 2) 사역 사진 첨부 및 관리 */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-gray-700">
+                    사역 사진 첨부 및 관리 ({editImageUrls.length}장)
+                  </label>
+                  <span className="text-[11px] text-purple-700 font-bold">
+                    대표 사진 선택 가능
+                  </span>
+                </div>
+
+                <input
+                  type="file"
+                  ref={editFileInputRef}
+                  onChange={handleEditFileUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+
+                <div className="mb-3">
+                  <button
+                    type="button"
+                    onClick={() => editFileInputRef.current?.click()}
+                    disabled={isUploadingEditImage}
+                    className="w-full py-3 px-4 bg-purple-50 hover:bg-purple-100 text-purple-700 border-2 border-dashed border-purple-200 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                  >
+                    <Upload size={15} />
+                    <span>
+                      {isUploadingEditImage
+                        ? '고화질 최적화 및 업로드 중...'
+                        : '📷 사진 추가하기 (자동 리사이즈)'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* 최적화 요약 안내 */}
+                {editOptimizationSummary && (
+                  <div className="mb-3 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                    <Sparkles size={14} className="text-emerald-600 shrink-0" />
+                    <span>{editOptimizationSummary}</span>
+                  </div>
+                )}
+
+                {/* 다중 이미지 미리보기 그리드 */}
+                {editImageUrls.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-52 overflow-y-auto p-2 bg-gray-50/80 rounded-2xl border border-gray-200">
+                      {editImageUrls.map((url, idx) => {
+                        const isPrimary = editPrimaryImageUrl === url || (!editPrimaryImageUrl && idx === 0)
+                        return (
+                          <div
+                            key={idx}
+                            className={`group relative h-24 rounded-xl overflow-hidden border-2 transition-all ${
+                              isPrimary
+                                ? 'border-purple-600 shadow-md ring-2 ring-purple-400/30'
+                                : 'border-gray-200 hover:border-purple-300'
+                            }`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt={`사진 ${idx + 1}`} className="w-full h-full object-cover" />
+
+                            {isPrimary ? (
+                              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-purple-600 text-white rounded text-[9px] font-black shadow-xs">
+                                ★ 대표
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSetEditPrimaryPhoto(url)}
+                                className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 hover:bg-purple-600 text-white rounded text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              >
+                                대표로
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEditPhotoItem(idx)}
+                              className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-full transition-colors cursor-pointer"
+                              title="이 사진 삭제"
+                            >
+                              <X size={11} />
+                            </button>
+
+                            <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] text-center py-0.5 backdrop-blur-2xs">
+                              사진 {idx + 1}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 3) 태그 (쉼표로 구분) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">태그 (쉼표로 구분)</label>
+                <input
+                  type="text"
+                  value={editTags}
+                  onChange={(e) => setEditTags(e.target.value)}
+                  placeholder="예: 평화역사, 아나뱁티스트, 메노나이트"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* 4) 사역 스토리 / 설명 * */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">사역 스토리 / 설명 *</label>
+                <textarea
+                  required
+                  rows={5}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  placeholder="사역 현장의 은혜로운 이야기와 역사적 의미를 기록해 주세요..."
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 leading-relaxed"
+                />
+              </div>
+
+              {/* 버튼 바 */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  disabled={isEditSubmitting}
+                  onClick={() => {
+                    setIsEditModalOpen(false)
+                    setEditingPost(null)
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer disabled:opacity-50"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditSubmitting}
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isEditSubmitting ? (
+                    <>
+                      <RefreshCw className="animate-spin" size={13} />
+                      <span>수정 및 다국어 번역 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={13} />
+                      <span>수정 완료</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

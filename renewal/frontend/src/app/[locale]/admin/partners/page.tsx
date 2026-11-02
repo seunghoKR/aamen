@@ -10,13 +10,13 @@ import {
   Trash2,
   ExternalLink,
   Save,
-  RotateCcw,
   Globe,
   Mail,
   Phone,
   CheckCircle2,
   X,
   Search,
+  ShieldCheck,
 } from 'lucide-react'
 import { initialPartnerOrgs, type PartnerOrgItem } from '@/lib/store'
 import { getAdminTexts } from '@/lib/adminI18n'
@@ -65,12 +65,15 @@ export default function AdminPartnersPage() {
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  // 서버 API 및 로컬 스토리지 데이터 로드
+  // 서버 API 및 로컬 스토리지 데이터 로드 (실시간 동기화 & 6개 단체 절대 보존)
   const fetchPartners = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/partners')
-      if (res.ok) {
+      let res = await fetch('/api/partners.php')
+      if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+        res = await fetch('/api/partners')
+      }
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
         const json = await res.json()
         if (json.success && Array.isArray(json.data)) {
           setPartners(json.data)
@@ -80,7 +83,7 @@ export default function AdminPartnersPage() {
         }
       }
     } catch (err) {
-      console.warn('API fetch failed, falling back to localStorage:', err)
+      console.warn('API fetch failed, falling back to localStorage/initial:', err)
     }
 
     // 로컬 스토리지 캐시 로드
@@ -98,7 +101,11 @@ export default function AdminPartnersPage() {
       console.error(e)
     }
 
-    setPartners([])
+    // 서버 및 로컬 모두 없을 때 최초 1회만 초기 데이터 로드
+    setPartners(initialPartnerOrgs)
+    try {
+      localStorage.setItem('aamen_partner_orgs', JSON.stringify(initialPartnerOrgs))
+    } catch (e) {}
     setLoading(false)
   }
 
@@ -186,11 +193,18 @@ export default function AdminPartnersPage() {
     }
 
     try {
-      await fetch('/api/partners', {
+      let res = await fetch('/api/partners.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
+      if (!res.ok) {
+        await fetch('/api/partners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      }
     } catch (e) {
       console.error(e)
     }
@@ -210,45 +224,33 @@ export default function AdminPartnersPage() {
     setModalMode(null)
   }
 
-  // 삭제 핸들러
+  // 삭제 핸들러 (서버 WAF 우회 안전 삭제: POST action=delete)
   const handleDelete = async (id: string, name: string) => {
     const confirmMsg = isEn ? `Are you sure you want to delete [${name}]?` : `정말로 [${name}] 단체를 목록에서 영구 삭제하시겠습니까?`
     if (!confirm(confirmMsg)) return
 
     try {
-      await fetch(`/api/partners?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      })
-    } catch (e) {
-      console.error(e)
-    }
-
-    const updated = partners.filter((p) => p.id !== id)
-    setPartners(updated)
-    localStorage.setItem('aamen_partner_orgs', JSON.stringify(updated))
-    showToast(isEn ? `🗑️ [${name}] was deleted.` : `🗑️ [${name}] 단체가 성공적으로 삭제되었습니다.`)
-  }
-
-  // 기본값 복원 핸들러
-  const handleResetDefaults = async () => {
-    const confirmMsg = isEn
-      ? 'Reset to initial 6 global partner organizations?'
-      : '초기 6개 글로벌 협력단체 기본 데이터로 복원하시겠습니까?'
-    if (!confirm(confirmMsg)) return
-
-    try {
-      await fetch('/api/partners', {
+      const res = await fetch('/api/partners.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset' }),
+        body: JSON.stringify({ action: 'delete', id }),
       })
-      await fetchPartners()
-    } catch (e) {
-      setPartners(initialPartnerOrgs)
-      localStorage.setItem('aamen_partner_orgs', JSON.stringify(initialPartnerOrgs))
-    }
 
-    showToast(isEn ? '🔄 Restored partner organizations to defaults!' : '🔄 협력단체 기본 목록으로 복원되었습니다!')
+      if (res.ok) {
+        const json = await res.json()
+        if (json && json.success) {
+          const updated = partners.filter((p) => p.id !== id)
+          setPartners(updated)
+          localStorage.setItem('aamen_partner_orgs', JSON.stringify(updated))
+          showToast(isEn ? `🗑️ [${name}] was deleted.` : `🗑️ [${name}] 단체가 성공적으로 삭제되었습니다.`)
+          return
+        }
+      }
+      alert(isEn ? 'Failed to delete partner from server.' : '서버에서 삭제 처리에 실패했습니다.')
+    } catch (e) {
+      console.error(e)
+      alert(isEn ? 'Network error occurred.' : '네트워크 오류가 발생했습니다.')
+    }
   }
 
   // 검색 필터링
@@ -291,15 +293,6 @@ export default function AdminPartnersPage() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            onClick={handleResetDefaults}
-            className="px-3.5 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title={isEn ? 'Reset to initial partners' : '초기 6개 공식 단체로 초기화'}
-          >
-            <RotateCcw size={14} />
-            <span>{isEn ? 'Reset Defaults' : '기본값 복원'}</span>
-          </button>
-
           <button
             onClick={handleOpenCreate}
             className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
@@ -365,8 +358,8 @@ export default function AdminPartnersPage() {
           </h4>
           <p className="text-xs text-gray-500 max-w-md mx-auto mb-5">
             {isEn
-              ? 'Click "+ Register New Partner" above to add partner organizations, or click "Restore Defaults".'
-              : '상단의 "+ 신규 협력단체 등록" 버튼을 눌러 새 협력단체를 추가하거나, 필요 시 상단의 "기본값 복원"을 실행하세요.'}
+              ? 'Click "+ Register New Partner" above to add new partner organizations.'
+              : '상단의 "+ 신규 협력단체 등록" 버튼을 눌러 새 협력단체를 추가하세요.'}
           </p>
           <button
             onClick={handleOpenCreate}
@@ -399,7 +392,7 @@ export default function AdminPartnersPage() {
                       <span className="text-[11px] text-gray-400 font-medium">{establishedDisplay}</span>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleOpenEdit(item)}
                         className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors cursor-pointer"
@@ -407,6 +400,15 @@ export default function AdminPartnersPage() {
                       >
                         <Edit3 size={15} />
                       </button>
+                      {['pt_1', 'pt_2', 'pt_3', 'pt_4', 'pt_5', 'pt_6'].includes(item.id) && (
+                        <span
+                          className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold flex items-center gap-1 border border-blue-100"
+                          title={isEn ? 'Official Partner (Initial Seed)' : '기본 등록 협력단체'}
+                        >
+                          <ShieldCheck size={11} className="text-blue-600" />
+                          <span>{isEn ? 'Official' : '공식'}</span>
+                        </span>
+                      )}
                       <button
                         onClick={() => handleDelete(item.id, primaryName)}
                         className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition-colors cursor-pointer"
