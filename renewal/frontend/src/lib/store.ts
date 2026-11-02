@@ -232,7 +232,7 @@ export const defaultBanners: BannerConfig[] = [
   {
     id: 'banner_01',
     type: 'image',
-    title: '아시아 15개국을 잇는 평화와 교육의 공동체',
+    title: '아시아 아나벱티스트/메노나이트를 잇는 평화와 교육의 공동체',
     subtitle: '언어와 국경을 넘어 그리스도의 비폭력 평화와 제자도를 함께 배웁니다',
     badgeText: 'AAMEN GLOBAL NETWORK',
     imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80',
@@ -635,6 +635,7 @@ export interface PartnerOrgItem {
   nameEn: string
   category: string
   websiteUrl: string
+  logoUrl?: string
   descKo: string
   descEn: string
   headquarters: string

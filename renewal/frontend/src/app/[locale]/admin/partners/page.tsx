@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import {
@@ -17,6 +17,7 @@ import {
   X,
   Search,
   ShieldCheck,
+  Upload,
 } from 'lucide-react'
 import { initialPartnerOrgs, type PartnerOrgItem } from '@/lib/store'
 import { getAdminTexts } from '@/lib/adminI18n'
@@ -45,6 +46,8 @@ export default function AdminPartnersPage() {
   // 모달 상태
   const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null)
   const [selectedPartner, setSelectedPartner] = useState<PartnerOrgItem | null>(null)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 폼 입력 상태
   const [formState, setFormState] = useState<Omit<PartnerOrgItem, 'id'>>({
@@ -52,6 +55,7 @@ export default function AdminPartnersPage() {
     nameEn: '',
     category: '국제기구',
     websiteUrl: '',
+    logoUrl: '',
     headquarters: '',
     established: '',
     contactEmail: '',
@@ -59,6 +63,41 @@ export default function AdminPartnersPage() {
     descKo: '',
     descEn: '',
   })
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setIsUploadingLogo(true)
+      const formData = new FormData()
+      formData.append('type', 'banners')
+      formData.append('image', file)
+
+      let res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      if (!res.ok) {
+        res = await fetch('/api/upload', { method: 'POST', body: formData })
+      }
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && (data.image_url || data.file_url)) {
+          const url = data.image_url || data.file_url
+          setFormState((prev) => ({ ...prev, logoUrl: url }))
+          showToast(isEn ? '📸 Logo image uploaded successfully!' : '📸 로고 이미지가 업로드되었습니다!')
+        } else {
+          alert(isEn ? 'Failed to upload image.' : '이미지 업로드에 실패했습니다.')
+        }
+      } else {
+        alert(isEn ? 'Server upload error.' : '서버 업로드 오류가 발생했습니다.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert(isEn ? 'Upload failed.' : '업로드 중 오류가 발생했습니다.')
+    } finally {
+      setIsUploadingLogo(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const showToast = (msg: string) => {
     setToastMessage(msg)
@@ -122,6 +161,7 @@ export default function AdminPartnersPage() {
       nameEn: '',
       category: '국제기구',
       websiteUrl: 'https://',
+      logoUrl: '',
       headquarters: '',
       established: isEn ? `${new Date().getFullYear()}` : `${new Date().getFullYear()}년`,
       contactEmail: '',
@@ -140,6 +180,7 @@ export default function AdminPartnersPage() {
       nameEn: item.nameEn,
       category: item.category,
       websiteUrl: item.websiteUrl,
+      logoUrl: item.logoUrl || '',
       headquarters: item.headquarters,
       established: item.established,
       contactEmail: item.contactEmail,
@@ -167,6 +208,7 @@ export default function AdminPartnersPage() {
         nameEn: formState.nameEn.trim() || formState.nameKo.trim(),
         category: formState.category,
         websiteUrl: formState.websiteUrl.trim() || 'https://aamen.net',
+        logoUrl: formState.logoUrl?.trim() || '',
         headquarters: formState.headquarters.trim() || 'Asia',
         established: formState.established.trim() || '2026',
         contactEmail: formState.contactEmail.trim(),
@@ -181,6 +223,7 @@ export default function AdminPartnersPage() {
         nameEn: formState.nameEn.trim() || formState.nameKo.trim(),
         category: formState.category,
         websiteUrl: formState.websiteUrl.trim(),
+        logoUrl: formState.logoUrl?.trim() || '',
         headquarters: formState.headquarters.trim(),
         established: formState.established.trim(),
         contactEmail: formState.contactEmail.trim(),
@@ -419,13 +462,30 @@ export default function AdminPartnersPage() {
                     </div>
                   </div>
 
-                  {/* 단체명 (한/영) */}
-                  <h3 className="text-lg font-black text-gray-900 leading-snug mb-0.5">
-                    {primaryName}
-                  </h3>
-                  <p className="text-xs font-semibold text-gray-500 font-mono mb-3">
-                    {secondaryName}
-                  </p>
+                  {/* 단체 로고 & 단체명 (한/영) */}
+                  <div className="flex items-start gap-3.5 mb-3">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-gray-200/90 p-1 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                      {item.logoUrl ? (
+                        <img
+                          src={item.logoUrl}
+                          alt={primaryName}
+                          className="w-full h-full object-contain rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                          <Building2 size={24} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-black text-gray-900 leading-snug mb-0.5 truncate">
+                        {primaryName}
+                      </h3>
+                      <p className="text-xs font-semibold text-gray-500 font-mono truncate">
+                        {secondaryName}
+                      </p>
+                    </div>
+                  </div>
 
                   {/* 소개글 미리보기 */}
                   <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 mb-3 space-y-1.5">
@@ -530,6 +590,88 @@ export default function AdminPartnersPage() {
                     placeholder={isEn ? 'e.g. Mennonite World Conference' : '예: Mennonite World Conference'}
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
                   />
+                </div>
+              </div>
+
+              {/* 단체 로고 (이미지 업로드 및 URL 입력) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                  <span>{isEn ? '🏢 Organization Logo' : '🏢 단체 공식 로고'}</span>
+                  <span className="text-[11px] text-gray-400 font-normal">
+                    {isEn ? 'PNG, JPG, WEBP, SVG supported' : 'PNG, JPG, WEBP, SVG 이미지 지원'}
+                  </span>
+                </label>
+
+                <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
+                  {/* 로고 미리보기 */}
+                  <div className="w-16 h-16 rounded-xl bg-white border border-gray-200 p-1 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden relative group">
+                    {formState.logoUrl ? (
+                      <>
+                        <img
+                          src={formState.logoUrl}
+                          alt="Logo Preview"
+                          className="w-full h-full object-contain rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormState({ ...formState, logoUrl: '' })}
+                          className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-lg"
+                          title={isEn ? 'Remove Logo' : '로고 제거'}
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="w-full h-full rounded-lg bg-gray-100 text-gray-400 flex flex-col items-center justify-center">
+                        <Building2 size={24} />
+                        <span className="text-[8px] mt-0.5 font-bold">NO LOGO</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 로고 업로드 버튼 및 직접 URL 입력 */}
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        id="partner-logo-file"
+                      />
+                      <button
+                        type="button"
+                        disabled={isUploadingLogo}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <Upload size={13} />
+                        <span>
+                          {isUploadingLogo
+                            ? (isEn ? 'Uploading...' : '업로드 중...')
+                            : (isEn ? 'Upload Image' : '로고 파일 업로드')}
+                        </span>
+                      </button>
+                      {formState.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFormState({ ...formState, logoUrl: '' })}
+                          className="px-2.5 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-100 text-gray-500 text-xs font-semibold transition-colors cursor-pointer"
+                        >
+                          {isEn ? 'Reset' : '삭제'}
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      value={formState.logoUrl || ''}
+                      onChange={(e) => setFormState({ ...formState, logoUrl: e.target.value })}
+                      placeholder={isEn ? 'Or enter image URL (https://...)' : '또는 로고 이미지 URL 직접 입력 (https://...)'}
+                      className="w-full px-3 py-1.5 text-xs rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 

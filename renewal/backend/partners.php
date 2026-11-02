@@ -16,6 +16,7 @@ try {
         name_en VARCHAR(200) NOT NULL,
         category VARCHAR(100) DEFAULT '국제기구',
         website_url VARCHAR(500) DEFAULT 'https://aamen.net',
+        logo_url VARCHAR(500) DEFAULT NULL,
         headquarters VARCHAR(200) DEFAULT 'Asia',
         established VARCHAR(50) DEFAULT '2026',
         contact_email VARCHAR(200) DEFAULT NULL,
@@ -27,6 +28,8 @@ try {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_partners_order (display_order ASC, created_at ASC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    $pdo->exec("ALTER TABLE partners ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500) DEFAULT NULL AFTER website_url;");
 } catch (\Exception $e) {}
 
 // 초기 6개 협력단체 기본 데이터
@@ -165,6 +168,8 @@ if ($method === 'GET') {
             'category' => $r['category'],
             'websiteUrl' => $r['website_url'],
             'website_url' => $r['website_url'],
+            'logoUrl' => $r['logo_url'] ?? '',
+            'logo_url' => $r['logo_url'] ?? '',
             'headquarters' => $r['headquarters'],
             'established' => $r['established'],
             'contactEmail' => $r['contact_email'] ?? '',
@@ -216,6 +221,7 @@ if ($method === 'GET') {
     $pid = $id ?: ('pt_' . time() . '_' . substr(bin2hex(random_bytes(3)), 0, 4));
     $category = $input['category'] ?? '국제기구';
     $websiteUrl = $input['websiteUrl'] ?? $input['website_url'] ?? 'https://aamen.net';
+    $logoUrl = trim($input['logoUrl'] ?? $input['logo_url'] ?? '');
     $headquarters = $input['headquarters'] ?? 'Asia';
     $established = $input['established'] ?? '2026';
     $contactEmail = $input['contactEmail'] ?? $input['contact_email'] ?? '';
@@ -224,9 +230,9 @@ if ($method === 'GET') {
     $descEn = $input['descEn'] ?? $input['desc_en'] ?? '';
     $displayOrder = isset($input['display_order']) ? (int)$input['display_order'] : 1;
 
-    $stmt = $pdo->prepare("REPLACE INTO partners (id, name_ko, name_en, category, website_url, headquarters, established, contact_email, phone, desc_ko, desc_en, display_order, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+    $stmt = $pdo->prepare("REPLACE INTO partners (id, name_ko, name_en, category, website_url, logo_url, headquarters, established, contact_email, phone, desc_ko, desc_en, display_order, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
     $stmt->execute([
-        $pid, $nameKo, $nameEn, $category, $websiteUrl, $headquarters,
+        $pid, $nameKo, $nameEn, $category, $websiteUrl, $logoUrl, $headquarters,
         $established, $contactEmail, $phone, $descKo, $descEn, $displayOrder
     ]);
 
