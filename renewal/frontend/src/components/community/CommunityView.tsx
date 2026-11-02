@@ -161,6 +161,8 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
   // 상세 모달 & 글쓰기 모달들
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
+  const [selectedResource, setSelectedResource] = useState<Post | null>(null)
+  const [expandedResourceIds, setExpandedResourceIds] = useState<Record<string, boolean>>({})
   const [isDetailLoading, setIsDetailLoading] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -172,6 +174,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [editContent, setEditContent] = useState('')
   const [editCategory, setEditCategory] = useState('')
   const [editImageUrl, setEditImageUrl] = useState('')
+  const [editFileUrl, setEditFileUrl] = useState('')
+  const [editFileName, setEditFileName] = useState('')
+  const [editFileSize, setEditFileSize] = useState('')
+  const [editFileType, setEditFileType] = useState('')
+  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false)
+  const [isUploadingEditFile, setIsUploadingEditFile] = useState(false)
+  const editImageInputRef = useRef<HTMLInputElement>(null)
+  const editFileInputRef = useRef<HTMLInputElement>(null)
   const [isEditSubmitting, setIsEditSubmitting] = useState(false)
 
   // 📢 공지사항 등록 모달 상태 (이미지 및 일반 파일 첨부 지원)
@@ -390,6 +400,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         showToast(t.delete_success_toast)
         setPosts((prev) => prev.filter((p) => p.id !== postId))
         if (selectedPost?.id === postId) setSelectedPost(null)
+        if (selectedResource?.id === postId) setSelectedResource(null)
         if (activeLightbox?.id === postId) setActiveLightbox(null)
       } else {
         showToast('게시물 삭제 중 오류가 발생했습니다.')
@@ -406,8 +417,88 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     setEditTitle(post.title)
     setEditContent(post.content)
     setEditCategory(post.category || '')
-    setEditImageUrl(post.image_url || '')
+    const extra = parseExtra(post)
+    setEditImageUrl(post.image_url || extra.image_url || '')
+    setEditFileUrl(extra.fileUrl && extra.fileUrl !== '#' ? extra.fileUrl : '')
+    setEditFileName(extra.fileName || '')
+    setEditFileSize(extra.fileSize || '')
+    setEditFileType(extra.fileType || '')
     setIsEditModalOpen(true)
+  }
+
+  // 📸 수정 모달 이미지 업로드 핸들러
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingEditImage(true)
+    try {
+      const optimized = await optimizeImage(file, { maxWidth: 1600, quality: 0.85 })
+      const formData = new FormData()
+      formData.append('type', editingPost?.board_type === 'announce' ? 'notices' : 'posts')
+      formData.append('image', optimized.file)
+
+      let res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      if (!res.ok) {
+        res = await fetch('/api/posts.php', { method: 'POST', body: formData })
+      }
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && (json.image_url || json.file_url)) {
+          setEditImageUrl(json.image_url || json.file_url)
+          showToast('📸 이미지가 성공적으로 변경되었습니다.')
+        } else {
+          alert(json.error || '이미지 업로드 실패')
+        }
+      } else {
+        alert('서버 업로드 오류가 발생했습니다.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('이미지 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setIsUploadingEditImage(false)
+      if (editImageInputRef.current) editImageInputRef.current.value = ''
+    }
+  }
+
+  // 📎 수정 모달 일반 파일 첨부 업로드 핸들러
+  const handleEditFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingEditFile(true)
+    try {
+      const formData = new FormData()
+      formData.append('type', editingPost?.board_type === 'resources' ? 'resources' : 'notices')
+      formData.append('file', file)
+
+      let res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      if (!res.ok) {
+        res = await fetch('/api/posts.php', { method: 'POST', body: formData })
+      }
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && (json.file_url || json.image_url)) {
+          setEditFileUrl(json.file_url || json.image_url)
+          setEditFileName(json.name || json.file_name || file.name)
+          setEditFileSize(json.file_size || `${(file.size / (1024 * 1024)).toFixed(1)} MB`)
+          const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE'
+          setEditFileType(json.file_type || ext)
+          showToast(`📎 파일 [${file.name}] 첨부 완료!`)
+        } else {
+          alert(json.error || '파일 업로드 실패')
+        }
+      } else {
+        alert('서버 업로드 오류가 발생했습니다.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('파일 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setIsUploadingEditFile(false)
+      if (editFileInputRef.current) editFileInputRef.current.value = ''
+    }
   }
 
   // ✏️ 게시물 수정 저장 핸들러
@@ -437,6 +528,20 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     extraData.titles = titles
     if (editImageUrl.trim()) {
       extraData.image_url = editImageUrl.trim()
+    } else {
+      delete extraData.image_url
+    }
+
+    if (editFileUrl.trim()) {
+      extraData.fileUrl = editFileUrl.trim()
+      extraData.fileName = editFileName.trim()
+      extraData.fileSize = editFileSize.trim()
+      extraData.fileType = editFileType.trim()
+    } else {
+      delete extraData.fileUrl
+      delete extraData.fileName
+      delete extraData.fileSize
+      delete extraData.fileType
     }
 
     try {
@@ -480,6 +585,20 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         )
         if (selectedPost?.id === editingPost.id) {
           setSelectedPost((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  title: updatedTitle,
+                  content: updatedContent,
+                  category: updatedCategory,
+                  image_url: updatedImg,
+                  extra_json: updatedExtra,
+                }
+              : null
+          )
+        }
+        if (selectedResource?.id === editingPost.id) {
+          setSelectedResource((prev) =>
             prev
               ? {
                   ...prev,
@@ -1497,7 +1616,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     return (
                       <div
                         key={res.id}
-                        className="p-5 rounded-2xl bg-white border border-gray-200 hover:border-sky-300 hover:shadow-md transition-all flex flex-col justify-between"
+                        className="p-5 rounded-2xl bg-white border border-gray-200 hover:border-sky-300 hover:shadow-md transition-all flex flex-col justify-between group"
                       >
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-2">
@@ -1508,10 +1627,48 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               {langLabel} · {extra.fileType || 'PDF'}
                             </span>
                           </div>
-                          <h4 className="font-bold text-base text-gray-900 mb-1.5 leading-snug">
+                          <h4
+                            onClick={() => setSelectedResource(res)}
+                            className="font-bold text-base text-gray-900 mb-2 leading-snug hover:text-sky-600 cursor-pointer transition-colors"
+                          >
                             {getPostTitle(res, locale)}
                           </h4>
-                          <p className="text-xs text-gray-600 leading-relaxed mb-4 line-clamp-2">{res.content}</p>
+
+                          {/* 📖 자료 설명: 펼침(Accordion) 또는 기본 2줄 요약 */}
+                          {expandedResourceIds[res.id] ? (
+                            <div className="p-3.5 bg-sky-50/60 rounded-xl border border-sky-100 text-xs text-gray-700 leading-relaxed mb-3 max-h-64 overflow-y-auto">
+                              <RichTextRenderer content={res.content} />
+                            </div>
+                          ) : (
+                            <p
+                              onClick={() => setSelectedResource(res)}
+                              className="text-xs text-gray-600 leading-relaxed mb-3 line-clamp-2 cursor-pointer hover:text-gray-900 transition-colors"
+                            >
+                              {res.content.replace(/<[^>]*>?/gm, '')}
+                            </p>
+                          )}
+
+                          {/* 상세 보기 컨트롤: 인라인 펼치기/접기 + 팝업 상세보기 버튼 */}
+                          <div className="flex items-center gap-2 mb-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedResourceIds((prev) => ({ ...prev, [res.id]: !prev[res.id] }))
+                              }
+                              className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <span>{expandedResourceIds[res.id] ? '내용 접기 ▲' : '내용 펼치기 ▼'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedResource(res)}
+                              className="px-2.5 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-sky-700 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer border border-gray-100"
+                              title="팝업으로 크게 보기"
+                            >
+                              <ExternalLink size={11} />
+                              <span>상세 팝업</span>
+                            </button>
+                          </div>
                         </div>
 
                         <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
@@ -2095,6 +2252,146 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 </button>
                 <button
                   onClick={() => setSelectedPost(null)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📚 교육 및 예배 자료 상세 모달 */}
+      {selectedResource && (
+        <div
+          onClick={() => setSelectedResource(null)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[10px] font-extrabold">
+                    {resourceCategories.find((c) => c.id === selectedResource.category)?.label || selectedResource.category || '자료'}
+                  </span>
+                  <span className="text-[11px] font-mono font-bold text-gray-400">
+                    {countryFlags[parseExtra(selectedResource).lang || selectedResource.author_country] || parseExtra(selectedResource).lang || selectedResource.author_country || '통합'} · {parseExtra(selectedResource).fileType || 'PDF'}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-gray-900 mt-1 mb-1">
+                  {getPostTitle(selectedResource, locale)}
+                </h3>
+                <div className="text-xs text-gray-400">
+                  {selectedResource.author_name || 'AAMEN 운영본부'} · {selectedResource.created_at.substring(0, 10)}
+                </div>
+              </div>
+              <button onClick={() => setSelectedResource(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* 📥 자료 파일 다운로드 전용 박스 */}
+            {(() => {
+              const extra = parseExtra(selectedResource)
+              return (
+                <div className="mb-5 p-4 rounded-2xl bg-sky-50/80 border border-sky-200 flex items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <FolderOpen size={20} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-sky-950 truncate">
+                        {extra.fileName || selectedResource.title}
+                      </div>
+                      <div className="text-[11px] text-sky-700 font-mono mt-0.5">
+                        형식: {extra.fileType || 'PDF'} {extra.fileSize ? `· 용량: ${extra.fileSize}` : ''}
+                      </div>
+                    </div>
+                  </div>
+                  {extra.fileUrl && extra.fileUrl !== '#' ? (
+                    <a
+                      href={extra.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      download
+                      className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <Download size={14} />
+                      <span>다운로드</span>
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => alert(`[${selectedResource.title}] 파일이 준비 중입니다.`)}
+                      className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <Download size={14} />
+                      <span>다운로드</span>
+                    </button>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* 📖 자료 상세 설명 (에디터 서식 반영 렌더러) */}
+            <div className="py-4 border-t border-b border-gray-100 mb-5">
+              <div className="text-xs font-bold text-gray-400 mb-2.5 flex items-center gap-1">
+                <FileText size={13} />
+                <span>자료 상세 안내 및 활용법</span>
+              </div>
+              <div className="text-sm text-gray-700 leading-relaxed">
+                <RichTextRenderer content={selectedResource.content} />
+              </div>
+            </div>
+
+            {/* 하단 버튼 바 */}
+            <div className="flex justify-between items-center gap-2">
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const currentUser = getStoredUser()
+                  const isAuthor = Boolean(selectedResource.author_id && currentUser?.id && selectedResource.author_id === currentUser.id)
+                  const canEdit = isAuthor || isLeaderOrAdmin
+                  if (!canEdit) return null
+                  return (
+                    <>
+                      <button
+                        onClick={() => {
+                          const item = selectedResource
+                          setSelectedResource(null)
+                          handleOpenEdit(item)
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Edit2 size={13} />
+                        <span>{t.btn_edit}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const item = selectedResource
+                          setSelectedResource(null)
+                          handleDeletePost(item.id, item.title)
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        {t.btn_delete}
+                      </button>
+                    </>
+                  )
+                })()}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => shareViaWhatsApp(getPostTitle(selectedResource, locale), `[AAMEN 자료실] ${selectedResource.title}`)}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Share2 size={13} />
+                  <span>WhatsApp 공유</span>
+                </button>
+                <button
+                  onClick={() => setSelectedResource(null)}
                   className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
                 >
                   닫기
@@ -2705,17 +3002,190 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 />
               </div>
 
-              {editingPost.image_url && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">이미지 / 파일 URL</label>
-                  <input
-                    type="text"
-                    value={editImageUrl}
-                    onChange={(e) => setEditImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
-                  />
-                </div>
+              {/* 📚 자료 수정인 경우: 카테고리 & 자료 파일 수정 */}
+              {editingPost.board_type === 'resources' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">자료 분류</label>
+                    <select
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value)}
+                      className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold"
+                    >
+                      <option value="curriculum">커리큘럼</option>
+                      <option value="education">교육자료</option>
+                      <option value="worship">예배자료</option>
+                      <option value="praise">찬양자료</option>
+                      <option value="books">서적/팜플렛</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
+                      <span>자료 파일 첨부 / 변경</span>
+                      <span className="text-[11px] text-gray-400 font-normal">PDF, HWP, DOCX, PPTX, ZIP 등</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editFileUrl}
+                        onChange={(e) => setEditFileUrl(e.target.value)}
+                        placeholder="https://... 또는 우측 파일 선택"
+                        className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
+                      />
+                      <input
+                        type="file"
+                        ref={editFileInputRef}
+                        onChange={handleEditFileUpload}
+                        accept=".pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => editFileInputRef.current?.click()}
+                        disabled={isUploadingEditFile}
+                        className="px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                      >
+                        <Upload size={13} />
+                        <span>{isUploadingEditFile ? '업로드 중...' : '파일 선택'}</span>
+                      </button>
+                    </div>
+                    {editFileName && (
+                      <div className="mt-2 p-2.5 bg-sky-50/70 rounded-xl border border-sky-200 flex items-center justify-between text-xs text-sky-900">
+                        <span className="font-bold flex items-center gap-1.5 truncate">
+                          <FileText size={14} className="shrink-0 text-sky-600" />
+                          <span className="truncate">{editFileName}</span>
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <span className="text-[11px] font-mono text-sky-600">
+                            {editFileType} {editFileSize ? `· ${editFileSize}` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditFileUrl('')
+                              setEditFileName('')
+                              setEditFileSize('')
+                              setEditFileType('')
+                            }}
+                            className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer"
+                            title="파일 제거"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* 📢 공지사항 및 일반 게시물 수정인 경우: 이미지 및 파일 첨부 수정 */}
+              {editingPost.board_type !== 'resources' && (
+                <>
+                  {/* 📸 대표 사진/포스터 수정 */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">포스터 / 대표 사진 (선택)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editImageUrl}
+                        onChange={(e) => setEditImageUrl(e.target.value)}
+                        placeholder="https://... 또는 우측 사진 첨부"
+                        className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                      />
+                      <input
+                        type="file"
+                        ref={editImageInputRef}
+                        onChange={handleEditImageUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => editImageInputRef.current?.click()}
+                        disabled={isUploadingEditImage}
+                        className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                      >
+                        <Upload size={13} />
+                        <span>{isUploadingEditImage ? '최적화 중...' : '사진 첨부'}</span>
+                      </button>
+                    </div>
+                    {editImageUrl && (
+                      <div className="relative mt-2 h-28 rounded-xl overflow-hidden bg-gray-100 border border-emerald-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={editImageUrl} alt="수정 이미지" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setEditImageUrl('')}
+                          className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80 cursor-pointer"
+                          title="사진 삭제"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 📎 일반 문서/파일 첨부 수정 */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
+                      <span>📎 공지 첨부 파일 (선택)</span>
+                      <span className="text-[11px] text-gray-400 font-normal">PDF, HWP, DOCX, XLSX, PPTX, ZIP 등</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editFileUrl}
+                        onChange={(e) => setEditFileUrl(e.target.value)}
+                        placeholder="https://... 또는 우측 파일 첨부"
+                        className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                      />
+                      <input
+                        type="file"
+                        ref={editFileInputRef}
+                        onChange={handleEditFileUpload}
+                        accept=".pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => editFileInputRef.current?.click()}
+                        disabled={isUploadingEditFile}
+                        className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                      >
+                        <Paperclip size={13} />
+                        <span>{isUploadingEditFile ? '업로드 중...' : '파일 첨부'}</span>
+                      </button>
+                    </div>
+                    {editFileName && (
+                      <div className="mt-2 p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
+                        <span className="font-bold flex items-center gap-1.5 truncate">
+                          <FileText size={14} className="shrink-0 text-emerald-600" />
+                          <span className="truncate">{editFileName}</span>
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <span className="text-[11px] font-mono text-emerald-600">
+                            {editFileType} {editFileSize ? `· ${editFileSize}` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditFileUrl('')
+                              setEditFileName('')
+                              setEditFileSize('')
+                              setEditFileType('')
+                            }}
+                            className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer"
+                            title="첨부 해제"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
