@@ -61,6 +61,7 @@ import {
 } from '@/lib/imageOptimizer'
 import { translateTitleTo15Languages, translateSingleGoogle } from '@/lib/gemini'
 import { getCommunityStrings, NATIONS_15 } from './communityI18n'
+import RichTextEditor, { RichTextRenderer } from '@/components/common/RichTextEditor'
 
 interface Comment {
   id: string
@@ -173,7 +174,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [editImageUrl, setEditImageUrl] = useState('')
   const [isEditSubmitting, setIsEditSubmitting] = useState(false)
 
-  // 📢 공지사항 등록 모달 상태 (이미지 첨부 지원)
+  // 📢 공지사항 등록 모달 상태 (이미지 및 일반 파일 첨부 지원)
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false)
   const [noticeTitle, setNoticeTitle] = useState('')
   const [noticeContent, setNoticeContent] = useState('')
@@ -181,6 +182,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [noticeImageUrl, setNoticeImageUrl] = useState('')
   const [isUploadingNoticeImage, setIsUploadingNoticeImage] = useState(false)
   const noticeFileInputRef = useRef<HTMLInputElement>(null)
+  const [noticeFileUrl, setNoticeFileUrl] = useState('')
+  const [noticeFileName, setNoticeFileName] = useState('')
+  const [noticeFileSize, setNoticeFileSize] = useState('')
+  const [noticeFileType, setNoticeFileType] = useState('')
+  const [isUploadingNoticeFile, setIsUploadingNoticeFile] = useState(false)
+  const noticeDocInputRef = useRef<HTMLInputElement>(null)
 
   // 📚 자료 등록 모달 상태 (실제 파일 업로드 연동)
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false)
@@ -533,6 +540,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     const extraData = {
       image_url: noticeImageUrl.trim() || undefined,
       titles,
+      fileUrl: noticeFileUrl.trim() || undefined,
+      fileName: noticeFileName.trim() || undefined,
+      fileSize: noticeFileSize.trim() || undefined,
+      fileType: noticeFileType.trim() || undefined,
     }
 
     try {
@@ -558,6 +569,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         setNoticeTitle('')
         setNoticeContent('')
         setNoticeImageUrl('')
+        setNoticeFileUrl('')
+        setNoticeFileName('')
+        setNoticeFileSize('')
+        setNoticeFileType('')
         setIsNoticeModalOpen(false)
         fetchPosts()
       } else {
@@ -609,6 +624,45 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     } finally {
       setIsUploadingNoticeImage(false)
       if (noticeFileInputRef.current) noticeFileInputRef.current.value = ''
+    }
+  }
+
+  // 📎 공지사항 일반 파일/문서 첨부 업로드 핸들러
+  const handleNoticeFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingNoticeFile(true)
+    try {
+      const formData = new FormData()
+      formData.append('type', 'notices')
+      formData.append('file', file)
+
+      let res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      if (!res.ok) {
+        res = await fetch('/api/posts.php', { method: 'POST', body: formData })
+      }
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && (json.file_url || json.image_url)) {
+          setNoticeFileUrl(json.file_url || json.image_url)
+          setNoticeFileName(json.name || json.file_name || file.name)
+          setNoticeFileSize(json.file_size || `${(file.size / (1024 * 1024)).toFixed(1)} MB`)
+          const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE'
+          setNoticeFileType(json.file_type || ext)
+          showToast(`📎 첨부파일 [${file.name}] 등록 완료!`)
+        } else {
+          alert(json.error || '파일 업로드 실패')
+        }
+      } else {
+        alert('서버 업로드 오류가 발생했습니다.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('파일 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setIsUploadingNoticeFile(false)
+      if (noticeDocInputRef.current) noticeDocInputRef.current.value = ''
     }
   }
 
@@ -1242,6 +1296,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-black text-[10px]">
                                 {countryFlags[post.author_country] || post.author_country}
                               </span>
+                              {Boolean(parseExtra(post).fileUrl && parseExtra(post).fileUrl !== '#') && (
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full font-bold text-[10px] flex items-center gap-1">
+                                  <Paperclip size={10} />
+                                  <span>첨부파일</span>
+                                </span>
+                              )}
                               <span className="text-xs text-gray-500 font-medium">
                                 {post.created_at.substring(0, 10)}
                               </span>
@@ -1958,8 +2018,41 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
             )}
 
-            <div className="py-4 border-t border-b border-gray-100 text-sm text-gray-700 leading-relaxed whitespace-pre-line mb-6">
-              {selectedPost.content}
+            {/* 📎 공지 첨부 파일 다운로드 카드 */}
+            {(() => {
+              const extra = parseExtra(selectedPost)
+              if (!extra.fileUrl || extra.fileUrl === '#') return null
+              return (
+                <div className="mb-5 p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <Paperclip size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-emerald-950 truncate">
+                        {extra.fileName || '공지 첨부파일'}
+                      </div>
+                      <div className="text-[11px] text-emerald-700 font-mono">
+                        {extra.fileType ? `${extra.fileType} · ` : ''}{extra.fileSize || ''}
+                      </div>
+                    </div>
+                  </div>
+                  <a
+                    href={extra.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    download
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <Download size={13} />
+                    <span>다운로드</span>
+                  </a>
+                </div>
+              )
+            })()}
+
+            <div className="py-4 border-t border-b border-gray-100 text-sm text-gray-700 leading-relaxed mb-6">
+              <RichTextRenderer content={selectedPost.content} />
             </div>
 
             <div className="flex justify-between items-center gap-2">
@@ -2064,27 +2157,27 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">공지 본문 내용 *</label>
-                <textarea
-                  required
-                  rows={6}
+                <RichTextEditor
+                  label="공지 본문 내용 *"
                   value={noticeContent}
-                  onChange={(e) => setNoticeContent(e.target.value)}
-                  placeholder="공지 내용을 상세히 작성해 주세요..."
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
+                  onChange={setNoticeContent}
+                  placeholder="공지 내용을 상세히 작성해 주세요... (상단 툴바의 굵게, 제목, 목록, 링크, 인용구 등 에디터 도구 활용)"
+                  rows={7}
+                  themeColor="emerald"
+                  required
                 />
               </div>
 
               {/* 📸 공지 포스터/이미지 첨부 */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">포스터 / 첨부 사진 (선택)</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">포스터 / 대표 사진 (선택)</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={noticeImageUrl}
                     onChange={(e) => setNoticeImageUrl(e.target.value)}
-                    placeholder="https://... 또는 파일 선택"
-                    className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="https://... 또는 우측 사진 첨부"
+                    className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
                   />
                   <input
                     type="file"
@@ -2110,10 +2203,69 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     <button
                       type="button"
                       onClick={() => setNoticeImageUrl('')}
-                      className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
+                      className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80 cursor-pointer"
                     >
                       <X size={12} />
                     </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 📎 일반 문서/파일 첨부 (PDF, HWP, DOCX, XLSX, PPTX, ZIP 등) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
+                  <span>📎 공지 첨부 파일 (선택)</span>
+                  <span className="text-[11px] text-gray-400 font-normal">PDF, HWP, DOCX, XLSX, PPTX, ZIP 등</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={noticeFileUrl}
+                    onChange={(e) => setNoticeFileUrl(e.target.value)}
+                    placeholder="https://... 또는 우측 파일 첨부"
+                    className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                  <input
+                    type="file"
+                    ref={noticeDocInputRef}
+                    onChange={handleNoticeFileUpload}
+                    accept=".pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => noticeDocInputRef.current?.click()}
+                    disabled={isUploadingNoticeFile}
+                    className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Paperclip size={13} />
+                    <span>{isUploadingNoticeFile ? '업로드 중...' : '파일 첨부'}</span>
+                  </button>
+                </div>
+                {noticeFileName && (
+                  <div className="mt-2 p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
+                    <span className="font-bold flex items-center gap-1.5 truncate">
+                      <FileText size={14} className="shrink-0 text-emerald-600" />
+                      <span className="truncate">{noticeFileName}</span>
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-[11px] font-mono text-emerald-600">
+                        {noticeFileType} · {noticeFileSize}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNoticeFileUrl('')
+                          setNoticeFileName('')
+                          setNoticeFileSize('')
+                          setNoticeFileType('')
+                        }}
+                        className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer"
+                        title="첨부 해제"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2264,14 +2416,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">자료 설명 *</label>
-                <textarea
-                  required
-                  rows={4}
+                <RichTextEditor
+                  label="자료 설명 *"
                   value={resDesc}
-                  onChange={(e) => setResDesc(e.target.value)}
-                  placeholder="자료에 대한 주요 내용 및 활용법을 설명해 주세요..."
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed"
+                  onChange={setResDesc}
+                  placeholder="자료에 대한 주요 내용 및 활용법을 설명해 주세요... (상단 툴바의 굵게, 제목, 목록, 링크, 인용구 등 에디터 도구 활용)"
+                  rows={6}
+                  themeColor="sky"
+                  required
                 />
               </div>
 
@@ -2542,14 +2694,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">본문 내용 *</label>
-                <textarea
-                  required
-                  rows={6}
+                <RichTextEditor
+                  label="본문 내용 *"
                   value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  placeholder="내용을 입력하세요..."
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
+                  onChange={setEditContent}
+                  placeholder="내용을 입력하세요... (상단 툴바의 굵게, 제목, 목록, 링크, 인용구 등 에디터 도구 활용)"
+                  rows={7}
+                  themeColor="emerald"
+                  required
                 />
               </div>
 

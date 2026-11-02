@@ -28,7 +28,7 @@ if ($targetType === 'resources') {
     $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
 } elseif ($targetType === 'notices') {
     $subDir = 'notices';
-    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'zip'];
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'hwp', 'hwpx', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'txt'];
 }
 
 $uploadDir = $rootDir . '/uploads/' . $subDir;
