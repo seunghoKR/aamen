@@ -193,7 +193,8 @@
       "profile": "個人資料",
       "notifications": "通知中心",
       "activity": "活動與代禱",
-      "security": "帳號與安全"
+      "security": "帳號與安全",
+      "messages": "站內信箱"
     },
     "profile": {
       "title": "會員基本資料",

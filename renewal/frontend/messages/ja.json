@@ -193,7 +193,8 @@
       "profile": "プロフィール",
       "notifications": "通知センター",
       "activity": "活動＆祈り",
-      "security": "アカウント＆セキュリティ"
+      "security": "アカウント＆セキュリティ",
+      "messages": "メッセージ箱"
     },
     "profile": {
       "title": "会員基本プロフィール",

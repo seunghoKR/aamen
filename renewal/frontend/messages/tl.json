@@ -182,7 +182,8 @@
       "profile": "Profile",
       "notifications": "Alert Center",
       "activity": "Activity & Prayers",
-      "security": "Security & Account"
+      "security": "Security & Account",
+      "messages": "Kahon ng Mensahe"
     },
     "profile": {
       "title": "Member Profile",
