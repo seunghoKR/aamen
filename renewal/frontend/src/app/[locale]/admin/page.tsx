@@ -69,11 +69,39 @@ export default function AdminDashboardPage() {
       const savedPartners = localStorage.getItem('aamen_partner_orgs')
       if (savedPartners) {
         const parsed = JSON.parse(savedPartners)
-        if (Array.isArray(parsed)) setPartnerCount(parsed.length)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPartnerCount(parsed.length)
+        } else {
+          setPartnerCount(initialPartnerOrgs.length)
+        }
+      } else {
+        setPartnerCount(initialPartnerOrgs.length)
       }
     } catch (e) {
       console.error(e)
     }
+
+    // 🤝 서버 DB로부터 최신 글로벌 협력단체 목록 실시간 동기화
+    async function loadServerPartners() {
+      try {
+        let res = await fetch('/api/partners.php')
+        if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+          res = await fetch('/api/partners')
+        }
+        if (!res.ok) return
+        const contentType = res.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) return
+        const data = await res.json()
+        const list = Array.isArray(data) ? data : data.data || []
+        if (list.length > 0) {
+          setPartnerCount(list.length)
+          localStorage.setItem('aamen_partner_orgs', JSON.stringify(list))
+        }
+      } catch (e) {
+        console.error('Failed to load server partners in admin dashboard', e)
+      }
+    }
+    loadServerPartners()
 
     // 🌟 서버 DB로부터 최신 회원 목록 및 권한/등급 실시간 동기화 (회원관리와 100% 일치)
     async function loadServerMembers() {

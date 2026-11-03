@@ -214,13 +214,9 @@ export default function MyPage() {
   const [profileAvatarId, setProfileAvatarId] = useState<string>('avatar_01')
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
 
-  // 🔐 계정 & 보안 상태 (User ID, 비밀번호, Google 연동)
+  // 🔐 계정 & 보안 상태 (Google 단일 SSO 연동)
   const [profileId, setProfileId] = useState('admin')
   const [profileEmail, setProfileEmail] = useState('leeshkr@gmail.com')
-  const [profilePassword, setProfilePassword] = useState('')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
 
   // 🧭 프로필 폼 변경 감지용 초기 상태
   const [initialProfile, setInitialProfile] = useState({
@@ -318,7 +314,6 @@ export default function MyPage() {
     const savedCountry = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_country_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_country') : null)) : null
     const savedPhone = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_phone_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_phone') : null)) : null
     const savedAvatar = typeof window !== 'undefined' ? (localStorage.getItem(`aamen_profile_avatar_${rawId}`) || (rawId === 'admin' ? localStorage.getItem('aamen_profile_avatar') : null)) : null
-    const savedPw = typeof window !== 'undefined' ? localStorage.getItem('aamen_profile_password') : null
 
     // 구글 로그인 회원이거나 더미 '신규 성도' 텍스트인 경우 실제 구글 사용자 이름을 최우선 반영
     const googleUserName = cleanName(userToLoad?.name || '')
@@ -338,10 +333,6 @@ export default function MyPage() {
     let resolvedAvatar = savedAvatar || (userToLoad as any)?.avatar || (userToLoad as any)?.avatar_url || preset?.avatarId || 'avatar_01'
     if (!resolvedAvatar.startsWith('avatar_') && !resolvedAvatar.startsWith('http')) {
       resolvedAvatar = 'avatar_01'
-    }
-
-    if (savedPw) {
-      setProfilePassword(savedPw)
     }
 
     setProfileId(rawId)
@@ -490,7 +481,7 @@ export default function MyPage() {
     if (savedWaPhone) setWhatsappPhone(savedWaPhone)
     if (savedWaCountry) setWhatsappCountryCode(savedWaCountry)
 
-    // URL 쿼리에 welcome=true가 있거나 신규 구글 가입인 경우 환영 배너 활성화
+    // URL 쿼리에 tab 파라미터가 있거나 welcome=true인 경우 배너 활성화
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search)
       const tabParam = searchParams.get('tab')
@@ -987,99 +978,7 @@ export default function MyPage() {
     }
   }
 
-  // 🔑 계정 & 보안: 로그인 아이디(User ID) 저장 핸들러
-  const handleSaveUserId = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    const cleanId = profileId.trim()
-    if (!cleanId) {
-      showToast(myTexts.toastInputUserId)
-      return
-    }
 
-    try {
-      const res = await fetch('/api/members.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update_security',
-          user_id: currentUser?.id || profileId,
-          new_id: cleanId,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok && data?.error) {
-        alert(data.error)
-        return
-      }
-    } catch (err) {
-      console.warn('API save id error:', err)
-    }
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('aamen_profile_id', cleanId)
-      if (currentUser) {
-        const updated: AuthUser = {
-          ...currentUser,
-          id: cleanId,
-        }
-        saveAuthUser(updated)
-        setCurrentUser(updated)
-      }
-    }
-    showToast(myTexts.toastUserIdSaved)
-  }
-
-  // 🔒 계정 & 보안: 비밀번호 저장/변경 핸들러
-  const handleSavePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const cleanNewPw = newPassword.trim()
-    const cleanConfirm = confirmPassword.trim()
-
-    if (!cleanNewPw) {
-      showToast(myTexts.toastInputNewPw)
-      return
-    }
-    if (cleanNewPw.length < 4) {
-      showToast(myTexts.toastPwMinLength)
-      return
-    }
-    if (cleanNewPw !== cleanConfirm) {
-      showToast(myTexts.toastPwMismatch)
-      return
-    }
-
-    try {
-      const res = await fetch('/api/members.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update_security',
-          user_id: currentUser?.id || profileId,
-          new_password: cleanNewPw,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok && data?.error) {
-        alert(data.error)
-        return
-      }
-    } catch (err) {
-      console.warn('API save password error:', err)
-    }
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('aamen_profile_password', cleanNewPw)
-      localStorage.setItem(`aamen_profile_password_${profileId}`, cleanNewPw)
-      if (currentUser?.id) {
-        localStorage.setItem(`aamen_profile_password_${currentUser.id}`, cleanNewPw)
-      }
-      setProfilePassword(cleanNewPw)
-    }
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    showToast(myTexts.toastPwChanged)
-  }
 
   // 🧭 수정사항이 있을 때 다른 페이지 이동 시도 감지 및 팝업 안내창 띄우기
   useEffect(() => {
@@ -1243,9 +1142,9 @@ export default function MyPage() {
           </div>
         )}
 
-        {/* 🎉 Google 인증 완료 환영 및 필수 입력 가이드 배너 */}
+        {/* 🎉 Google 인증 완료 환영 배너 */}
         {isWelcomeBanner && (
-          <div className="mb-6 p-5 sm:p-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white rounded-3xl shadow-lg border border-emerald-400/40 animate-in fade-in slide-in-from-top-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="mb-6 p-5 sm:p-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 text-white rounded-3xl shadow-lg border border-emerald-400/40 animate-in fade-in slide-in-from-top-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shrink-0 shadow-xs">
                 🎉
@@ -1260,17 +1159,18 @@ export default function MyPage() {
                   </span>
                 </div>
                 <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
-                  {myTexts.googleWelcomeDesc}<br className="hidden sm:inline" />
-                  {myTexts.googleWelcomeSubDesc}
+                  {`${myTexts.googleWelcomeDesc} ${myTexts.googleWelcomeSubDesc}`}
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setIsWelcomeBanner(false)}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 self-end sm:self-auto"
-            >
-              {myTexts.confirmBtn}
-            </button>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                onClick={() => setIsWelcomeBanner(false)}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                {myTexts.confirmBtn}
+              </button>
+            </div>
           </div>
         )}
 
@@ -2362,102 +2262,72 @@ export default function MyPage() {
               </div>
             </div>
 
-            {/* 우측: ID / 비밀번호 관리 및 2차 보안 */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm space-y-6 flex flex-col justify-between">
+            {/* 우측: Google 단일 인증 (SSO) 보안 센터 & 계정 무결성 */}
+            <div id="account-security-section" className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm space-y-6 flex flex-col justify-between scroll-mt-24">
               <div className="space-y-5">
                 <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
                   <h3 className="text-base sm:text-lg font-black text-gray-900 flex items-center gap-2">
-                    <Key size={18} className="text-gray-700" />
-                    <span>{myTexts.securitySectionTitle}</span>
+                    <ShieldCheck size={20} className="text-emerald-600" />
+                    <span>{isKo ? 'Google SSO 보안 센터' : 'Google SSO Security Center'}</span>
                   </h3>
-                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    {myTexts.securityCenterBadge}
+                  <span className="text-[10px] font-black px-2.5 py-1 rounded-full text-emerald-800 bg-emerald-100 border border-emerald-200 flex items-center gap-1">
+                    <CheckCircle2 size={11} />
+                    <span>{isKo ? 'Google 인증 완료' : 'Verified by Google'}</span>
                   </span>
                 </div>
 
-                <p className="text-xs text-gray-500">
-                  {t('security.pw_hint')}
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  {isKo
+                    ? 'AAMEN 아시아 네트워크는 비밀번호 유출 및 계정 도용을 방지하기 위해 100% 구글 단일 인증(OAuth 2.0 SSO)을 사용합니다. 별도의 비밀번호를 기억하거나 입력할 필요 없이 항상 안전하게 로그인하실 수 있습니다.'
+                    : 'AAMEN uses 100% Google Single Sign-On (OAuth 2.0 SSO). Your account is protected by Google security without needing passwords.'}
                 </p>
 
-                {/* 🔑 1. 로그인 아이디 (User ID) 설정 / 변경 */}
-                <div className="p-4.5 rounded-2xl bg-gradient-to-r from-emerald-50/70 to-teal-50/40 border border-emerald-200/90 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                      <span>{myTexts.userIdLabel}</span>
-                      <span className="text-[10px] font-black text-rose-500">*{myTexts.required}</span>
-                    </label>
-                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Lock size={9} />
-                      <span>{myTexts.googleIdLabel} {profileEmail}</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={profileId}
-                      onChange={(e) => setProfileId(e.target.value)}
-                      placeholder={myTexts.userIdPlaceholder}
-                      className="flex-1 px-3.5 py-2.5 bg-white rounded-xl border border-emerald-300 text-xs sm:text-sm font-black font-mono text-emerald-950 focus:outline-emerald-600 shadow-2xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSaveUserId}
-                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
-                    >
-                      {myTexts.saveUserIdBtn}
-                    </button>
+                {/* 인증된 주 계정 정보 카드 */}
+                <div className="p-4.5 rounded-2xl bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-white border border-emerald-200 space-y-3">
+                  <span className="text-[11px] font-bold text-emerald-950 uppercase tracking-wider block">
+                    {isKo ? '인증된 기본 계정 정보' : 'Verified Google Identity'}
+                  </span>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-emerald-100 shadow-2xs">
+                      <span className="text-gray-500 font-medium">{isKo ? '구글 이메일' : 'Google Email'}</span>
+                      <span className="font-mono font-bold text-gray-900">{profileEmail}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-emerald-100 shadow-2xs">
+                      <span className="text-gray-500 font-medium">{isKo ? '회원 권한 등급' : 'Member Tier'}</span>
+                      <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        {localizedTier.name} (Level {currentLevel})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-emerald-100 shadow-2xs">
+                      <span className="text-gray-500 font-medium">{isKo ? '인증 방식' : 'Auth Method'}</span>
+                      <span className="font-bold text-blue-700 flex items-center gap-1">
+                        <span>Google OAuth 2.0 SSO</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* 🔒 2. 로그인 비밀번호 변경 폼 */}
-                <form onSubmit={handleSavePassword} className="space-y-3.5 text-xs sm:text-sm pt-1">
-                  <div>
-                    <label className="block font-bold text-gray-700 mb-1">{t('security.current_pw')}</label>
-                    <input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder={myTexts.currentPwPlaceholder}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600 text-xs sm:text-sm"
-                    />
+                {/* 보안 혜택 안내 */}
+                <div className="space-y-2 pt-1 text-xs text-gray-600">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{isKo ? '비밀번호를 별도로 저장하지 않아 데이터베이스 해킹 및 비밀번호 유출 위험 0%' : 'Zero password breach risk - credentials handled entirely by Google.'}</span>
                   </div>
-
-                  <div>
-                    <label className="block font-bold text-gray-700 mb-1">{t('security.new_pw')}</label>
-                    <input
-                      type="password"
-                      required
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder={myTexts.newPwPlaceholder}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600 text-xs sm:text-sm"
-                    />
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{isKo ? '구글 2단계 인증(2FA)과 실시간 연동되어 최고 수준의 계정 보안 제공' : 'Leverages Google 2-Factor Authentication for maximum security.'}</span>
                   </div>
-
-                  <div>
-                    <label className="block font-bold text-gray-700 mb-1">{t('security.confirm_pw')}</label>
-                    <input
-                      type="password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder={myTexts.confirmPwPlaceholder}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600 text-xs sm:text-sm"
-                    />
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{isKo ? '모바일 웹앱(PWA) 및 PC 브라우저에서 원클릭으로 간편하게 로그인' : 'One-click sign-in across all devices, mobile PWA, and desktop.'}</span>
                   </div>
-
-                  <div className="pt-1 flex justify-end">
-                    <button
-                      type="submit"
-                      className="px-5 py-2.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-md cursor-pointer text-xs"
-                    >
-                      {t('security.save_pw')}
-                    </button>
-                  </div>
-                </form>
+                </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 text-xs text-amber-900 mt-4">
+              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 mt-4">
                 <span className="font-bold block mb-0.5">{myTexts.securityTipTitle}</span>
                 <p className="text-[11px] text-amber-800 leading-relaxed">
                   {myTexts.securityTipDesc}

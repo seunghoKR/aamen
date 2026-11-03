@@ -44,7 +44,7 @@ export async function subscribeToWebPush(userId: string): Promise<{ success: boo
     }
 
     // 2. 서비스 워커 등록 확인
-    let registration = await navigator.serviceWorker.getRegistration()
+    let registration: ServiceWorkerRegistration | null | undefined = await navigator.serviceWorker.getRegistration()
     if (!registration) {
       registration = await registerAamenServiceWorker()
     }
@@ -63,7 +63,7 @@ export async function subscribeToWebPush(userId: string): Promise<{ success: boo
     const convertedVapidKey = urlBase64ToUint8Array(keyData.public_key)
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: convertedVapidKey
+      applicationServerKey: convertedVapidKey as any
     })
 
     const subJson = subscription.toJSON()

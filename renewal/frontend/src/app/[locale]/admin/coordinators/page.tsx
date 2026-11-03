@@ -48,7 +48,7 @@ const countryNameMapEn: Record<string, string> = {
 }
 
 // 🌍 국가별 국제전화 국가번호 및 포맷 가이드
-export const COUNTRY_CALLING_CODES: Record<
+const COUNTRY_CALLING_CODES: Record<
   string,
   { code: string; defaultPhone: string; flag: string; nameEn: string; nameKo: string }
 > = {

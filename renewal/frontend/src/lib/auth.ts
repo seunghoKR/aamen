@@ -11,6 +11,7 @@ export interface AuthUser {
   country_code?: string
   phone?: string
   provider?: string
+  google_linked?: boolean
 }
 
 export const AUTH_USER_KEY = 'aamen_current_user'
@@ -48,6 +49,14 @@ export function logoutUser() {
   if (typeof window === 'undefined') return
   try {
     localStorage.removeItem(AUTH_USER_KEY)
+    localStorage.removeItem('aamen_profile_id')
+    localStorage.removeItem('aamen_profile_name')
+    localStorage.removeItem('aamen_profile_name_en')
+    localStorage.removeItem('aamen_profile_email')
+    localStorage.removeItem('aamen_profile_phone')
+    localStorage.removeItem('aamen_profile_avatar')
+    localStorage.removeItem('aamen_profile_affiliation')
+    localStorage.removeItem('aamen_profile_password')
     localStorage.setItem(AUTH_ROLE_KEY, 'guest')
     localStorage.setItem(TIER_STORAGE_KEY, '0')
 

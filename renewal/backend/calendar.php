@@ -14,9 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$calId = trim($_GET['cal_id'] ?? 'asiaaamen2025@gmail.com');
+$calId = trim($_GET['cal_id'] ?? 'asiaamen2025@gmail.com');
 if (empty($calId)) {
-    $calId = 'asiaaamen2025@gmail.com';
+    $calId = 'asiaamen2025@gmail.com';
 }
 
 $encodedId = urlencode($calId);

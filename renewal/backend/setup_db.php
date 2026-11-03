@@ -196,115 +196,6 @@ $alter_queries = [
     "ALTER TABLE prayer_cards ADD COLUMN extra_json LONGTEXT DEFAULT NULL"
 ];
 
-// 🌟 공식 7명 회원 + 1명 개발자 계정 데이터셋 (2026-10-15 확정본)
-$members_v150 = [
-    // 1) 개발자 계정
-    [
-        'id' => 'admin',
-        'email' => 'leeshkr@gmail.com',
-        'name' => '이승호',
-        'name_en' => 'Seungho Lee',
-        'provider' => 'google',
-        'country_code' => 'KR',
-        'role' => 'developer',
-        'status' => 'active',
-        'bio' => 'AAMEN 시스템 개발 및 운영 총괄',
-        'phone' => '+82 10-4069-2739',
-        'affiliation' => '누리오 (개발자)'
-    ],
-    // 2) Jeanette Hanson (Coordinator / MWC)
-    [
-        'id' => 'Jeanette',
-        'email' => 'Jeanette.m.hanson@gmail.com',
-        'name' => 'Jeanette Hanson',
-        'provider' => 'google',
-        'country_code' => 'US',
-        'role' => 'country_admin',
-        'status' => 'active',
-        'bio' => 'MWC Leader / 국가 코디네이터',
-        'phone' => '+1 000-000-0000',
-        'affiliation' => 'MWC'
-    ],
-    // 3) Jeremiah (Coordinator)
-    [
-        'id' => 'Jeremiah',
-        'email' => 'hkjerechoi@gmail.com',
-        'name' => 'Jeremiah',
-        'provider' => 'google',
-        'country_code' => 'HK',
-        'role' => 'country_admin',
-        'status' => 'active',
-        'bio' => 'Hongkong Coordinator',
-        'phone' => '+852 0000-0000',
-        'affiliation' => ''
-    ],
-    // 4) Paulus S. Widjaja (Coordinator)
-    [
-        'id' => 'Paulus',
-        'email' => 'psw.dosen@gmail.com',
-        'name' => 'Paulus S. Widjaja',
-        'provider' => 'google',
-        'country_code' => 'ID',
-        'role' => 'country_admin',
-        'status' => 'active',
-        'bio' => 'Indonesia Coordinator',
-        'phone' => '+62 000-000-0000',
-        'affiliation' => ''
-    ],
-    // 5) Andi Santoso (Coordinator / MNN)
-    [
-        'id' => 'Andi',
-        'email' => 'andiospeace@gmail.com',
-        'name' => 'Andi Santoso',
-        'provider' => 'google',
-        'country_code' => 'US',
-        'role' => 'country_admin',
-        'status' => 'active',
-        'bio' => 'Coordinator / MNN',
-        'phone' => '+1 000-000-0000',
-        'affiliation' => 'MNN'
-    ],
-    // 6) Hiro Katano (Coordinator / Japan)
-    [
-        'id' => 'Hiro',
-        'email' => 'h98484435@gmail.com',
-        'name' => 'Hiro Katano',
-        'provider' => 'google',
-        'country_code' => 'JP',
-        'role' => 'country_admin',
-        'status' => 'active',
-        'bio' => 'Japan Coordinator',
-        'phone' => '+81 00-0000-0000',
-        'affiliation' => ''
-    ],
-    // 7) Kim Bockki (Helper / MCSK)
-    [
-        'id' => 'Bockki',
-        'email' => 'bockkikim@gmail.com',
-        'name' => 'Kim Bockki',
-        'provider' => 'google',
-        'country_code' => 'KR',
-        'role' => 'level3_worker',
-        'status' => 'active',
-        'bio' => 'Helper / MCSK 사역자',
-        'phone' => '+82 10-0000-0000',
-        'affiliation' => 'MCSK'
-    ],
-    // 8) Bae Yongha (Coordinator / MCSK)
-    [
-        'id' => 'Yongha',
-        'email' => 'byh1424@gmail.com',
-        'name' => 'Bae Yongha',
-        'provider' => 'google',
-        'country_code' => 'KR',
-        'role' => 'country_admin',
-        'status' => 'active',
-        'bio' => 'Korea Coordinator / MCSK',
-        'phone' => '+82 10-0000-0000',
-        'affiliation' => 'MCSK'
-    ]
-];
-
 $results = [];
 
 try {
@@ -319,13 +210,12 @@ try {
             // 이미 존재하는 컬럼 무시
         }
     }
-    // 컬럼 마이그레이션 (안전한 누락 컬럼 추가)
+    // 컬럼 마이그레이션 (안전한 누락 컬럼 추가 및 비밀번호 컬럼 영구 제거)
     $safe_migrations = [
         "ALTER TABLE members ADD COLUMN name_en VARCHAR(100) NULL AFTER name",
-        "ALTER TABLE members ADD COLUMN password VARCHAR(255) NULL AFTER affiliation",
         "ALTER TABLE members ADD COLUMN facebook_account VARCHAR(150) NULL AFTER affiliation",
         "ALTER TABLE members ADD COLUMN telegram_chat_id VARCHAR(100) NULL AFTER facebook_account",
-        "ALTER TABLE members ADD COLUMN google_linked TINYINT(1) DEFAULT 0 AFTER telegram_chat_id"
+        "ALTER TABLE members ADD COLUMN google_linked TINYINT(1) DEFAULT 1 AFTER telegram_chat_id"
     ];
     foreach ($safe_migrations as $sm) {
         try {
@@ -333,34 +223,12 @@ try {
         } catch (\Exception $e) {}
     }
 
-    // 🔒 구글 1회 이상 로그인 성공 이력이 있는 회원만 google_linked = 1로 활성화
+    // 비밀번호 컬럼 영구 삭제
     try {
-        $pdo->exec("UPDATE members SET google_linked = 1 WHERE (avatar_url IS NOT NULL AND avatar_url LIKE '%googleusercontent.com%') OR id = 'admin' OR id = 'Yongha'");
-        $pdo->exec("UPDATE members SET google_linked = 0 WHERE id IN ('Jeanette', 'Jeremiah', 'Paulus', 'Andi', 'Hiro', 'Bockki') AND (avatar_url IS NULL OR avatar_url NOT LIKE '%googleusercontent.com%')");
+        $pdo->exec("ALTER TABLE members DROP COLUMN password");
     } catch (\Exception $e) {}
 
     $results['tables'] = 'Created or verified successfully (Production Safe Mode)';
-
-    // 🔒 운영 모드: 회원 정보 보존 (INSERT IGNORE로 기존 데이터는 절대 덮어쓰지 않음)
-    $stmt = $pdo->prepare("INSERT IGNORE INTO members 
-        (id, email, name, name_en, provider, country_code, role, status, bio, phone, affiliation) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-    foreach ($members_v150 as $m) {
-        $stmt->execute([
-            $m['id'],
-            $m['email'],
-            $m['name'],
-            $m['name_en'] ?? $m['name'],
-            $m['provider'],
-            $m['country_code'],
-            $m['role'],
-            $m['status'],
-            $m['bio'],
-            $m['phone'],
-            $m['affiliation']
-        ]);
-    }
     $results['members_preserved'] = true;
 
     // 🔒 기도제목 카드 초기 시드 (prayer_cards 테이블이 비어있을 때만 6개 기본 시드 주입)

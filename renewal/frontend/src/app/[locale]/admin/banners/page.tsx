@@ -104,7 +104,7 @@ export default function AdminBannersPage() {
     }
 
     // 서버 API 동기화
-    fetch('/api/banners?admin=1')
+    fetch('/api/banners.php?admin=1')
       .then((res) => {
         if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return null
         return res.json()
@@ -284,7 +284,7 @@ export default function AdminBannersPage() {
         })),
       }
 
-      const res = await fetch('/api/banners', {
+      let res = await fetch('/api/banners.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

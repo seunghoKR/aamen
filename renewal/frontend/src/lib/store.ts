@@ -168,6 +168,7 @@ export function getMemberLevel(role: MemberRole): MemberLevel {
 export interface Member {
   id: string
   name: string
+  name_en?: string | null
   email: string
   countryCode: string
   countryName: string
@@ -179,10 +180,14 @@ export interface Member {
   affiliation?: string
   phone?: string
   provider?: string
+  bio?: string | null
+  password?: string | null
   facebook_account?: string | null
   telegram_chat_id?: string | null
   google_linked?: boolean | number
   avatar_url?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 // 배너 설정 정의 (이미지 또는 텍스트 배너)
@@ -308,107 +313,8 @@ export const defaultBanners: BannerConfig[] = [
 
 export const defaultBanner: BannerConfig = defaultBanners[0]
 
-// 기본 회원 목록 (공식 7명 회원 - 회원관리 설정값 100% 복원)
-export const initialMembers: Member[] = [
-  {
-    id: 'Andi',
-    name: 'Andi Santoso',
-    email: 'andiospeace@gmail.com',
-    countryCode: 'US',
-    countryName: '미국 (USA)',
-    flag: '🇺🇸',
-    role: 'country_admin',
-    level: 4,
-    affiliation: 'MNN',
-    phone: '+1 000-000-0000',
-    joinedDate: '2026-10-16',
-    status: 'active',
-  },
-  {
-    id: 'Hiro',
-    name: 'Hiro Katano',
-    email: 'h98484435@gmail.com',
-    countryCode: 'JP',
-    countryName: '일본 (Japan)',
-    flag: '🇯🇵',
-    role: 'country_admin',
-    level: 4,
-    affiliation: '',
-    phone: '+81 00-0000-0000',
-    joinedDate: '2026-10-16',
-    status: 'active',
-  },
-  {
-    id: 'Bockki',
-    name: 'Kim Bockki',
-    email: 'bockkikim@gmail.com',
-    countryCode: 'KR',
-    countryName: '대한민국',
-    flag: '🇰🇷',
-    role: 'level3_worker',
-    level: 3,
-    affiliation: 'MCSK',
-    phone: '+82 10-0000-0000',
-    joinedDate: '2026-10-16',
-    status: 'active',
-  },
-  {
-    id: 'Paulus',
-    name: 'Paulus S. Widjaja',
-    email: 'psw.dosen@gmail.com',
-    countryCode: 'ID',
-    countryName: '인도네시아',
-    flag: '🇮🇩',
-    role: 'country_admin',
-    level: 4,
-    affiliation: '',
-    phone: '+62 000-0000-0000',
-    joinedDate: '2026-10-16',
-    status: 'active',
-  },
-  {
-    id: 'Yongha',
-    name: 'Bae Yongha',
-    email: 'byh1424@gmail.com',
-    countryCode: 'KR',
-    countryName: '대한민국',
-    flag: '🇰🇷',
-    role: 'super_admin',
-    level: 5,
-    affiliation: 'MCSK',
-    phone: '+82 10-0000-0000',
-    joinedDate: '2026-10-16',
-    status: 'active',
-  },
-  {
-    id: 'Jeanette',
-    name: 'Jeanette Hanson',
-    email: 'Jeanette.m.hanson@gmail.com',
-    countryCode: 'US',
-    countryName: '미국 (USA)',
-    flag: '🇺🇸',
-    role: 'country_admin',
-    level: 4,
-    affiliation: 'MWC',
-    phone: '+1 000-000-0000',
-    joinedDate: '2026-10-16',
-    status: 'active',
-  },
-  {
-    id: 'Jeremiah',
-    name: 'Jeremiah',
-    email: 'hkjerechoi@gmail.com',
-    countryCode: 'HK',
-    countryName: '홍콩 (Hong Kong)',
-    flag: '🇭🇰',
-    role: 'country_admin',
-    level: 4,
-    affiliation: '',
-    phone: '+852 0000-0000',
-    joinedDate: '2026-10-16',
-    status: 'active',
-  },
-]
+// 기본 회원 목록 (MariaDB 연동 - 하드코딩된 더미/샘플 계정 영구 제거)
+export const initialMembers: Member[] = []
 
 // 기본 게시글 샘플 (전체 삭제 완료)
 export const initialPosts: BoardPost[] = []

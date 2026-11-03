@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { getAdminTexts } from '@/lib/adminI18n'
+import { getStoredUser, AUTH_EVENT_NAME } from '@/lib/auth'
+import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import {
   Member,
   MemberRole,
@@ -25,6 +27,18 @@ import {
   AlertCircle,
   X,
   RotateCcw,
+  Key,
+  Shield,
+  ExternalLink,
+  Copy,
+  Eye,
+  EyeOff,
+  Smartphone,
+  Globe,
+  Lock,
+  Wrench,
+  CheckCircle2,
+  User,
 } from 'lucide-react'
 
 // 등급 메타데이터 (0단계 비회원 ~ 5단계 총괄관리자)
@@ -257,15 +271,7 @@ export default function AdminMembersPage() {
   const permissionDefinitions = isEn ? permissionDefinitionsEn : permissionDefinitionsKo
 
   const [activeTab, setActiveTab] = useState<'members' | 'permissions'>('members')
-  const [members, setMembers] = useState<Member[]>(
-    initialMembers.filter(
-      (m) =>
-        m.role !== ('developer' as any) &&
-        !m.name.includes('개발자') &&
-        m.email !== 'admin@aamen.net' &&
-        !isSampleMember(m)
-    )
-  )
+  const [members, setMembers] = useState<Member[]>([])
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLevel, setFilterLevel] = useState<string>('ALL')
@@ -295,7 +301,19 @@ export default function AdminMembersPage() {
   // 5단계 권한 설정 상태 (localStorage 및 기본값 연동)
   const [tierSettings, setTierSettings] = useState<Record<MemberLevel, MemberTierInfo>>(defaultTierSettings)
 
-  // 신규 회원 등록 모달 상태
+  // 🌟 개발자 최고 권한 여부 (Level 6 이상 또는 role이 developer)
+  const [isDeveloper, setIsDeveloper] = useState(false)
+
+  // 🌟 개발자 회원 정보 인스펙터 & 보안/비밀번호 모달 상태
+  const [inspectorMember, setInspectorMember] = useState<Member | null>(null)
+  const [inspectorTab, setInspectorTab] = useState<'profile' | 'sns' | 'security'>('profile')
+  const [inspectorForm, setInspectorForm] = useState<Partial<Member>>({})
+  const [newResetPassword, setNewResetPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [isSavingInspector, setIsSavingInspector] = useState(false)
+  const [copySuccess, setCopySuccess] = useState(false)
+
+  // 신규 회원 등록 모달 상태 (신규 회원은 반드시 1단계: 준회원으로 기본 진입)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [newMember, setNewMember] = useState({
     name: '',
@@ -303,11 +321,31 @@ export default function AdminMembersPage() {
     countryCode: 'KR',
     countryName: '대한민국',
     flag: '🇰🇷',
-    level: 2 as MemberLevel,
+    level: 1 as MemberLevel,
   })
 
-  // 1. 초기 로드: MariaDB API 및 localStorage 동기화
+  // 1. 초기 로드: MariaDB API 및 권한/개발자 상태 동기화
   useEffect(() => {
+    // 🌟 오직 6단계(개발자) 시뮬레이터/권한 레벨일 때만 개발자 관리 기능 활성화
+    const checkDev = (lvl?: number) => {
+      const currentLvl = typeof lvl === 'number' ? lvl : getStoredTierLevel()
+      setIsDeveloper(currentLvl >= 6)
+    }
+    checkDev()
+
+    const handleAuthChange = () => checkDev()
+    const handleTierChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ level: MemberLevel }>
+      if (customEvent.detail && typeof customEvent.detail.level === 'number') {
+        checkDev(customEvent.detail.level)
+      } else {
+        checkDev()
+      }
+    }
+    const handleStorage = () => checkDev()
+    window.addEventListener(AUTH_EVENT_NAME, handleAuthChange)
+    window.addEventListener(TIER_EVENT_NAME, handleTierChange)
+    window.addEventListener('storage', handleStorage)
     try {
       const savedPerms = localStorage.getItem('aamen_tier_permissions')
       if (savedPerms) {
@@ -324,8 +362,7 @@ export default function AdminMembersPage() {
         if (!contentType || !contentType.includes('application/json')) return
         const data = await res.json()
         const list = Array.isArray(data) ? data : data.data || []
-        if (list.length > 0) {
-          const countryMap: Record<string, { name: string; flag: string }> = {
+        const countryMap: Record<string, { name: string; flag: string }> = {
             KR: { name: '대한민국', flag: '🇰🇷' },
             US: { name: '미국', flag: '🇺🇸' },
             MM: { name: '미얀마', flag: '🇲🇲' },
@@ -342,44 +379,43 @@ export default function AdminMembersPage() {
             HK: { name: '홍콩', flag: '🇭🇰' },
           }
 
-          // 개발자 계정 철저히 필터링
-          const filteredList = list.filter(
-            (m: any) => m.role !== 'developer' && !m.name.includes('개발자') && m.email !== 'admin@aamen.net'
-          )
+        // 개발자 계정 철저히 필터링
+        const filteredList = list.filter(
+          (m: any) => m.role !== 'developer' && !m.name?.includes('개발자') && m.email !== 'admin@aamen.net'
+        )
 
-          const formatted: Member[] = filteredList.map((m: any) => {
-            const cInfo = countryMap[m.country_code] || { name: m.country_code, flag: '🌐' }
-            const lvl = getMemberLevel(m.role as MemberRole)
-            return {
-              id: m.id,
-              name: m.name,
-              email: m.email,
-              countryCode: m.country_code,
-              countryName: cInfo.name,
-              flag: cInfo.flag,
-              role: m.role as MemberRole,
-              level: lvl,
-              status: (m.status || 'active') as any,
-              joinedDate: (m.created_at || '').substring(0, 10),
-              affiliation: m.affiliation || '',
-              phone: m.phone || '',
-              provider: m.provider || 'google',
-              facebook_account: m.facebook_account || null,
-              telegram_chat_id: m.telegram_chat_id || null,
-              google_linked: Boolean(
-                m.google_linked === 1 ||
-                m.google_linked === '1' ||
-                m.google_linked === true ||
-                (m.avatar_url && m.avatar_url.includes('googleusercontent.com')) ||
-                m.id?.toLowerCase() === 'admin' ||
-                m.id?.toLowerCase() === 'yongha'
-              ),
-              avatar_url: m.avatar_url || null,
-            }
-          })
-          setMembers(formatted)
-          return
-        }
+        const formatted: Member[] = filteredList.map((m: any) => {
+          const cInfo = countryMap[m.country_code] || { name: m.country_code, flag: '🌐' }
+          const lvl = getMemberLevel(m.role as MemberRole)
+          return {
+            id: m.id,
+            name: m.name,
+            name_en: m.name_en || null,
+            email: m.email,
+            countryCode: m.country_code,
+            countryName: cInfo.name,
+            flag: cInfo.flag,
+            role: m.role as MemberRole,
+            level: lvl,
+            status: (m.status || 'active') as any,
+            joinedDate: (m.created_at || '').substring(0, 10),
+            created_at: m.created_at || '',
+            updated_at: m.updated_at || '',
+            affiliation: m.affiliation || '',
+            phone: m.phone || '',
+            bio: m.bio || '',
+            provider: m.provider || 'google',
+            facebook_account: m.facebook_account || null,
+            telegram_chat_id: m.telegram_chat_id || null,
+            google_linked: true,
+            avatar_url: m.avatar_url || null,
+          }
+        })
+        setMembers(formatted)
+        try {
+          localStorage.setItem('aamen_members', JSON.stringify(formatted))
+        } catch (e) {}
+        return
       } catch (e) {
         console.error('Failed to load server members, fallback to local', e)
       }
@@ -388,32 +424,18 @@ export default function AdminMembersPage() {
         const saved = localStorage.getItem('aamen_members')
         if (saved) {
           const parsed: Member[] = JSON.parse(saved)
-          const existingIds = new Set(parsed.map((m) => m.id))
-          const missing = initialMembers.filter((m) => !existingIds.has(m.id))
-          const merged = [...missing, ...parsed].filter(
-            (m) =>
-              m.role !== ('developer' as any) &&
-              !m.name.includes('개발자') &&
-              m.email !== 'admin@aamen.net' &&
-              !isSampleMember(m)
-          )
-          setMembers(merged)
-          localStorage.setItem('aamen_members', JSON.stringify(merged))
-        } else {
-          const initialList = initialMembers.filter(
-            (m) =>
-              m.role !== ('developer' as any) &&
-              !m.name.includes('개발자') &&
-              m.email !== 'admin@aamen.net' &&
-              !isSampleMember(m)
-          )
-          setMembers(initialList)
-          localStorage.setItem('aamen_members', JSON.stringify(initialList))
+          setMembers(parsed)
         }
       } catch (e) {}
     }
 
     loadMembers()
+
+    return () => {
+      window.removeEventListener(AUTH_EVENT_NAME, handleAuthChange)
+      window.removeEventListener(TIER_EVENT_NAME, handleTierChange)
+      window.removeEventListener('storage', handleStorage)
+    }
   }, [])
 
   // 저장 헬퍼
@@ -426,6 +448,142 @@ export default function AdminMembersPage() {
     }
     setToastMessage(msg)
     setTimeout(() => setToastMessage(null), 2500)
+  }
+
+  // 🌟 개발자 인스펙터 모달 열기
+  const openInspector = (member: Member) => {
+    setInspectorMember(member)
+    setInspectorForm({
+      name: member.name,
+      name_en: member.name_en || '',
+      email: member.email,
+      countryCode: member.countryCode,
+      affiliation: member.affiliation || '',
+      phone: member.phone || '',
+      bio: member.bio || '',
+      role: member.role,
+      status: member.status,
+      facebook_account: member.facebook_account || '',
+      telegram_chat_id: member.telegram_chat_id || '',
+      google_linked: member.google_linked ? 1 : 0,
+      avatar_url: member.avatar_url || '',
+      password: member.password || '',
+    })
+    setInspectorTab('profile')
+    setNewResetPassword('')
+    setShowPassword(false)
+  }
+
+  // 🌟 개발자 권한 비밀번호 강제 리셋 핸들러
+  const handleAdminResetPassword = async (memberId: string, customPw?: string) => {
+    const pwToSet = (customPw || newResetPassword).trim()
+    if (!pwToSet) {
+      alert(isEn ? 'Please enter a new password.' : '새 비밀번호를 입력해주세요.')
+      return
+    }
+
+    setIsSavingInspector(true)
+    try {
+      let res = await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'admin_reset_password',
+          id: memberId,
+          user_id: memberId,
+          password: pwToSet,
+          new_password: pwToSet,
+        }),
+      })
+      if (!res.ok) {
+        res = await fetch('/api/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'admin_reset_password',
+            id: memberId,
+            user_id: memberId,
+            password: pwToSet,
+            new_password: pwToSet,
+          }),
+        })
+      }
+
+      const data = await res.json()
+      if (data.status === 'success') {
+        const updated = members.map((m) =>
+          m.id === memberId ? { ...m, password: pwToSet } : m
+        )
+        persistMembers(
+          updated,
+          isEn
+            ? `Password for [${inspectorMember?.name || memberId}] has been reset successfully!`
+            : `[${inspectorMember?.name || memberId}] 회원의 비밀번호가 [${pwToSet}]로 재설정되었습니다!`
+        )
+        if (inspectorMember && inspectorMember.id === memberId) {
+          setInspectorMember((prev) => (prev ? { ...prev, password: pwToSet } : null))
+          setInspectorForm((prev) => ({ ...prev, password: pwToSet }))
+        }
+        setNewResetPassword('')
+      } else {
+        alert(data.error || (isEn ? 'Failed to reset password.' : '비밀번호 재설정에 실패했습니다.'))
+      }
+    } catch (e: any) {
+      console.error('Reset password error:', e)
+      alert((isEn ? 'Failed to reset password: ' : '비밀번호 재설정 오류: ') + e.message)
+    } finally {
+      setIsSavingInspector(false)
+    }
+  }
+
+  // 🌟 개발자 인스펙터 전체 정보 일괄 저장
+  const handleSaveInspectorDetails = async () => {
+    if (!inspectorMember) return
+    setIsSavingInspector(true)
+
+    try {
+      const payload = {
+        action: 'admin_update_member',
+        id: inspectorMember.id,
+        user_id: inspectorMember.id,
+        ...inspectorForm,
+      }
+
+      let res = await fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        res = await fetch('/api/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      }
+
+      const data = await res.json()
+      if (data.status === 'success') {
+        const updatedData = data.member || { ...inspectorMember, ...inspectorForm }
+        const updated = members.map((m) =>
+          m.id === inspectorMember.id ? { ...m, ...updatedData } : m
+        )
+        persistMembers(
+          updated,
+          isEn
+            ? `[${inspectorMember.name}] details and integration status updated.`
+            : `[${inspectorMember.name}] 회원의 정보 및 연동 상태가 성공적으로 저장되었습니다.`
+        )
+        setInspectorMember(updatedData)
+      } else {
+        alert(data.error || (isEn ? 'Failed to update member.' : '회원 정보 수정에 실패했습니다.'))
+      }
+    } catch (e: any) {
+      console.error('Update member error:', e)
+      alert((isEn ? 'Update failed: ' : '수정 실패: ') + e.message)
+    } finally {
+      setIsSavingInspector(false)
+    }
   }
 
   // 🌟 1) 등급 드롭다운 임시 선택 (실시간 저장이 아닌 수동 저장 대기)
@@ -480,6 +638,7 @@ export default function AdminMembersPage() {
       setPendingLevels((prev) => {
         const next = { ...prev }
         delete next[id]
+        return next
       })
     } catch (e) {
       console.error('Role update error:', e)
@@ -570,7 +729,7 @@ export default function AdminMembersPage() {
         isEn ? `Member '${name}' was deleted.` : `'${name}' 회원이 삭제되었습니다.`
       )
       try {
-        await fetch('/api/members', {
+        await fetch('/api/members.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'delete', id }),
@@ -621,7 +780,7 @@ export default function AdminMembersPage() {
 
       try {
         for (const id of selectedMemberIds) {
-          fetch('/api/members', {
+          fetch('/api/members.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'delete', id }),
@@ -725,6 +884,22 @@ export default function AdminMembersPage() {
         ? `New member [${created.name}] has been registered.`
         : `신규 회원 [${created.name}]이 등록되었습니다.`
     )
+
+    try {
+      fetch('/api/members.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: created.id,
+          name: created.name,
+          email: created.email,
+          country_code: created.countryCode,
+          role: created.role,
+          status: created.status,
+        }),
+      }).catch(() => {})
+    } catch (e) {}
+
     setIsModalOpen(false)
     setNewMember({
       name: '',
@@ -732,7 +907,7 @@ export default function AdminMembersPage() {
       countryCode: 'KR',
       countryName: '대한민국',
       flag: '🇰🇷',
-      level: 2,
+      level: 1,
     })
   }
 
@@ -764,6 +939,32 @@ export default function AdminMembersPage() {
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-emerald-500/40 animate-in fade-in slide-in-from-bottom-2 text-sm font-semibold">
           <Check size={16} className="text-emerald-400" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* 🛠️ 개발자 권한 전용 알림 & 안내 배너 */}
+      {isDeveloper && (
+        <div className="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white p-4 sm:p-5 rounded-3xl border border-indigo-500/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center shrink-0 shadow-inner">
+              <Wrench size={22} className="text-indigo-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-black text-sm text-white">
+                  {isEn ? 'Developer Authority Active' : '개발자(Developer) 최고 관리 권한 활성화됨'}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-500 text-white shadow-xs">
+                  Level 6 Developer
+                </span>
+              </div>
+              <p className="text-xs text-indigo-200/90 mt-1 leading-relaxed">
+                {isEn
+                  ? 'You have complete access to inspect each member’s raw profile, SNS & messenger sync status, and reset passwords directly.'
+                  : '각 회원의 모든 세부 정보(소셜 연동 여부, 전화번호, 이메일, 계정 식별자) 확인 및 비밀번호 직접 리셋/수정 권한이 적용되었습니다. 명단 우측의 [개발자 관리] 버튼을 클릭하세요.'}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1018,15 +1219,46 @@ export default function AdminMembersPage() {
 
                         {/* 이름 & 이메일 */}
                         <td className="py-4 px-6">
-                          <div className="font-bold text-gray-900 flex items-center gap-2 flex-wrap">
-                            <span>{member.name}</span>
-                            {member.affiliation && (
-                              <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
-                                {member.affiliation}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-gray-400 font-mono">{member.email}</div>
+                          {isDeveloper ? (
+                            <button
+                              type="button"
+                              onClick={() => openInspector(member)}
+                              className="text-left group cursor-pointer focus:outline-none"
+                              title={isEn ? 'Click to inspect full details (Dev only)' : '클릭하여 회원 전체 상세정보 및 연동/보안 확인 (개발자 전용)'}
+                            >
+                              <div className="font-bold text-gray-900 flex items-center gap-2 flex-wrap group-hover:text-indigo-600 transition-colors">
+                                <span className="underline decoration-dotted underline-offset-4 decoration-gray-300 group-hover:decoration-indigo-500">
+                                  {member.name}
+                                </span>
+                                {member.name_en && (
+                                  <span className="text-xs text-gray-400 font-normal">({member.name_en})</span>
+                                )}
+                                {member.affiliation && (
+                                  <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                                    {member.affiliation}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-400 font-mono mt-0.5 group-hover:text-gray-600 transition-colors">
+                                {member.email}
+                              </div>
+                            </button>
+                          ) : (
+                            <div>
+                              <div className="font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                                <span>{member.name}</span>
+                                {member.name_en && (
+                                  <span className="text-xs text-gray-400 font-normal">({member.name_en})</span>
+                                )}
+                                {member.affiliation && (
+                                  <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                                    {member.affiliation}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-400 font-mono mt-0.5">{member.email}</div>
+                            </div>
+                          )}
                         </td>
 
                         {/* 국가 */}
@@ -1216,15 +1448,28 @@ export default function AdminMembersPage() {
                           {member.joinedDate}
                         </td>
 
-                        {/* 관리 (삭제) */}
+                        {/* 관리 (개발자 관리 & 삭제) */}
                         <td className="py-4 px-6 text-right whitespace-nowrap">
-                          <button
-                            onClick={() => handleDeleteMember(member.id, member.name)}
-                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title={isEn ? 'Delete Member' : '회원 삭제'}
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isDeveloper && (
+                              <button
+                                type="button"
+                                onClick={() => openInspector(member)}
+                                className="px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-indigo-200 ring-1 ring-indigo-500/50"
+                                title={isEn ? 'View All Member Details & Security (Dev only)' : '회원 전체 정보 및 연동/비밀번호 관리 (개발자 전용)'}
+                              >
+                                <Wrench size={13} className="text-indigo-200" />
+                                <span>{isEn ? 'Dev Inspector' : '개발자 관리'}</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteMember(member.id, member.name)}
+                              className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title={isEn ? 'Delete Member' : '회원 삭제'}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -1428,6 +1673,417 @@ export default function AdminMembersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 개발자 회원 정보 인스펙터 & 보안/비밀번호 관리 모달 (6단계 개발자 권한 전용) */}
+      {isDeveloper && inspectorMember && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col my-auto">
+            {/* 모달 헤더 */}
+            <div className="flex items-start justify-between pb-4 border-b border-gray-100 shrink-0">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-lg flex items-center justify-center shadow-md overflow-hidden relative">
+                  {inspectorMember.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={inspectorMember.avatar_url}
+                      alt={inspectorMember.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{inspectorMember.name.substring(0, 2)}</span>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg font-black text-gray-900 tracking-tight">
+                      {inspectorMember.name}
+                    </h3>
+                    {inspectorMember.name_en && (
+                      <span className="text-xs text-gray-400 font-medium">({inspectorMember.name_en})</span>
+                    )}
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${tierLabels[inspectorMember.level || getMemberLevel(inspectorMember.role)].badgeClass}`}>
+                      {tierLabels[inspectorMember.level || getMemberLevel(inspectorMember.role)].name}
+                    </span>
+                    {isDeveloper && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-200 flex items-center gap-1">
+                        <Wrench size={10} />
+                        <span>{isEn ? 'Dev Inspector' : '개발자 인스펙터'}</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">
+                    <span className="font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">{inspectorMember.email}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setInspectorMember(null)}
+                className="p-2 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100 cursor-pointer transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* 탭 네비게이션 */}
+            <div className="flex border-b border-gray-100 gap-2 mt-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => setInspectorTab('profile')}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                  inspectorTab === 'profile'
+                    ? 'border-indigo-600 text-indigo-700 font-black'
+                    : 'border-transparent text-gray-400 hover:text-gray-700'
+                }`}
+              >
+                <User size={13} />
+                <span>{isEn ? 'Profile Info' : '기본 프로필'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectorTab('sns')}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                  inspectorTab === 'sns'
+                    ? 'border-indigo-600 text-indigo-700 font-black'
+                    : 'border-transparent text-gray-400 hover:text-gray-700'
+                }`}
+              >
+                <Globe size={13} />
+                <span>{isEn ? 'SNS / Integration' : '소셜 & 메신저 연동'}</span>
+              </button>
+            </div>
+
+            {/* 모달 본문 */}
+            <div className="py-4 overflow-y-auto space-y-4 flex-1 pr-1">
+              {/* TAB 1: 기본 프로필 */}
+              {inspectorTab === 'profile' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                        {isEn ? 'Name' : '이름'}
+                      </label>
+                      <input
+                        type="text"
+                        value={inspectorForm.name || ''}
+                        onChange={(e) => setInspectorForm({ ...inspectorForm, name: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                        {isEn ? 'English Name' : '영문 이름 (Name EN)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={inspectorForm.name_en || ''}
+                        onChange={(e) => setInspectorForm({ ...inspectorForm, name_en: e.target.value })}
+                        placeholder="e.g. John Doe"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                        {isEn ? 'Email' : '이메일 주소'}
+                      </label>
+                      <input
+                        type="email"
+                        value={inspectorForm.email || ''}
+                        onChange={(e) => setInspectorForm({ ...inspectorForm, email: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                        {isEn ? 'Phone / WhatsApp' : '전화번호 / 연락처'}
+                      </label>
+                      <input
+                        type="text"
+                        value={inspectorForm.phone || ''}
+                        onChange={(e) => setInspectorForm({ ...inspectorForm, phone: e.target.value })}
+                        placeholder="+82 10-0000-0000"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                        {isEn ? 'Affiliation / Church' : '소속 단체 / 교회'}
+                      </label>
+                      <input
+                        type="text"
+                        value={inspectorForm.affiliation || ''}
+                        onChange={(e) => setInspectorForm({ ...inspectorForm, affiliation: e.target.value })}
+                        placeholder="예: MCSK, MWC, 한국아나밥티스트센터"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                        {isEn ? 'Country' : '소속 국가'}
+                      </label>
+                      <select
+                        value={inspectorForm.countryCode || 'KR'}
+                        onChange={(e) => setInspectorForm({ ...inspectorForm, countryCode: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                      >
+                        <option value="KR">🇰🇷 {isEn ? 'South Korea' : '대한민국'}</option>
+                        <option value="US">🇺🇸 {isEn ? 'United States' : '미국'}</option>
+                        <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
+                        <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
+                        <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
+                        <option value="ID">🇮🇩 {isEn ? 'Indonesia' : '인도네시아'}</option>
+                        <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
+                        <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                        <option value="IN">🇮🇳 {isEn ? 'India' : '인도'}</option>
+                        <option value="KH">🇰🇭 {isEn ? 'Cambodia' : '캄보디아'}</option>
+                        <option value="LA">🇱🇦 {isEn ? 'Laos' : '라오스'}</option>
+                        <option value="MN">🇲🇳 {isEn ? 'Mongolia' : '몽골'}</option>
+                        <option value="TW">🇹🇼 {isEn ? 'Taiwan' : '대만'}</option>
+                        <option value="HK">🇭🇰 {isEn ? 'Hong Kong' : '홍콩'}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                      {isEn ? 'Bio / Description' : '자기소개 (Bio)'}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={inspectorForm.bio || ''}
+                      onChange={(e) => setInspectorForm({ ...inspectorForm, bio: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-200 text-xs space-y-1.5 font-mono text-gray-600">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">{isEn ? 'Google Account:' : '구글 계정:'}</span>
+                      <span className="font-bold text-gray-800">{inspectorMember.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">{isEn ? 'Joined Date:' : '가입 일시:'}</span>
+                      <span>{inspectorMember.created_at || inspectorMember.joinedDate}</span>
+                    </div>
+                    {inspectorMember.updated_at && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">{isEn ? 'Last Updated:' : '최근 수정:'}</span>
+                        <span>{inspectorMember.updated_at}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: SNS 및 메신저 연동 진단 */}
+              {inspectorTab === 'sns' && (
+                <div className="space-y-3.5">
+                  <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-2xl text-xs text-blue-900 flex items-center justify-between">
+                    <div>
+                      <p className="font-bold">{isEn ? 'SNS Integration Diagnosis' : 'SNS 및 메신저 연동 상태 정밀 진단'}</p>
+                      <p className="text-[11px] text-blue-800 mt-0.5">
+                        {isEn
+                          ? 'Check and manage the member’s Google, WhatsApp, Facebook, and Telegram connections.'
+                          : '회원의 구글 소셜 로그인, 왓츠앱 연락처, 페이스북 프로필, 텔레그램 봇 연동 상태를 확인하고 직접 조정할 수 있습니다.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3">
+                    {/* 1. Google 계정 연동 */}
+                    <div className="p-3.5 bg-white border border-gray-200 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0">
+                          <svg className="w-5 h-5" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-xs text-gray-900">Google OAuth 2.0</span>
+                            {inspectorForm.google_linked ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                {isEn ? 'Connected' : '연동 완료'}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">
+                                {isEn ? 'Not Connected' : '미연동'}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
+                            {inspectorForm.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setInspectorForm({
+                            ...inspectorForm,
+                            google_linked: inspectorForm.google_linked ? 0 : 1,
+                          })
+                        }
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          inspectorForm.google_linked
+                            ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {inspectorForm.google_linked
+                          ? (isEn ? 'Disable Google' : '구글 연동 해제')
+                          : (isEn ? 'Force Enable' : '강제 연동 활성화')}
+                      </button>
+                    </div>
+
+                    {/* 2. WhatsApp 메신저 */}
+                    <div className="p-3.5 bg-white border border-gray-200 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                          <MessageSquare size={16} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-xs text-gray-900">WhatsApp Messenger</span>
+                            {inspectorForm.phone && inspectorForm.phone.length > 7 ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                {isEn ? 'Valid Phone' : '번호 등록됨'}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200">
+                                {isEn ? 'No Phone' : '미등록'}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
+                            {inspectorForm.phone || (isEn ? 'No phone number' : '등록된 전화번호 없음')}
+                          </p>
+                        </div>
+                      </div>
+
+                      {inspectorForm.phone && (
+                        <a
+                          href={`https://wa.me/${inspectorForm.phone.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
+                        >
+                          <ExternalLink size={12} />
+                          <span>WhatsApp</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* 3. Facebook 계정 */}
+                    <div className="p-3.5 bg-white border border-gray-200 rounded-2xl space-y-2 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#1877F2] text-white font-black text-base flex items-center justify-center shrink-0">
+                            f
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-xs text-gray-900">Facebook Account</span>
+                              {inspectorForm.facebook_account ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">
+                                  {isEn ? 'Linked' : '연동됨'}
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">
+                                  {isEn ? 'Not Linked' : '미연동'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {inspectorForm.facebook_account && (
+                          <a
+                            href={inspectorForm.facebook_account.startsWith('http') ? inspectorForm.facebook_account : `https://facebook.com/${inspectorForm.facebook_account}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={inspectorForm.facebook_account || ''}
+                        onChange={(e) => setInspectorForm({ ...inspectorForm, facebook_account: e.target.value })}
+                        placeholder="https://facebook.com/username 또는 프로필 주소"
+                        className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                      />
+                    </div>
+
+                    {/* 4. Telegram 계정 */}
+                    <div className="p-3.5 bg-white border border-gray-200 rounded-2xl space-y-2 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#2AABEE] text-white flex items-center justify-center shrink-0">
+                            <Send size={15} className="-translate-x-0.5 translate-y-0.5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-xs text-gray-900">Telegram Bot (@aamen13_bot)</span>
+                              {inspectorForm.telegram_chat_id ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-800 border border-sky-200">
+                                  {isEn ? 'Bot Verified' : '봇 연동 인증됨'}
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">
+                                  {isEn ? 'Pending /start' : '/start 인증 대기'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-gray-400 shrink-0">Chat ID:</span>
+                        <input
+                          type="text"
+                          value={inspectorForm.telegram_chat_id || ''}
+                          onChange={(e) => setInspectorForm({ ...inspectorForm, telegram_chat_id: e.target.value })}
+                          placeholder="5618137472 (숫자 Chat ID)"
+                          className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 모달 하단 액션 버튼 바 */}
+            <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setInspectorMember(null)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                {isEn ? 'Close' : '닫기'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveInspectorDetails}
+                disabled={isSavingInspector}
+                className="px-5 py-2 bg-slate-950 hover:bg-slate-900 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Save size={14} className="text-emerald-400" />
+                <span>{isSavingInspector ? (isEn ? 'Saving...' : '저장 중...') : (isEn ? 'Save All Changes' : '수정사항 전체 저장')}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

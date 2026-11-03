@@ -18,13 +18,29 @@ export default function HeroSection() {
   const [progress, setProgress] = useState(0)
   const [mounted, setMounted] = useState(false)
 
-  // 15개국 다국어 번역 헬퍼
-  const getBannerField = (id: string, field: 'title' | 'subtitle' | 'buttonText' | 'secondaryButtonText' | 'badgeText', fallback?: string) => {
+  // 15개국 다국어 번역 및 관리자 입력값 우선 반영 헬퍼
+  const getBannerField = (
+    id: string,
+    field: 'title' | 'subtitle' | 'buttonText' | 'secondaryButtonText' | 'badgeText',
+    fallback?: string
+  ) => {
+    // 1) 한국어(ko)에서는 관리자가 대시보드에서 입력/저장한 값이 있으면 100% 최우선 반영!
+    if (locale === 'ko' && fallback && fallback.trim().length > 0) {
+      return fallback
+    }
+
+    // 2) 외국어 환경이거나 한국어 입력값이 없을 때 다국어 번역 파일 조회
     try {
       if (tBanners.has(`${id}.${field}`)) {
-        return tBanners(`${id}.${field}`)
+        const defaultBanner = defaultBanners.find((b) => b.id === id)
+        const defaultVal = defaultBanner ? (defaultBanner[field as keyof BannerConfig] as string) : ''
+        // 기본 텍스트 상태이거나 fallback이 없을 때는 정적 다국어 번역문 출력
+        if (!fallback || fallback === defaultVal || !defaultVal) {
+          return tBanners(`${id}.${field}`)
+        }
       }
     } catch (e) {}
+
     return fallback || ''
   }
 
