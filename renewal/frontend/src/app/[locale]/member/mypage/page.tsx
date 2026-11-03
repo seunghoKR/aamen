@@ -608,7 +608,18 @@ export default function MyPage() {
     }
 
     setIsSendingTelegramTest(true)
-    const testMessage = `🕊️ *[AAMEN 알림 연동 테스트]*\n샬롬! *${profileName || '회원'}*님, AAMEN 공식 봇(@aamen13_bot) 연동이 성공적으로 완료되었습니다.\n\n• 발송 일시: ${new Date().toLocaleString()}\n• 소속 국가: ${getCountryDisplayName(profileCountry)}\n• 소속 사역: ${profileAffiliation || 'AAMEN 네트워크'}\n• 텔레그램 ID: \`${cleanChatId}\`\n\n앞으로 아시아 13개국 긴급 중보기도 및 주요 공지사항이 본 텔레그램으로 실시간 전달됩니다!`
+    const escapeHtml = (str: string) =>
+      String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+
+    const safeName = escapeHtml(profileName || '회원')
+    const safeCountry = escapeHtml(getCountryDisplayName(profileCountry) || 'AAMEN')
+    const safeAffiliation = escapeHtml(profileAffiliation || 'AAMEN 네트워크')
+    const safeChatId = escapeHtml(cleanChatId)
+
+    const testMessage = `🕊️ <b>[AAMEN 알림 연동 테스트]</b>\n샬롬! <b>${safeName}</b>님, AAMEN 공식 봇(@aamen13_bot) 연동이 성공적으로 완료되었습니다.\n\n• 발송 일시: ${new Date().toLocaleString()}\n• 소속 국가: ${safeCountry}\n• 소속 사역: ${safeAffiliation}\n• 텔레그램 ID: <code>${safeChatId}</code>\n\n앞으로 아시아 15개국 긴급 중보기도 및 주요 공지사항이 본 텔레그램으로 실시간 전달됩니다!`
 
     try {
       const botToken = '8748536633:AAHZLX0sd-05jtTezYsIYFpY-hTYnPRS1qQ'
@@ -618,7 +629,7 @@ export default function MyPage() {
         body: JSON.stringify({
           chat_id: cleanChatId,
           text: testMessage,
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
         }),
       })
 
@@ -628,7 +639,16 @@ export default function MyPage() {
       } else {
         const errorMsg = data.description || 'Failed'
         console.error('Telegram API error:', data)
-        showToast(`${myTexts.toastTelegramTestFailed}: ${errorMsg}`)
+        const lowerDesc = errorMsg.toLowerCase()
+        if (lowerDesc.includes('chat not found') || lowerDesc.includes('bot was blocked') || lowerDesc.includes('user not found')) {
+          showToast(
+            currentLocale === 'ko'
+              ? '⚠️ 발송 실패: 먼저 [1단계: 봇 시작하기 (@aamen13_bot)]를 누르고 [시작]을 해주셔야 합니다!'
+              : '⚠️ Failed: Please open @aamen13_bot and click [Start] first!'
+          )
+        } else {
+          showToast(`${myTexts.toastTelegramTestFailed}: ${errorMsg}`)
+        }
       }
     } catch (e) {
       console.error(e)
@@ -1748,20 +1768,48 @@ export default function MyPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-sky-50/70 border border-sky-100 mb-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-sky-950 block">
-                      {t('notifications.telegram_id_label')}
+                {/* 🌟 1단계: 텔레그램 봇 시작하기 (필수 선행 단계 강조 배너) */}
+                <div className="mb-4 p-4 rounded-2xl bg-gradient-to-br from-sky-500 via-sky-600 to-blue-700 text-white shadow-sm space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-black tracking-wide">
+                      <Sparkles size={12} className="text-amber-300" />
+                      <span>{currentLocale === 'ko' ? '1단계: 봇 시작하기 (필수)' : 'Step 1: Start Bot (Required)'}</span>
                     </span>
-                    <a
-                      href="https://t.me/aamen13_bot"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-bold text-sky-700 hover:underline flex items-center gap-1"
-                    >
-                      <span>{myTexts.telegramStartBot}</span>
-                      <ExternalLink size={11} />
-                    </a>
+                    <span className="text-[11px] text-sky-100 font-medium">
+                      {currentLocale === 'ko' ? '알림 수신 활성화 필수' : 'Required to Receive Alerts'}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-sky-50 leading-relaxed font-medium">
+                    {currentLocale === 'ko'
+                      ? '텔레그램 보안 정책상, 봇 대화창에서 [시작(Start)]을 먼저 눌러주셔야 AAMEN 봇이 회원님께 알림을 보낼 수 있습니다.'
+                      : 'Under Telegram policy, you must click [Start] in the bot chat first so the AAMEN bot can deliver messages to you.'}
+                  </p>
+
+                  <a
+                    href="https://t.me/aamen13_bot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-white hover:bg-sky-50 text-sky-700 font-black text-xs sm:text-sm rounded-xl shadow-sm transition-all cursor-pointer group"
+                  >
+                    <Send size={14} className="text-sky-600 group-hover:translate-x-0.5 transition-transform" />
+                    <span>{currentLocale === 'ko' ? '👉 @aamen13_bot 대화창 열고 [시작(Start)] 누르기' : '👉 Open @aamen13_bot and Click [Start]'}</span>
+                    <ExternalLink size={13} className="text-sky-400" />
+                  </a>
+                </div>
+
+                {/* 🌟 2단계: 내 Chat ID 입력 및 테스트 발송 */}
+                <div className="p-4 rounded-2xl bg-sky-50/80 border border-sky-100 mb-5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-sky-600 text-white text-[10px] font-black flex items-center justify-center">2</span>
+                      <span className="text-xs font-bold text-sky-950 block">
+                        {t('notifications.telegram_id_label')}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-sky-600 font-medium">
+                      {currentLocale === 'ko' ? '* 본인 텔레그램 숫자 Chat ID 입력' : '* Enter your numeric Chat ID'}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1770,13 +1818,13 @@ export default function MyPage() {
                       placeholder={myTexts.telegramChatIdPlaceholder}
                       value={telegramChatId}
                       onChange={(e) => setTelegramChatId(e.target.value)}
-                      className="flex-1 px-3.5 py-2.5 bg-white rounded-xl border border-sky-200 text-xs sm:text-sm font-mono font-bold focus:outline-sky-500"
+                      className="flex-1 px-3.5 py-2.5 bg-white rounded-xl border border-sky-200 text-xs sm:text-sm font-mono font-bold focus:outline-sky-500 text-gray-800"
                     />
                     <button
                       type="button"
                       onClick={handleTelegramTestSend}
                       disabled={isSendingTelegramTest}
-                      className="px-3.5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shrink-0"
+                      className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
                       {isSendingTelegramTest ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
                       <span>{t('notifications.telegram_test_btn')}</span>

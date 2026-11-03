@@ -14,7 +14,7 @@ define('TELEGRAM_BOT_USERNAME', 'aamen13_bot');
  * @param string $parse_mode
  * @return array
  */
-function send_telegram_message($chat_id, $text, $parse_mode = 'Markdown') {
+function send_telegram_message($chat_id, $text, $parse_mode = 'HTML') {
     if (empty($chat_id) || empty($text)) {
         return ['ok' => false, 'error' => 'Missing chat_id or text'];
     }
