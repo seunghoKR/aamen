@@ -41,6 +41,7 @@ import MessagesInbox from '@/components/member/MessagesInbox'
 import NotificationHistoryList from '@/components/member/NotificationHistoryList'
 import AppInstallGuide from '@/components/member/AppInstallGuide'
 import { subscribeToWebPush, sendTestWebPush } from '@/lib/pushNotifications'
+import { getNotificationGuideTexts } from '@/lib/notificationGuideI18n'
 import {
   getLocalizedTierInfo,
   getLocalizedCountryList,
@@ -195,6 +196,7 @@ export default function MyPage() {
   const getLocalizedPath = (path: string) => `/${currentLocale}${path.startsWith('/') ? path : `/${path}`}`
 
   const myTexts = getMyPageTexts(currentLocale)
+  const tGuide = getNotificationGuideTexts(currentLocale)
   const localizedCountries = getLocalizedCountryList(currentLocale)
 
   const [mounted, setMounted] = useState(false)
@@ -1768,47 +1770,14 @@ export default function MyPage() {
                   </div>
                 </div>
 
-                {/* 🌟 1단계: 텔레그램 봇 시작하기 (필수 선행 단계 강조 배너) */}
-                <div className="mb-4 p-4 rounded-2xl bg-gradient-to-br from-sky-500 via-sky-600 to-blue-700 text-white shadow-sm space-y-2.5">
+                {/* 🌟 1. 내 Chat ID 입력 및 테스트 발송 (상단 배치) */}
+                <div className="p-4 rounded-2xl bg-sky-50/80 border border-sky-100 mb-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-black tracking-wide">
-                      <Sparkles size={12} className="text-amber-300" />
-                      <span>{currentLocale === 'ko' ? '1단계: 봇 시작하기 (필수)' : 'Step 1: Start Bot (Required)'}</span>
+                    <span className="text-xs font-bold text-sky-950 block">
+                      {t('notifications.telegram_id_label')}
                     </span>
-                    <span className="text-[11px] text-sky-100 font-medium">
-                      {currentLocale === 'ko' ? '알림 수신 활성화 필수' : 'Required to Receive Alerts'}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-sky-50 leading-relaxed font-medium">
-                    {currentLocale === 'ko'
-                      ? '텔레그램 보안 정책상, 봇 대화창에서 [시작(Start)]을 먼저 눌러주셔야 AAMEN 봇이 회원님께 알림을 보낼 수 있습니다.'
-                      : 'Under Telegram policy, you must click [Start] in the bot chat first so the AAMEN bot can deliver messages to you.'}
-                  </p>
-
-                  <a
-                    href="https://t.me/aamen13_bot"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-white hover:bg-sky-50 text-sky-700 font-black text-xs sm:text-sm rounded-xl shadow-sm transition-all cursor-pointer group"
-                  >
-                    <Send size={14} className="text-sky-600 group-hover:translate-x-0.5 transition-transform" />
-                    <span>{currentLocale === 'ko' ? '👉 @aamen13_bot 대화창 열고 [시작(Start)] 누르기' : '👉 Open @aamen13_bot and Click [Start]'}</span>
-                    <ExternalLink size={13} className="text-sky-400" />
-                  </a>
-                </div>
-
-                {/* 🌟 2단계: 내 Chat ID 입력 및 테스트 발송 */}
-                <div className="p-4 rounded-2xl bg-sky-50/80 border border-sky-100 mb-5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-full bg-sky-600 text-white text-[10px] font-black flex items-center justify-center">2</span>
-                      <span className="text-xs font-bold text-sky-950 block">
-                        {t('notifications.telegram_id_label')}
-                      </span>
-                    </div>
                     <span className="text-[10px] text-sky-600 font-medium">
-                      {currentLocale === 'ko' ? '* 본인 텔레그램 숫자 Chat ID 입력' : '* Enter your numeric Chat ID'}
+                      {tGuide.telegramIdSub}
                     </span>
                   </div>
 
@@ -1830,6 +1799,34 @@ export default function MyPage() {
                       <span>{t('notifications.telegram_test_btn')}</span>
                     </button>
                   </div>
+                </div>
+
+                {/* 🌟 2. 봇 시작하기 강조 배너 (ID 입력창 밑으로 이동 완료!) */}
+                <div className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-sky-500 via-sky-600 to-blue-700 text-white shadow-sm space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-black tracking-wide">
+                      <Sparkles size={12} className="text-amber-300" />
+                      <span>{tGuide.telegramBotNoticeBadge}</span>
+                    </span>
+                    <span className="text-[11px] text-sky-100 font-medium">
+                      {tGuide.telegramPolicyLabel}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-sky-50 leading-relaxed font-medium">
+                    {tGuide.telegramPolicyDesc}
+                  </p>
+
+                  <a
+                    href="https://t.me/aamen13_bot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-white hover:bg-sky-50 text-sky-700 font-black text-xs sm:text-sm rounded-xl shadow-sm transition-all cursor-pointer group"
+                  >
+                    <Send size={14} className="text-sky-600 group-hover:translate-x-0.5 transition-transform" />
+                    <span>{tGuide.telegramOpenBotBtn}</span>
+                    <ExternalLink size={13} className="text-sky-400" />
+                  </a>
                 </div>
 
                 <div className="space-y-3">
@@ -2862,4 +2859,3 @@ export default function MyPage() {
     </div>
   )
 }
-

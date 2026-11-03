@@ -16,6 +16,7 @@ import {
   Filter
 } from 'lucide-react'
 import { NotificationItem } from '../layout/NotificationBell'
+import { getNotificationGuideTexts } from '@/lib/notificationGuideI18n'
 
 interface NotificationHistoryListProps {
   locale: string
@@ -25,6 +26,7 @@ interface NotificationHistoryListProps {
 export default function NotificationHistoryList({ locale, userId }: NotificationHistoryListProps) {
   const router = useRouter()
   const isKo = locale === 'ko'
+  const tGuide = getNotificationGuideTexts(locale)
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -157,10 +159,10 @@ export default function NotificationHistoryList({ locale, userId }: Notification
       const past = new Date(dateStr.replace(' ', 'T')).getTime()
       const diffSec = Math.floor((now - past) / 1000)
 
-      if (diffSec < 60) return isKo ? '방금 전' : 'Just now'
-      if (diffSec < 3600) return isKo ? `${Math.floor(diffSec / 60)}분 전` : `${Math.floor(diffSec / 60)}m ago`
-      if (diffSec < 86400) return isKo ? `${Math.floor(diffSec / 3600)}시간 전` : `${Math.floor(diffSec / 3600)}h ago`
-      if (diffSec < 604800) return isKo ? `${Math.floor(diffSec / 86400)}일 전` : `${Math.floor(diffSec / 86400)}d ago`
+      if (diffSec < 60) return tGuide.timeJustNow
+      if (diffSec < 3600) return tGuide.timeMinAgo(Math.floor(diffSec / 60))
+      if (diffSec < 86400) return tGuide.timeHourAgo(Math.floor(diffSec / 3600))
+      if (diffSec < 604800) return tGuide.timeDayAgo(Math.floor(diffSec / 86400))
       return dateStr.substring(0, 10)
     } catch {
       return dateStr
@@ -190,16 +192,16 @@ export default function NotificationHistoryList({ locale, userId }: Notification
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-extrabold text-lg text-gray-900">
-                {isKo ? '실시간 알림 내역' : 'Real-time Notifications'}
+                {tGuide.historyTitle}
               </h3>
               {unreadCount > 0 && (
                 <span className="text-[11px] font-black bg-rose-500 text-white px-2.5 py-0.5 rounded-full">
-                  {unreadCount} {isKo ? '미확인' : 'unread'}
+                  {unreadCount} {tGuide.historyUnreadBadge}
                 </span>
               )}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              {isKo ? '기도, 댓글, 쪽지 등 나에게 전달된 최신 알림을 확인하고 관리합니다.' : 'Check and manage latest notifications for prayers, comments, and messages.'}
+              {tGuide.historyDesc}
             </p>
           </div>
         </div>
@@ -209,7 +211,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
           <button
             type="button"
             onClick={() => fetchNotifications(true)}
-            title={isKo ? '새로고침' : 'Refresh'}
+            title={tGuide.historyRefresh}
             className="p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
           >
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
@@ -222,7 +224,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
                 className="px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold transition-colors flex items-center gap-1.5"
               >
                 <CheckCheck size={14} />
-                <span>{isKo ? '모두 읽음' : 'Mark all read'}</span>
+                <span>{tGuide.historyMarkAllRead}</span>
               </button>
               <button
                 type="button"
@@ -230,7 +232,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
                 className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold transition-colors flex items-center gap-1.5"
               >
                 <Trash2 size={13} />
-                <span>{isKo ? '전체 삭제' : 'Delete all'}</span>
+                <span>{tGuide.historyDeleteAll}</span>
               </button>
             </>
           )}
@@ -248,7 +250,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          {isKo ? `전체 (${notifications.length})` : `All (${notifications.length})`}
+          {`${tGuide.historyTabAll} (${notifications.length})`}
         </button>
         <button
           type="button"
@@ -259,7 +261,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          {isKo ? `미확인 (${unreadCount})` : `Unread (${unreadCount})`}
+          {`${tGuide.historyTabUnread} (${unreadCount})`}
         </button>
         <button
           type="button"
@@ -270,7 +272,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          💬 {isKo ? '댓글' : 'Comments'}
+          💬 {tGuide.historyTabComment}
         </button>
         <button
           type="button"
@@ -281,7 +283,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          🙏 {isKo ? '기도/아멘' : 'Prayers'}
+          🙏 {tGuide.historyTabPrayer}
         </button>
         <button
           type="button"
@@ -292,7 +294,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          ✉️ {isKo ? '쪽지' : 'Messages'}
+          ✉️ {tGuide.historyTabMessage}
         </button>
       </div>
 
@@ -301,7 +303,7 @@ export default function NotificationHistoryList({ locale, userId }: Notification
         {loading ? (
           <div className="py-12 text-center text-gray-400 flex flex-col items-center justify-center gap-2">
             <RefreshCw size={24} className="animate-spin text-emerald-600" />
-            <span className="text-xs">{isKo ? '알림을 불러오는 중...' : 'Loading notifications...'}</span>
+            <span className="text-xs">{tGuide.historyLoading}</span>
           </div>
         ) : filteredNotifications.length === 0 ? (
           <div className="py-12 px-4 text-center border-2 border-dashed border-gray-100 rounded-2xl">
@@ -309,10 +311,10 @@ export default function NotificationHistoryList({ locale, userId }: Notification
               <Bell size={22} className="opacity-40" />
             </div>
             <p className="text-sm font-bold text-gray-700">
-              {isKo ? '해당하는 알림이 없습니다 🕊️' : 'No notifications in this category 🕊️'}
+              {tGuide.historyEmptyTitle}
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              {isKo ? '새로운 상호작용이 발생하면 여기에 표시됩니다.' : 'New activities will appear here.'}
+              {tGuide.historyEmptyDesc}
             </p>
           </div>
         ) : (
@@ -359,23 +361,23 @@ export default function NotificationHistoryList({ locale, userId }: Notification
                         </span>
                       )}
                       <span className="text-gray-400">
-                        {item.type === 'comment' && (isKo ? '게시물 댓글' : 'Comment')}
-                        {item.type === 'amen' && (isKo ? '저도 기도할게요' : 'Prayer Amen')}
-                        {item.type === 'urgent_prayer' && (isKo ? '🚨 긴급 중보기도' : '🚨 Urgent Prayer')}
-                        {item.type === 'message' && (isKo ? '✉️ 개인 쪽지' : '✉️ Message')}
-                        {item.type === 'system' && (isKo ? '시스템 공지' : 'System')}
+                        {item.type === 'comment' && tGuide.typeComment}
+                        {item.type === 'amen' && tGuide.typeAmen}
+                        {item.type === 'urgent_prayer' && tGuide.typeUrgentPrayer}
+                        {item.type === 'message' && tGuide.typeMessage}
+                        {item.type === 'system' && tGuide.typeSystem}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <span className="text-emerald-700 font-bold flex items-center gap-0.5">
-                        <span>{isKo ? '바로가기' : 'View'}</span>
+                        <span>{tGuide.viewAction}</span>
                         <ExternalLink size={11} />
                       </span>
                       <button
                         type="button"
                         onClick={(e) => handleDeleteItem(e, item.id)}
-                        title={isKo ? '삭제' : 'Delete'}
+                        title={tGuide.deleteAction}
                         className="p-1 hover:text-rose-600 text-gray-400 transition-colors"
                       >
                         <Trash2 size={13} />
