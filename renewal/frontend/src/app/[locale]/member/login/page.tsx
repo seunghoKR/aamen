@@ -396,7 +396,7 @@ export default function LoginPage() {
               </div>
               <div className="flex items-center gap-1.5 text-gray-600 font-medium">
                 <Check size={14} className="text-gray-400 shrink-0" />
-                <span>{isKo ? 'WhatsApp, Facebook, Telegram 연동 지원' : 'Full sync with WhatsApp, Facebook, Telegram'}</span>
+                <span>{isKo ? 'WhatsApp, Telegram 연동 지원' : 'Full sync with WhatsApp, Telegram'}</span>
               </div>
             </div>
           </div>

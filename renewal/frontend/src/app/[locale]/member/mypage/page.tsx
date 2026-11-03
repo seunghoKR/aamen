@@ -2209,60 +2209,7 @@ export default function MyPage() {
                   </div>
                 </div>
 
-                {/* 3. Facebook 계정 (미얀마·캄보디아·라오스 핵심) */}
-                <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200 flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#1877F2] text-white flex items-center justify-center shrink-0 shadow-xs font-black text-lg">
-                        f
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-extrabold text-gray-900">{t('social_accounts.facebook_title')}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                            connectedFacebook ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            {connectedFacebook ? myTexts.facebookConnectedBadge : t('social_accounts.status_disconnected')}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-500 mt-0.5">
-                          {connectedFacebook ? facebookProfileName : t('social_accounts.facebook_desc')}
-                        </p>
-                      </div>
-                    </div>
-
-                    {connectedFacebook ? (
-                      <button
-                        type="button"
-                        onClick={handleDisconnectFacebook}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all cursor-pointer"
-                      >
-                        {t('social_accounts.disconnect_btn')}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setInputFacebookAccount(facebookProfileName || '')
-                          setIsFacebookModalOpen(true)
-                        }}
-                        className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1877F2] hover:bg-blue-700 text-white shadow-xs transition-all cursor-pointer"
-                      >
-                        {myTexts.facebookConnectBtn}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* 💡 페이스북 연동 방식 설명 배너 */}
-                  <div className="pt-2 border-t border-indigo-100 text-[11px] text-indigo-900/80 leading-relaxed flex items-center gap-1.5">
-                    <span>💡</span>
-                    <span>
-                      <strong>{myTexts.facebookHelpTitle}</strong> {myTexts.facebookHelpDesc}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 4. Telegram 계정 (보안 및 채널 알림) */}
+                {/* 3. Telegram 계정 (보안 및 채널 알림) */}
                 <div className="p-4 rounded-2xl bg-sky-50/50 border border-sky-200 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#2AABEE] text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -2665,86 +2612,6 @@ export default function MyPage() {
                   className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
                 >
                   {isKo ? '닫기' : 'Close'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 🌐 Facebook 계정 연동 모달 */}
-        {isFacebookModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#1877F2] text-white flex items-center justify-center font-black text-lg shadow-xs">
-                    f
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-gray-900 text-sm sm:text-base">
-                      {isKo ? 'Facebook 계정 연동' : 'Connect Facebook Account'}
-                    </h3>
-                    <p className="text-[11px] text-gray-400">
-                      {isKo ? '미얀마·캄보디아·라오스 메콩 사역 네트워크 1:1 매칭' : 'Mekong Network 1:1 matching'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsFacebookModalOpen(false)}
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 space-y-2">
-                <p className="font-medium leading-relaxed">
-                  {isKo
-                    ? '미얀마, 캄보디아, 라오스 등 페이스북 기반 사역 현장과 직접 소통하기 위해 회원의 페이스북 프로필을 안전하게 매칭합니다.'
-                    : 'Safely link your Facebook profile to communicate directly with ministry fields in Myanmar, Cambodia, and Laos.'}
-                </p>
-                <a
-                  href="https://www.facebook.com/me"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1877F2] hover:underline"
-                >
-                  <span>{isKo ? '🌐 내 Facebook 프로필 확인하기 (새창)' : 'Open My Facebook Profile (New Tab)'}</span>
-                  <ExternalLink size={12} />
-                </a>
-              </div>
-
-              <div className="space-y-1.5 text-left">
-                <label className="block text-xs font-bold text-gray-700">
-                  {isKo ? 'Facebook 프로필 URL 또는 사용자 이름' : 'Facebook Profile URL or Username'} <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={inputFacebookAccount}
-                  onChange={(e) => setInputFacebookAccount(e.target.value)}
-                  placeholder={isKo ? '예: https://facebook.com/my.name 또는 홍길동' : 'e.g. https://facebook.com/my.name'}
-                  className="w-full px-3.5 py-2.5 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#1877F2] focus:outline-hidden"
-                />
-                <p className="text-[10px] text-gray-400">
-                  {isKo ? '페이스북 주소창의 링크나 프로필 이름을 입력해 주시면 AAMEN 계정과 1:1로 연결됩니다.' : 'Enter your profile URL or name to link with your AAMEN account.'}
-                </p>
-              </div>
-
-              <div className="pt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleConnectFacebook}
-                  className="flex-1 py-2.5 bg-[#1877F2] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-                >
-                  {isKo ? 'Facebook 계정 연동 완료' : 'Complete Facebook Connection'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFacebookModalOpen(false)}
-                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                >
-                  {isKo ? '취소' : 'Cancel'}
                 </button>
               </div>
             </div>

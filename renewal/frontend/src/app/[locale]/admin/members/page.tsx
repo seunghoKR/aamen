@@ -1332,27 +1332,7 @@ export default function AdminMembersPage() {
                                   <MessageSquare size={12} />
                                 </div>
 
-                                {/* 3. Facebook 계정 */}
-                                <div
-                                  className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs transition-all cursor-help hover:scale-110 ${
-                                    sns.facebook
-                                      ? 'bg-[#1877F2] text-white shadow-2xs ring-1 ring-blue-500/30'
-                                      : 'bg-gray-200/60 text-gray-400 opacity-30 grayscale'
-                                  }`}
-                                  title={
-                                    sns.facebook
-                                      ? isEn
-                                        ? `Facebook Connected: ${sns.facebookDetail}`
-                                        : `Facebook 연동 완료: ${sns.facebookDetail}`
-                                      : isEn
-                                      ? 'Facebook Not Connected'
-                                      : 'Facebook 미연동'
-                                  }
-                                >
-                                  f
-                                </div>
-
-                                {/* 4. Telegram 계정 (봇 /start 인증 완료 시에만 컬러 활성화) */}
+                                {/* 3. Telegram 계정 (봇 /start 인증 완료 시에만 컬러 활성화) */}
                                 <div
                                   className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-help hover:scale-110 ${
                                     sns.telegram
@@ -1887,8 +1867,8 @@ export default function AdminMembersPage() {
                       <p className="font-bold">{isEn ? 'SNS Integration Diagnosis' : 'SNS 및 메신저 연동 상태 정밀 진단'}</p>
                       <p className="text-[11px] text-blue-800 mt-0.5">
                         {isEn
-                          ? 'Check and manage the member’s Google, WhatsApp, Facebook, and Telegram connections.'
-                          : '회원의 구글 소셜 로그인, 왓츠앱 연락처, 페이스북 프로필, 텔레그램 봇 연동 상태를 확인하고 직접 조정할 수 있습니다.'}
+                          ? 'Check and manage the member’s Google, WhatsApp, and Telegram connections.'
+                          : '회원의 구글 소셜 로그인, 왓츠앱 연락처, 텔레그램 봇 연동 상태를 확인하고 직접 조정할 수 있습니다.'}
                       </p>
                     </div>
                   </div>
@@ -1982,50 +1962,7 @@ export default function AdminMembersPage() {
                       )}
                     </div>
 
-                    {/* 3. Facebook 계정 */}
-                    <div className="p-3.5 bg-white border border-gray-200 rounded-2xl space-y-2 shadow-xs">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-[#1877F2] text-white font-black text-base flex items-center justify-center shrink-0">
-                            f
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-black text-xs text-gray-900">Facebook Account</span>
-                              {inspectorForm.facebook_account ? (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">
-                                  {isEn ? 'Linked' : '연동됨'}
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-100 text-gray-600 border border-gray-200">
-                                  {isEn ? 'Not Linked' : '미연동'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {inspectorForm.facebook_account && (
-                          <a
-                            href={inspectorForm.facebook_account.startsWith('http') ? inspectorForm.facebook_account : `https://facebook.com/${inspectorForm.facebook_account}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
-                          >
-                            <ExternalLink size={14} />
-                          </a>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        value={inspectorForm.facebook_account || ''}
-                        onChange={(e) => setInspectorForm({ ...inspectorForm, facebook_account: e.target.value })}
-                        placeholder="https://facebook.com/username 또는 프로필 주소"
-                        className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                      />
-                    </div>
-
-                    {/* 4. Telegram 계정 */}
+                    {/* 3. Telegram 계정 */}
                     <div className="p-3.5 bg-white border border-gray-200 rounded-2xl space-y-2 shadow-xs">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
