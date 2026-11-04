@@ -62,73 +62,6 @@ interface MemberOption {
   aliases: string[]
 }
 
-// 🌟 공식 7명 회원 다국어 매핑 및 풍부한 별칭(Aliases) 사전
-const OFFICIAL_MEMBER_METAS: Record<string, {
-  nameKo: string
-  nameEn: string
-  aliases: string[]
-  affiliation: string
-  countryNameKo: string
-  countryNameEn: string
-}> = {
-  Yongha: {
-    nameKo: '배용하',
-    nameEn: 'Bae Yongha',
-    aliases: ['배용하', '배', '용하', 'Bae', 'Yongha', 'bea', 'byh1424', 'gimac1424', 'MCSK', '한국', '대한민국', 'Korea', 'South Korea'],
-    affiliation: 'MCSK',
-    countryNameKo: '대한민국',
-    countryNameEn: 'South Korea'
-  },
-  Bockki: {
-    nameKo: '김복기',
-    nameEn: 'Kim Bockki',
-    aliases: ['김복기', '김', '복기', 'Kim', 'Bockki', 'bockkikim', 'MCSK', '한국', '대한민국', 'Korea', 'South Korea'],
-    affiliation: 'MCSK',
-    countryNameKo: '대한민국',
-    countryNameEn: 'South Korea'
-  },
-  Jeanette: {
-    nameKo: '지넷 한슨',
-    nameEn: 'Jeanette Hanson',
-    aliases: ['지넷 한슨', '지넷', '한슨', 'Jeanette', 'Hanson', 'MWC', '미국', 'USA', 'United States'],
-    affiliation: 'MWC',
-    countryNameKo: '미국',
-    countryNameEn: 'United States'
-  },
-  Jeremiah: {
-    nameKo: '최제레마이어',
-    nameEn: 'Jeremiah',
-    aliases: ['최제레마이어', '제레마이어', '예레미야', 'Jeremiah', 'hkjerechoi', '홍콩', 'Hong Kong'],
-    affiliation: 'HK Anabaptist',
-    countryNameKo: '홍콩',
-    countryNameEn: 'Hong Kong'
-  },
-  Paulus: {
-    nameKo: '파울루스 위자야',
-    nameEn: 'Paulus S. Widjaja',
-    aliases: ['파울루스 위자야', '파울루스', '위자야', 'Paulus', 'Widjaja', 'psw.dosen', 'GKMI', '인도네시아', 'Indonesia'],
-    affiliation: 'GKMI',
-    countryNameKo: '인도네시아',
-    countryNameEn: 'Indonesia'
-  },
-  Andi: {
-    nameKo: '안디 산토소',
-    nameEn: 'Andi Santoso',
-    aliases: ['안디 산토소', '안디', '산토소', 'Andi', 'Santoso', 'andiospeace', 'MNN', '미국', 'USA', 'Indonesia'],
-    affiliation: 'MNN',
-    countryNameKo: '미국',
-    countryNameEn: 'United States'
-  },
-  Hiro: {
-    nameKo: '카타노 히로',
-    nameEn: 'Hiro Katano',
-    aliases: ['카타노 히로', '히로', '카타노', 'Hiro', 'Katano', '片野', 'ヒロ', 'h98484435', '일본', 'Japan'],
-    affiliation: 'Japan Mennonite',
-    countryNameKo: '일본',
-    countryNameEn: 'Japan'
-  }
-}
-
 const COUNTRY_FLAGS: Record<string, string> = {
   KR: '🇰🇷 한국',
   MM: '🇲🇲 미얀마',
@@ -148,46 +81,43 @@ const COUNTRY_FLAGS: Record<string, string> = {
 }
 
 function formatMemberOption(m: any, locale: string): MemberOption {
-  const meta = OFFICIAL_MEMBER_METAS[m.id]
   const isKo = locale === 'ko'
   const cCode = m.country_code || m.countryCode || 'KR'
   const flagInfo = COUNTRY_FLAGS[cCode] || '🌐'
   const flagEmoji = flagInfo.split(' ')[0]
 
-  let displayName = m.name || m.id
-  const nameEn = m.name_en || m.nameEn || meta?.nameEn || m.name || m.id
-  const nameKo = meta?.nameKo
+  const rawName = m.name || m.email || 'AAMEN Member'
+  const nameEn = m.name_en || ''
+  const nameKo = m.name || ''
 
-  if (isKo && meta?.nameKo) {
-    displayName = `${meta.nameKo} (${meta.nameEn})`
-  } else if (!isKo && meta?.nameEn) {
-    displayName = meta.nameEn
+  let displayName = rawName
+  if (nameKo && nameEn && nameKo !== nameEn) {
+    displayName = isKo ? `${nameKo} (${nameEn})` : `${nameEn} (${nameKo})`
+  } else if (nameEn && !isKo) {
+    displayName = nameEn
   }
 
   const aliases: string[] = [
-    m.name,
+    rawName,
     nameEn,
-    m.id,
+    nameKo,
     m.email || '',
-    m.affiliation || meta?.affiliation || '',
+    m.affiliation || '',
     cCode,
     flagInfo,
-    meta?.countryNameKo || '',
-    meta?.countryNameEn || '',
-    ...(meta?.aliases || [])
   ].filter(Boolean)
 
   return {
     id: m.id,
     name: displayName,
-    raw_name: m.name || m.id,
+    raw_name: rawName,
     name_ko: nameKo,
     name_en: nameEn,
     email: m.email || '',
     country_code: cCode,
     country_flag: flagEmoji,
     role: m.role || 'regular',
-    affiliation: m.affiliation || meta?.affiliation || '',
+    affiliation: m.affiliation || '',
     avatar_url: m.avatar_url || null,
     aliases: Array.from(new Set(aliases))
   }
@@ -297,7 +227,7 @@ export default function MessagesInbox({ currentUser, currentLevel, onUnreadChang
   useEffect(() => {
     async function loadMembers() {
       try {
-        let res = await fetch('/api/members.php')
+        let res = await fetch(`/api/members.php?_t=${Date.now()}`)
         if (!res.ok) res = await fetch('/api/members')
         if (res.ok) {
           const json = await res.json()
@@ -1076,9 +1006,7 @@ export default function MessagesInbox({ currentUser, currentLevel, onUnreadChang
                                       </div>
                                       <div className="text-[11px] text-gray-400 flex items-center gap-2 mt-0.5">
                                         {m.email && <span>{m.email}</span>}
-                                        <span className="text-[10px] text-emerald-600 font-medium">
-                                          ID: {m.id}
-                                        </span>
+                                        
                                       </div>
                                     </div>
                                   </div>

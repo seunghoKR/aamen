@@ -53,6 +53,7 @@ import {
 } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import { getStoredUser } from '@/lib/auth'
+import { AuthorMessageBadge } from '@/components/common/DirectMessageModal'
 import {
   optimizeImage,
   optimizeMultipleImages,
@@ -1425,8 +1426,8 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                                 {post.created_at.substring(0, 10)}
                               </span>
                               {post.author_name && (
-                                <span className="text-xs text-gray-500 font-medium">
-                                  · by {post.author_name}
+                                <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                                  · by <AuthorMessageBadge authorName={post.author_name} authorId={post.author_id} authorCountry={post.author_country} contextTitle={getPostTitle(post, locale)} />
                                 </span>
                               )}
                             </div>
@@ -2076,9 +2077,15 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     )}
                   </div>
 
-                  <h3 className="text-lg font-black text-gray-900 mb-3 leading-snug">
+                  <h3 className="text-lg font-black text-gray-900 mb-2 leading-snug">
                     {photoTitleText}
                   </h3>
+                  {activeLightbox.author_name && (
+                    <div className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
+                      <span className="text-gray-400">게시자:</span>
+                      <AuthorMessageBadge authorName={activeLightbox.author_name} authorId={activeLightbox.author_id} authorCountry={activeLightbox.author_country} contextTitle={photoTitleText} />
+                    </div>
+                  )}
 
                   <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-6 whitespace-pre-line">
                     {activeLightbox.content}
@@ -2155,8 +2162,9 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   📢 공지사항
                 </span>
                 <h3 className="text-xl font-black text-gray-900 mt-2 mb-1">{getPostTitle(selectedPost, locale)}</h3>
-                <div className="text-xs text-gray-400">
-                  {selectedPost.author_name} · {selectedPost.created_at.substring(0, 10)}
+                <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
+                  <AuthorMessageBadge authorName={selectedPost.author_name} authorId={selectedPost.author_id} authorCountry={selectedPost.author_country} contextTitle={getPostTitle(selectedPost, locale)} />
+                  <span>· {selectedPost.created_at.substring(0, 10)}</span>
                 </div>
               </div>
               <button onClick={() => setSelectedPost(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
@@ -2285,8 +2293,9 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 <h3 className="text-xl font-black text-gray-900 mt-1 mb-1">
                   {getPostTitle(selectedResource, locale)}
                 </h3>
-                <div className="text-xs text-gray-400">
-                  {selectedResource.author_name || 'AAMEN 운영본부'} · {selectedResource.created_at.substring(0, 10)}
+                <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
+                  <AuthorMessageBadge authorName={selectedResource.author_name || 'AAMEN 운영본부'} authorId={selectedResource.author_id} authorCountry={selectedResource.author_country} contextTitle={getPostTitle(selectedResource, locale)} />
+                  <span>· {selectedResource.created_at.substring(0, 10)}</span>
                 </div>
               </div>
               <button onClick={() => setSelectedResource(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">

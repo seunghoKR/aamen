@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { locales, type Locale } from '@/config/locales'
 import GlobalTierSimulator from '@/components/common/GlobalTierSimulator'
 import WhatsAppWidget from '@/components/common/WhatsAppWidget'
+import DirectMessageModal from '@/components/common/DirectMessageModal'
 
 interface LocaleLayoutProps {
   children: React.ReactNode
@@ -31,6 +32,7 @@ export default async function LocaleLayout({
     <NextIntlClientProvider messages={messages}>
       {children}
       <GlobalTierSimulator />
+      <DirectMessageModal />
       {/* 왓츠앱 플로팅 위젯 (현재 비활성화 / 추후 필요 시 주석 해제) */}
       {/* <WhatsAppWidget /> */}
     </NextIntlClientProvider>

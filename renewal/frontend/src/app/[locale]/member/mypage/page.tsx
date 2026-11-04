@@ -35,6 +35,7 @@ import {
 } from 'lucide-react'
 import { MemberLevel, defaultTierSettings, MemberTierInfo } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
+import { AuthorMessageBadge, openDirectMessage } from '@/components/common/DirectMessageModal'
 import { getStoredUser, saveAuthUser, logoutUser, AUTH_EVENT_NAME, type AuthUser } from '@/lib/auth'
 import { AVATAR_LIST, getAvatarSrc, CharacterSvg } from '@/lib/avatarCharacters'
 import MessagesInbox from '@/components/member/MessagesInbox'
@@ -2073,7 +2074,10 @@ export default function MyPage() {
                       🇲🇲 {getLocalizedCountryName('MM', currentLocale)}
                     </span>
                     <span className="font-bold text-gray-800">{myTexts.demoPrayer1Title}</span>
-                    <span className="text-gray-400 text-[11px] block mt-0.5">2026-09-28 {myTexts.joinedText}</span>
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px]">
+                      <span className="text-gray-400">2026-09-28 {myTexts.joinedText}</span>
+                      <AuthorMessageBadge authorName="Pastor Zaw Min" authorCountry="MM" contextTitle={myTexts.demoPrayer1Title} className="text-[11px] text-emerald-700" />
+                    </div>
                   </div>
                   <span className="text-rose-600 font-bold flex items-center gap-1 shrink-0">
                     <Heart size={12} className="fill-rose-500" /> {t('activity.amen_completed')}
@@ -2086,7 +2090,10 @@ export default function MyPage() {
                       🇻🇳 {getLocalizedCountryName('VN', currentLocale)}
                     </span>
                     <span className="font-bold text-gray-800">{myTexts.demoPrayer2Title}</span>
-                    <span className="text-gray-400 text-[11px] block mt-0.5">2026-09-27 {myTexts.joinedText}</span>
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px]">
+                      <span className="text-gray-400">2026-09-27 {myTexts.joinedText}</span>
+                      <AuthorMessageBadge authorName="Sarah Nguyen" authorCountry="VN" contextTitle={myTexts.demoPrayer2Title} className="text-[11px] text-emerald-700" />
+                    </div>
                   </div>
                   <span className="text-rose-600 font-bold flex items-center gap-1 shrink-0">
                     <Heart size={12} className="fill-rose-500" /> {t('activity.amen_completed')}

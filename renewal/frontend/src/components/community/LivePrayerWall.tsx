@@ -26,6 +26,7 @@ import {
 import { MemberLevel, defaultTierSettings } from '@/lib/store'
 import { getStoredTierLevel, TIER_EVENT_NAME, TIER_STORAGE_KEY } from '@/components/common/GlobalTierSimulator'
 import { getStoredUser } from '@/lib/auth'
+import { AuthorMessageBadge } from '@/components/common/DirectMessageModal'
 import { NATIONS_15 } from './communityI18n'
 import { translateTitleTo15Languages } from '@/lib/gemini'
 
@@ -1333,7 +1334,7 @@ export default function LivePrayerWall() {
                         </div>
                       ) : isRegularOrAbove ? (
                         <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
-                          <span>{item.author}</span>
+                          <AuthorMessageBadge authorName={item.author} authorId={item.authorId} authorCountry={item.countryCode} contextTitle={item.title} />
                         </div>
                       ) : (
                         <div className="font-bold text-sm text-emerald-800 flex items-center gap-1">
@@ -1822,7 +1823,11 @@ export default function LivePrayerWall() {
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-sm sm:text-base text-gray-900">
-                      {isGuest ? '🔒 [사역자 비공개]' : selectedPrayer.author}
+                      {isGuest ? (
+                        '🔒 [사역자 비공개]'
+                      ) : (
+                        <AuthorMessageBadge authorName={selectedPrayer.author} authorId={selectedPrayer.authorId} authorCountry={selectedPrayer.countryCode} contextTitle={selectedPrayer.title} />
+                      )}
                     </span>
                     <span className="text-xs text-gray-400 font-medium">·</span>
                     <span className="text-xs font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
