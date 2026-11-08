@@ -1,4 +1,4 @@
-﻿[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+﻿﻿[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = 'AAMEN [퇴근] 시놀로지 영구 백업'
 Clear-Host
 Write-Host '======================================================================' -ForegroundColor Cyan

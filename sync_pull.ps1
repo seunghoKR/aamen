@@ -1,4 +1,4 @@
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+﻿[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "AAMEN [출근] 작업 준비 & 현황 브리핑"
 Clear-Host
 Write-Host "======================================================================" -ForegroundColor Cyan

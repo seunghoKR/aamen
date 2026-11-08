@@ -1945,7 +1945,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                                   handleDeletePost(photo.id, photo.title)
                                 }}
                                 className="p-1.5 rounded-lg bg-white border border-gray-200 hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition-colors"
-                                title="사진 삭제"
+                                title={t.photo_btn_delete}
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -2134,7 +2134,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     <button
                       onClick={() => handleDeletePost(activeLightbox.id, activeLightbox.title)}
                       className="p-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors cursor-pointer"
-                      title="사진 삭제"
+                      title={t.photo_btn_delete}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -2424,7 +2424,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
               <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                 <PlusCircle className="text-emerald-600" size={18} />
-                <span>새 공지사항 작성</span>
+                <span>{t.modal_notice_title}</span>
               </h3>
               <button
                 onClick={() => setIsNoticeModalOpen(false)}
@@ -2436,20 +2436,20 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
             <form onSubmit={handleCreateNotice} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">공지 제목 *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">{t.notice_title_label}</label>
                 <input
                   type="text"
                   required
                   value={noticeTitle}
                   onChange={(e) => setNoticeTitle(e.target.value)}
-                  placeholder="공지사항 제목을 입력하세요"
+                  placeholder={t.notice_title_placeholder}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold"
                 />
               </div>
 
               <div className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100">
                 <span className="text-xs text-gray-600 font-medium">
-                  작성자 국가: <strong className="text-emerald-700">{countryFlags[getStoredUser()?.country_code || 'KR'] || getStoredUser()?.country_code || 'KR'}</strong> (계정 국가 자동 지정)
+                  {t.notice_author_country} <strong className="text-emerald-700">{countryFlags[getStoredUser()?.country_code || 'KR'] || getStoredUser()?.country_code || 'KR'}</strong> {t.notice_auto_assigned}
                 </span>
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
                   <input
@@ -2458,31 +2458,32 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     onChange={(e) => setNoticeIsPinned(e.target.checked)}
                     className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                   />
-                  <span>상단 고정 공지로 등록</span>
+                  <span>{t.notice_pin_label}</span>
                 </label>
               </div>
 
               <div>
                 <RichTextEditor
-                  label="공지 본문 내용 *"
+                  label={t.notice_content_label}
                   value={noticeContent}
                   onChange={setNoticeContent}
-                  placeholder="공지 내용을 상세히 작성해 주세요... (상단 툴바의 굵게, 제목, 목록, 링크, 인용구 등 에디터 도구 활용)"
+                  placeholder={t.notice_content_placeholder}
                   rows={7}
                   themeColor="emerald"
                   required
+                  locale={locale}
                 />
               </div>
 
               {/* 📸 공지 포스터/이미지 첨부 */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">포스터 / 대표 사진 (선택)</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">{t.notice_poster_label}</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={noticeImageUrl}
                     onChange={(e) => setNoticeImageUrl(e.target.value)}
-                    placeholder="https://... 또는 우측 사진 첨부"
+                    placeholder={t.notice_poster_placeholder}
                     className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
                   />
                   <input
@@ -2499,13 +2500,13 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                   >
                     <Upload size={13} />
-                    <span>{isUploadingNoticeImage ? '최적화 중...' : '사진 첨부'}</span>
+                    <span>{isUploadingNoticeImage ? t.status_optimizing : t.btn_attach_photo}</span>
                   </button>
                 </div>
                 {noticeImageUrl && (
                   <div className="relative mt-2 h-28 rounded-xl overflow-hidden bg-gray-100 border border-emerald-200">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={noticeImageUrl} alt="공지 이미지" className="w-full h-full object-cover" />
+                    <img src={noticeImageUrl} alt={t.notice_poster_label} className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setNoticeImageUrl('')}
@@ -2517,18 +2518,18 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 )}
               </div>
 
-              {/* 📎 일반 문서/파일 첨부 (PDF, HWP, DOCX, XLSX, PPTX, ZIP 등) */}
+              {/* 📎 일반 문서/파일 첨부 ({t.notice_file_types}) */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
-                  <span>📎 공지 첨부 파일 (선택)</span>
-                  <span className="text-[11px] text-gray-400 font-normal">PDF, HWP, DOCX, XLSX, PPTX, ZIP 등</span>
+                  <span>{t.notice_file_label}</span>
+                  <span className="text-[11px] text-gray-400 font-normal">{t.notice_file_types}</span>
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={noticeFileUrl}
                     onChange={(e) => setNoticeFileUrl(e.target.value)}
-                    placeholder="https://... 또는 우측 파일 첨부"
+                    placeholder={t.notice_file_placeholder}
                     className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
                   />
                   <input
@@ -2545,7 +2546,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                   >
                     <Paperclip size={13} />
-                    <span>{isUploadingNoticeFile ? '업로드 중...' : '파일 첨부'}</span>
+                    <span>{isUploadingNoticeFile ? t.status_uploading : t.btn_attach_file}</span>
                   </button>
                 </div>
                 {noticeFileName && (
@@ -2567,7 +2568,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                           setNoticeFileType('')
                         }}
                         className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer"
-                        title="첨부 해제"
+                        title={t.btn_remove_attachment}
                       >
                         <X size={13} />
                       </button>
@@ -2582,14 +2583,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   onClick={() => setIsNoticeModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
                 >
-                  취소
+                  {t.btn_cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? '등록 중...' : '공지 등록하기'}
+                  {isSubmitting ? t.status_submitting : t.btn_submit_notice}
                 </button>
               </div>
             </form>
@@ -2610,7 +2611,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
               <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                 <FolderOpen className="text-sky-600" size={18} />
-                <span>새 교육 및 예배 자료 등록</span>
+                <span>{t.modal_resource_title}</span>
               </h3>
               <button
                 onClick={() => setIsResourceModalOpen(false)}
@@ -2622,34 +2623,34 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
             <form onSubmit={handleCreateResource} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">자료 제목 *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">{t.res_title_label}</label>
                 <input
                   type="text"
                   required
                   value={resTitle}
                   onChange={(e) => setResTitle(e.target.value)}
-                  placeholder="예: AAMEN 7대 신념 표준 주일학교 교안"
+                  placeholder={t.res_title_placeholder}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">자료 분류</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">{t.res_category_label}</label>
                   <select
                     value={resCategory}
                     onChange={(e) => setResCategory(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold"
                   >
-                    <option value="curriculum">커리큘럼</option>
-                    <option value="education">교육자료</option>
-                    <option value="worship">예배자료</option>
-                    <option value="praise">찬양자료</option>
-                    <option value="books">서적/팜플렛</option>
+                    <option value="curriculum">{t.res_cat_curriculum}</option>
+                    <option value="education">{t.res_cat_education}</option>
+                    <option value="worship">{t.res_cat_worship}</option>
+                    <option value="praise">{t.res_cat_praise}</option>
+                    <option value="books">{t.res_cat_books}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">작성자 국가 (자동 지정)</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">{t.res_author_country}</label>
                   <div className="w-full px-3 py-2 text-xs rounded-xl bg-gray-100 border border-gray-200 text-gray-600 font-bold flex items-center gap-1.5">
                     <span>{countryFlags[getStoredUser()?.country_code || 'KR'] || getStoredUser()?.country_code || 'KR'}</span>
                   </div>
@@ -2658,22 +2659,22 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">파일 형식</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">{t.res_filetype_label}</label>
                   <input
                     type="text"
                     value={resFileType}
                     onChange={(e) => setResFileType(e.target.value)}
-                    placeholder="예: PDF, DOCX, PPTX"
+                    placeholder={t.res_filetype_placeholder}
                     className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">파일 용량 (선택)</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">{t.res_filesize_label}</label>
                   <input
                     type="text"
                     value={resFileSize}
                     onChange={(e) => setResFileSize(e.target.value)}
-                    placeholder="예: 3.5 MB"
+                    placeholder={t.res_filesize_placeholder}
                     className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
@@ -2681,14 +2682,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  자료 파일 첨부 (PDF, HWP, DOCX, PPTX, ZIP 등) 또는 다운로드 링크
+                  {t.res_attachment_label}
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={resFileUrl}
                     onChange={(e) => setResFileUrl(e.target.value)}
-                    placeholder="https://... 또는 우측 파일 업로드"
+                    placeholder={t.res_attachment_placeholder}
                     className="flex-1 px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                   />
                   <input
@@ -2705,7 +2706,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     className="px-4 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                   >
                     <Upload size={14} />
-                    <span>{isUploadingResourceFile ? '업로드중...' : '파일 선택'}</span>
+                    <span>{isUploadingResourceFile ? t.res_uploading_status : t.res_choose_file_btn}</span>
                   </button>
                 </div>
                 {resFileName && (
@@ -2723,13 +2724,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
               <div>
                 <RichTextEditor
-                  label="자료 설명 *"
+                  label={t.res_desc_label}
                   value={resDesc}
                   onChange={setResDesc}
-                  placeholder="자료에 대한 주요 내용 및 활용법을 설명해 주세요... (상단 툴바의 굵게, 제목, 목록, 링크, 인용구 등 에디터 도구 활용)"
+                  placeholder={t.res_desc_placeholder}
                   rows={6}
                   themeColor="sky"
                   required
+                  locale={locale}
                 />
               </div>
 
@@ -2739,14 +2741,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   onClick={() => setIsResourceModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
                 >
-                  취소
+                  {t.btn_cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? '등록 중...' : '자료 등록하기'}
+                  {isSubmitting ? t.status_submitting : t.btn_submit_resource}
                 </button>
               </div>
             </form>
@@ -2767,7 +2769,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
               <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                 <Camera className="text-purple-600" size={18} />
-                <span>현장 사역 사진 등록</span>
+                <span>{t.modal_photo_title}</span>
               </h3>
               <button
                 onClick={() => setIsPhotoModalOpen(false)}
@@ -2779,13 +2781,13 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
             <form onSubmit={handleCreatePhoto} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">사진 제목 *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">{t.photo_title_label}</label>
                 <input
                   type="text"
                   required
                   value={photoTitle}
                   onChange={(e) => setPhotoTitle(e.target.value)}
-                  placeholder="예: 미얀마 양곤 평화 신학 세미나 & 워크숍"
+                  placeholder={t.photo_title_placeholder}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
                 />
               </div>
@@ -2794,10 +2796,10 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-bold text-gray-700">
-                    사역 사진 첨부 (여러 장 선택 가능 · 크기 자동 최적화)
+                    {t.photo_upload_label}
                   </label>
                   <span className="text-[11px] text-purple-700 font-bold">
-                    {photoImageUrls.length > 0 ? `${photoImageUrls.length}장 등록됨` : '최대 10장 권장'}
+                    {photoImageUrls.length > 0 ? `${photoImageUrls.length}${t.photo_count_registered}` : t.photo_max_hint}
                   </span>
                 </div>
 
@@ -2821,8 +2823,8 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     <Upload size={16} />
                     <span>
                       {isUploadingImage
-                        ? '고화질 최적화 및 업로드 중...'
-                        : '📷 사진 여러 장 선택하기 (자동 리사이즈)'}
+                        ? t.photo_optimizing_status
+                        : t.photo_select_btn}
                     </span>
                   </button>
                 </div>
@@ -2839,14 +2841,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 {photoImageUrls.length > 0 && (
                   <div className="space-y-2 mb-3">
                     <div className="text-[11px] font-bold text-gray-500 flex items-center justify-between">
-                      <span>미리보기 (첫 번째 사진이 목록 대표 썸네일로 사용됩니다)</span>
+                      <span>{t.photo_preview_hint}</span>
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         className="text-purple-600 hover:underline flex items-center gap-1 font-bold cursor-pointer"
                       >
                         <Plus size={12} />
-                        <span>사진 더 추가하기</span>
+                        <span>{t.photo_add_more}</span>
                       </button>
                     </div>
 
@@ -2863,12 +2865,12 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                             }`}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={url} alt={`사진 ${idx + 1}`} className="w-full h-full object-cover" />
+                            <img src={url} alt={`${t.photo_item_label} ${idx + 1}`} className="w-full h-full object-cover" />
 
                             {/* 뱃지: 대표 */}
                             {isPrimary ? (
                               <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-purple-600 text-white rounded text-[9px] font-black shadow-xs">
-                                ★ 대표
+                                {t.photo_badge_primary}
                               </div>
                             ) : (
                               <button
@@ -2876,7 +2878,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                                 onClick={() => handleSetPrimaryPhoto(url)}
                                 className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 hover:bg-purple-600 text-white rounded text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                               >
-                                대표로
+                                {t.photo_btn_set_primary}
                               </button>
                             )}
 
@@ -2885,13 +2887,13 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               type="button"
                               onClick={() => handleRemovePhotoItem(idx)}
                               className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-full transition-colors cursor-pointer"
-                              title="이 사진 삭제"
+                              title={t.photo_btn_delete}
                             >
                               <X size={11} />
                             </button>
 
                             <div className="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[9px] text-center py-0.5 backdrop-blur-2xs">
-                              사진 {idx + 1}
+                              {t.photo_item_label} {idx + 1}
                             </div>
                           </div>
                         )
@@ -2902,24 +2904,24 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">태그 (쉼표로 구분)</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">{t.photo_tags_label}</label>
                 <input
                   type="text"
                   value={photoTags}
                   onChange={(e) => setPhotoTags(e.target.value)}
-                  placeholder="평화제자도, 청년리더, 워크숍"
+                  placeholder={t.photo_tags_placeholder}
                   className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">사역 스토리 / 설명 *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">{t.photo_story_label}</label>
                 <textarea
                   required
                   rows={4}
                   value={photoDesc}
                   onChange={(e) => setPhotoDesc(e.target.value)}
-                  placeholder="현장에서 있었던 은혜로운 사역 이야기와 기도 제목을 적어주세요..."
+                  placeholder={t.photo_story_placeholder}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 leading-relaxed"
                 />
               </div>
@@ -2930,14 +2932,14 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   onClick={() => setIsPhotoModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
                 >
-                  취소
+                  {t.btn_cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? '등록 중...' : '사진 등록하기'}
+                  {isSubmitting ? t.status_submitting : t.btn_submit_photo}
                 </button>
               </div>
             </form>
@@ -2983,31 +2985,32 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
 
             <div className="mb-4 p-3 rounded-2xl bg-emerald-50/80 border border-emerald-100 text-xs text-emerald-800 flex items-center gap-2">
               <Sparkles className="shrink-0 text-emerald-600" size={16} />
-              <span>수정 완료 시 제목이 15개국 언어로 자동 재번역되어 전 세계 회원에게 반영됩니다.</span>
+              <span>{t.edit_translate_notice}</span>
             </div>
 
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">제목 *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">{t.edit_title_label}</label>
                 <input
                   type="text"
                   required
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="제목을 입력하세요"
+                  placeholder={t.edit_title_placeholder}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold"
                 />
               </div>
 
               <div>
                 <RichTextEditor
-                  label="본문 내용 *"
+                  label={t.edit_content_label}
                   value={editContent}
                   onChange={setEditContent}
-                  placeholder="내용을 입력하세요... (상단 툴바의 굵게, 제목, 목록, 링크, 인용구 등 에디터 도구 활용)"
+                  placeholder={t.edit_content_placeholder}
                   rows={7}
                   themeColor="emerald"
                   required
+                  locale={locale}
                 />
               </div>
 
@@ -3015,31 +3018,31 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
               {editingPost.board_type === 'resources' && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">자료 분류</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">{t.res_category_label}</label>
                     <select
                       value={editCategory}
                       onChange={(e) => setEditCategory(e.target.value)}
                       className="w-full px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold"
                     >
-                      <option value="curriculum">커리큘럼</option>
-                      <option value="education">교육자료</option>
-                      <option value="worship">예배자료</option>
-                      <option value="praise">찬양자료</option>
-                      <option value="books">서적/팜플렛</option>
+                      <option value="curriculum">{t.res_cat_curriculum}</option>
+                      <option value="education">{t.res_cat_education}</option>
+                      <option value="worship">{t.res_cat_worship}</option>
+                      <option value="praise">{t.res_cat_praise}</option>
+                      <option value="books">{t.res_cat_books}</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
-                      <span>자료 파일 첨부 / 변경</span>
-                      <span className="text-[11px] text-gray-400 font-normal">PDF, HWP, DOCX, PPTX, ZIP 등</span>
+                      <span>{t.edit_res_file_label}</span>
+                      <span className="text-[11px] text-gray-400 font-normal">{t.notice_file_types}</span>
                     </label>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={editFileUrl}
                         onChange={(e) => setEditFileUrl(e.target.value)}
-                        placeholder="https://... 또는 우측 파일 선택"
+                        placeholder={t.edit_res_file_placeholder}
                         className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                       />
                       <input
@@ -3056,7 +3059,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                         className="px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                       >
                         <Upload size={13} />
-                        <span>{isUploadingEditFile ? '업로드 중...' : '파일 선택'}</span>
+                        <span>{isUploadingEditFile ? t.status_uploading : t.res_choose_file_btn}</span>
                       </button>
                     </div>
                     {editFileName && (
@@ -3078,7 +3081,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               setEditFileType('')
                             }}
                             className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer"
-                            title="파일 제거"
+                            title={t.btn_remove_attachment}
                           >
                             <X size={13} />
                           </button>
@@ -3094,7 +3097,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                 <>
                   {/* 📸 대표 사진/포스터 수정 */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">포스터 / 대표 사진 (선택)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">{t.notice_poster_label}</label>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -3117,18 +3120,18 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                         className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                       >
                         <Upload size={13} />
-                        <span>{isUploadingEditImage ? '최적화 중...' : '사진 첨부'}</span>
+                        <span>{isUploadingEditImage ? t.status_optimizing : t.btn_attach_photo}</span>
                       </button>
                     </div>
                     {editImageUrl && (
                       <div className="relative mt-2 h-28 rounded-xl overflow-hidden bg-gray-100 border border-emerald-200">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={editImageUrl} alt="수정 이미지" className="w-full h-full object-cover" />
+                        <img src={editImageUrl} alt={t.notice_poster_label} className="w-full h-full object-cover" />
                         <button
                           type="button"
                           onClick={() => setEditImageUrl('')}
                           className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80 cursor-pointer"
-                          title="사진 삭제"
+                          title={t.photo_btn_delete}
                         >
                           <X size={12} />
                         </button>
@@ -3139,8 +3142,8 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   {/* 📎 일반 문서/파일 첨부 수정 */}
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
-                      <span>📎 공지 첨부 파일 (선택)</span>
-                      <span className="text-[11px] text-gray-400 font-normal">PDF, HWP, DOCX, XLSX, PPTX, ZIP 등</span>
+                      <span>{t.notice_file_label}</span>
+                      <span className="text-[11px] text-gray-400 font-normal">{t.notice_file_types}</span>
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -3164,7 +3167,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                         className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                       >
                         <Paperclip size={13} />
-                        <span>{isUploadingEditFile ? '업로드 중...' : '파일 첨부'}</span>
+                        <span>{isUploadingEditFile ? t.status_uploading : t.btn_attach_file}</span>
                       </button>
                     </div>
                     {editFileName && (
@@ -3186,7 +3189,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                               setEditFileType('')
                             }}
                             className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer"
-                            title="첨부 해제"
+                            title={t.btn_remove_attachment}
                           >
                             <X size={13} />
                           </button>
