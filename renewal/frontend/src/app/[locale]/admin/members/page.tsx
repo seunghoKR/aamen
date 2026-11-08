@@ -1079,17 +1079,20 @@ export default function AdminMembersPage() {
               >
                 <option value="ALL">{isEn ? 'All 15 Nations' : '15개국 전체'}</option>
                 <option value="KR">🇰🇷 {isEn ? 'South Korea' : '대한민국'}</option>
-                <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
-                <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
-                <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
+                <option value="US">🇺🇸 {isEn ? 'United States' : '미국'}</option>
                 <option value="ID">🇮🇩 {isEn ? 'Indonesia' : '인도네시아'}</option>
-                <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
-                <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
+                <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
+                <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
                 <option value="IN">🇮🇳 {isEn ? 'India' : '인도'}</option>
+                <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
                 <option value="KH">🇰🇭 {isEn ? 'Cambodia' : '캄보디아'}</option>
                 <option value="LA">🇱🇦 {isEn ? 'Laos' : '라오스'}</option>
                 <option value="MN">🇲🇳 {isEn ? 'Mongolia' : '몽골'}</option>
                 <option value="TW">🇹🇼 {isEn ? 'Taiwan' : '대만'}</option>
+                <option value="HK">🇭🇰 {isEn ? 'Hong Kong' : '홍콩'}</option>
+                <option value="PH">🇵🇭 {isEn ? 'Philippines' : '필리핀'}</option>
               </select>
             </div>
           </div>
@@ -1609,13 +1612,19 @@ export default function AdminMembersPage() {
                   >
                     <option value="KR">🇰🇷 {isEn ? 'South Korea' : '대한민국'}</option>
                     <option value="US">🇺🇸 {isEn ? 'United States' : '미국'}</option>
-                    <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
-                    <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
-                    <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
                     <option value="ID">🇮🇩 {isEn ? 'Indonesia' : '인도네시아'}</option>
-                    <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
-                    <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                    <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
+                    <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
+                    <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
                     <option value="IN">🇮🇳 {isEn ? 'India' : '인도'}</option>
+                    <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                    <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
+                    <option value="KH">🇰🇭 {isEn ? 'Cambodia' : '캄보디아'}</option>
+                    <option value="LA">🇱🇦 {isEn ? 'Laos' : '라오스'}</option>
+                    <option value="MN">🇲🇳 {isEn ? 'Mongolia' : '몽골'}</option>
+                    <option value="TW">🇹🇼 {isEn ? 'Taiwan' : '대만'}</option>
+                    <option value="HK">🇭🇰 {isEn ? 'Hong Kong' : '홍콩'}</option>
+                    <option value="PH">🇵🇭 {isEn ? 'Philippines' : '필리핀'}</option>
                   </select>
                 </div>
 
@@ -1812,18 +1821,19 @@ export default function AdminMembersPage() {
                       >
                         <option value="KR">🇰🇷 {isEn ? 'South Korea' : '대한민국'}</option>
                         <option value="US">🇺🇸 {isEn ? 'United States' : '미국'}</option>
-                        <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
-                        <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
-                        <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
                         <option value="ID">🇮🇩 {isEn ? 'Indonesia' : '인도네시아'}</option>
-                        <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
-                        <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                        <option value="TH">🇹🇭 {isEn ? 'Thailand' : '태국'}</option>
+                        <option value="VN">🇻🇳 {isEn ? 'Vietnam' : '베트남'}</option>
+                        <option value="MM">🇲🇲 {isEn ? 'Myanmar' : '미얀마'}</option>
                         <option value="IN">🇮🇳 {isEn ? 'India' : '인도'}</option>
+                        <option value="NP">🇳🇵 {isEn ? 'Nepal' : '네팔'}</option>
+                        <option value="JP">🇯🇵 {isEn ? 'Japan' : '일본'}</option>
                         <option value="KH">🇰🇭 {isEn ? 'Cambodia' : '캄보디아'}</option>
                         <option value="LA">🇱🇦 {isEn ? 'Laos' : '라오스'}</option>
                         <option value="MN">🇲🇳 {isEn ? 'Mongolia' : '몽골'}</option>
                         <option value="TW">🇹🇼 {isEn ? 'Taiwan' : '대만'}</option>
                         <option value="HK">🇭🇰 {isEn ? 'Hong Kong' : '홍콩'}</option>
+                        <option value="PH">🇵🇭 {isEn ? 'Philippines' : '필리핀'}</option>
                       </select>
                     </div>
                   </div>

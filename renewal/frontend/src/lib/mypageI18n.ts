@@ -271,6 +271,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "라오스 (LA)",
     MN: "몽골 (MN)",
     TW: "대만 (TW)",
+    HK: "홍콩 (HK)",
+    PH: "필리핀 (PH)",
   },
   en: {
     KR: "South Korea (KR)",
@@ -286,6 +288,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "Laos (LA)",
     MN: "Mongolia (MN)",
     TW: "Taiwan (TW)",
+    HK: "Hong Kong (HK)",
+    PH: "Philippines (PH)",
   },
   ja: {
     KR: "大韓民国 (KR)",
@@ -301,6 +305,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "ラオス (LA)",
     MN: "モンゴル (MN)",
     TW: "台湾 (TW)",
+    HK: "香港 (HK)",
+    PH: "フィリピン (PH)",
   },
   'zh-TW': {
     KR: "南韓 (KR)",
@@ -316,6 +322,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "寮國 (LA)",
     MN: "蒙古 (MN)",
     TW: "台灣 (TW)",
+    HK: "香港 (HK)",
+    PH: "菲律賓 (PH)",
   },
   'zh-CN': {
     KR: "韩国 (KR)",
@@ -331,6 +339,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "老挝 (LA)",
     MN: "蒙古 (MN)",
     TW: "台湾 (TW)",
+    HK: "香港 (HK)",
+    PH: "菲律宾 (PH)",
   },
   id: {
     KR: "Korea Selatan (KR)",
@@ -346,6 +356,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "Laos (LA)",
     MN: "Mongolia (MN)",
     TW: "Taiwan (TW)",
+    HK: "Hong Kong (HK)",
+    PH: "Filipina (PH)",
   },
   th: {
     KR: "เกาหลีใต้ (KR)",
@@ -361,6 +373,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "ลาว (LA)",
     MN: "มองโกเลีย (MN)",
     TW: "ไต้หวัน (TW)",
+    HK: "ฮ่องกง (HK)",
+    PH: "ฟิลิปปินส์ (PH)",
   },
   vi: {
     KR: "Hàn Quốc (KR)",
@@ -376,6 +390,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "Lào (LA)",
     MN: "Mông Cổ (MN)",
     TW: "Đài Loan (TW)",
+    HK: "Hồng Kông (HK)",
+    PH: "Philippines (PH)",
   },
   lo: {
     KR: "ເກົາຫຼີໃຕ້ (KR)",
@@ -391,6 +407,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "ລາວ (LA)",
     MN: "ມົງໂກລີ (MN)",
     TW: "ໄຕ້ຫວັນ (TW)",
+    HK: "ຮົງກົງ (HK)",
+    PH: "ຟີລິບປິນ (PH)",
   },
   my: {
     KR: "တောင်ကိုရီးယား (KR)",
@@ -406,6 +424,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "လာအို (LA)",
     MN: "မွန်ဂိုလီးယား (MN)",
     TW: "ထိုင်ဝမ် (TW)",
+    HK: "ဟောင်ကောင် (HK)",
+    PH: "ဖိလစ်ပိုင် (PH)",
   },
   ne: {
     KR: "दक्षिण कोरिया (KR)",
@@ -421,6 +441,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "लाओस (LA)",
     MN: "मङ्गोलिया (MN)",
     TW: "ताइवान (TW)",
+    HK: "हङकङ (HK)",
+    PH: "फिलिपिन्स (PH)",
   },
   hi: {
     KR: "दक्षिण कोरिया (KR)",
@@ -436,6 +458,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "लाओस (LA)",
     MN: "मंगोलिया (MN)",
     TW: "ताइवान (TW)",
+    HK: "हांगकांग (HK)",
+    PH: "फिलीपींस (PH)",
   },
   km: {
     KR: "កូរ៉េខាងត្បូង (KR)",
@@ -451,6 +475,8 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "ឡាវ (LA)",
     MN: "ម៉ុងហ្គោលី (MN)",
     TW: "តៃវ៉ាន់ (TW)",
+    HK: "ហុងកុង (HK)",
+    PH: "ហ្វីលីពីន (PH)",
   },
   mn: {
     KR: "Өмнөд Солонгос (KR)",
@@ -466,7 +492,44 @@ const COUNTRY_NAMES_BY_LOCALE: Record<string, Record<string, string>> = {
     LA: "Лаос (LA)",
     MN: "Монгол (MN)",
     TW: "Тайвань (TW)",
+    HK: "Хонконг (HK)",
+    PH: "Филиппин (PH)",
   },
+  'zh-HK': {
+    KR: "南韓 (KR)",
+    US: "美國 (US)",
+    ID: "印尼 (ID)",
+    TH: "泰國 (TH)",
+    VN: "越南 (VN)",
+    MM: "緬甸 (MM)",
+    IN: "印度 (IN)",
+    NP: "尼泊爾 (NP)",
+    JP: "日本 (JP)",
+    KH: "柬埔寨 (KH)",
+    LA: "寮國 (LA)",
+    MN: "蒙古 (MN)",
+    TW: "台灣 (TW)",
+    HK: "香港 (HK)",
+    PH: "菲律賓 (PH)",
+  },
+  tl: {
+    KR: "Timog Korea (KR)",
+    US: "Estados Unidos (US)",
+    ID: "Indonesia (ID)",
+    TH: "Thailand (TH)",
+    VN: "Vietnam (VN)",
+    MM: "Myanmar (MM)",
+    IN: "India (IN)",
+    NP: "Nepal (NP)",
+    JP: "Hapon (JP)",
+    KH: "Cambodia (KH)",
+    LA: "Laos (LA)",
+    MN: "Mongolia (MN)",
+    TW: "Taiwan (TW)",
+    HK: "Hong Kong (HK)",
+    PH: "Pilipinas (PH)",
+  },
+
 }
 
 // 3. 마이페이지 공통 텍스트 14개국어 완전 탑재
@@ -2192,16 +2255,21 @@ export function getLocalizedCountryList(locale: string): LocalizedCountry[] {
   let names = COUNTRY_NAMES_BY_LOCALE[locale]
 
   if (!names) {
-    if (clean.startsWith('zh')) {
+    if (clean === 'zh-hk') {
+      names = COUNTRY_NAMES_BY_LOCALE['zh-HK'] || COUNTRY_NAMES_BY_LOCALE['zh-TW']
+    } else if (clean.startsWith('zh')) {
       names = clean.includes('cn') ? COUNTRY_NAMES_BY_LOCALE['zh-CN'] : COUNTRY_NAMES_BY_LOCALE['zh-TW']
+    } else if (clean === 'tl' || clean.startsWith('tl-') || clean === 'fil') {
+      names = COUNTRY_NAMES_BY_LOCALE['tl'] || COUNTRY_NAMES_BY_LOCALE.en
     } else {
       const prefix = clean.split('-')[0]
       names = COUNTRY_NAMES_BY_LOCALE[prefix] || COUNTRY_NAMES_BY_LOCALE.en || COUNTRY_NAMES_BY_LOCALE.ko
     }
   }
 
-  const codes = ['KR', 'US', 'ID', 'TH', 'VN', 'MM', 'IN', 'NP', 'JP', 'KH', 'LA', 'MN', 'TW']
+  const codes = ['KR', 'US', 'ID', 'TH', 'VN', 'MM', 'IN', 'NP', 'JP', 'KH', 'LA', 'MN', 'TW', 'HK', 'PH']
   const flags: Record<string, string> = {
+    HK: '🇭🇰',
     ID: '🇮🇩',
     IN: '🇮🇳',
     JP: '🇯🇵',
@@ -2211,6 +2279,7 @@ export function getLocalizedCountryList(locale: string): LocalizedCountry[] {
     MM: '🇲🇲',
     MN: '🇲🇳',
     NP: '🇳🇵',
+    PH: '🇵🇭',
     TH: '🇹🇭',
     TW: '🇹🇼',
     US: '🇺🇸',
@@ -2229,8 +2298,12 @@ export function getLocalizedCountryName(code: string, locale: string): string {
   let names = COUNTRY_NAMES_BY_LOCALE[locale]
 
   if (!names) {
-    if (clean.startsWith('zh')) {
+    if (clean === 'zh-hk') {
+      names = COUNTRY_NAMES_BY_LOCALE['zh-HK'] || COUNTRY_NAMES_BY_LOCALE['zh-TW']
+    } else if (clean.startsWith('zh')) {
       names = clean.includes('cn') ? COUNTRY_NAMES_BY_LOCALE['zh-CN'] : COUNTRY_NAMES_BY_LOCALE['zh-TW']
+    } else if (clean === 'tl' || clean.startsWith('tl-') || clean === 'fil') {
+      names = COUNTRY_NAMES_BY_LOCALE['tl'] || COUNTRY_NAMES_BY_LOCALE.en
     } else {
       const prefix = clean.split('-')[0]
       names = COUNTRY_NAMES_BY_LOCALE[prefix] || COUNTRY_NAMES_BY_LOCALE.en || COUNTRY_NAMES_BY_LOCALE.ko
