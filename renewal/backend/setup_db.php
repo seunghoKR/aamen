@@ -339,6 +339,43 @@ try {
         }
     } catch (\Exception $e) {}
 
+    // 🔒 커뮤니티 사진첩(board_type = 'photos') 타국가 작성자임에도 location이 'Seoul, Korea'로 잘못 저장된 데이터 정상화
+    try {
+        $fixStmt = $pdo->prepare("SELECT id, author_country, extra_json FROM posts WHERE board_type = 'photos' AND author_country != 'KR'");
+        $fixStmt->execute();
+        $rows = $fixStmt->fetchAll();
+        $countryNameMap = [
+            'IN' => '인도 (India)',
+            'JP' => '일본 (Japan)',
+            'US' => '미국 (USA)',
+            'TW' => '대만 (Taiwan)',
+            'HK' => '홍콩 (Hong Kong)',
+            'PH' => '필리핀 (Philippines)',
+            'TH' => '태국 (Thailand)',
+            'VN' => '베트남 (Vietnam)',
+            'MM' => '미얀마 (Myanmar)',
+            'ID' => '인도네시아 (Indonesia)',
+            'KH' => '캄보디아 (Cambodia)',
+            'LA' => '라오스 (Laos)',
+            'MN' => '몽골 (Mongolia)',
+            'NP' => '네팔 (Nepal)',
+        ];
+        $updStmt = $pdo->prepare("UPDATE posts SET extra_json = ? WHERE id = ?");
+        $fixedCount = 0;
+        foreach ($rows as $r) {
+            $extra = json_decode($r['extra_json'] ?? '{}', true) ?: [];
+            if (isset($extra['location']) && ($extra['location'] === 'Seoul, Korea' || $extra['location'] === 'Seoul' || $extra['location'] === 'Asia')) {
+                $c = strtoupper($r['author_country']);
+                $extra['location'] = $countryNameMap[$c] ?? $c;
+                $updStmt->execute([json_encode($extra, JSON_UNESCAPED_UNICODE), $r['id']]);
+                $fixedCount++;
+            }
+        }
+        if ($fixedCount > 0) {
+            $results['photos_location_fixed'] = $fixedCount;
+        }
+    } catch (\Exception $e) {}
+
     send_json([
         'status' => 'success',
         'version' => 'v1.5.1-prod-safe',

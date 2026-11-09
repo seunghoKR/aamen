@@ -217,10 +217,61 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false)
   const [photoTitle, setPhotoTitle] = useState('')
   const [photoDesc, setPhotoDesc] = useState('')
-  const [photoLocation, setPhotoLocation] = useState('Seoul, Korea')
+  const [photoLocation, setPhotoLocation] = useState('')
   const [photoDate, setPhotoDate] = useState(new Date().toISOString().substring(0, 10))
   const [photoAttendees, setPhotoAttendees] = useState('')
   const [photoTags, setPhotoTags] = useState('')
+
+  // 📍 사진첩 국가/위치 표기 정상화 헬퍼 (타국가 작성자임에도 'Seoul, Korea'로 표시되는 오류 원천 방지)
+  const getPhotoLocationText = (photo: Post, extra: any): string => {
+    const cCode = (photo.author_country || '').toUpperCase()
+    const rawLoc = (extra?.location || '').trim()
+
+    // 타국가 작성자인데 'Seoul, Korea' 또는 'Seoul'로 되어 있다면 초기 하드코딩 기본값 오류
+    const isBuggedLocation = !rawLoc || rawLoc === 'Asia' || (cCode !== 'KR' && (rawLoc === 'Seoul, Korea' || rawLoc === 'Seoul' || rawLoc === 'Korea'))
+
+    if (!isBuggedLocation && rawLoc) {
+      return rawLoc
+    }
+
+    // 작성자의 고유 국가명으로 표기
+    if (countryFlags[cCode]) {
+      const isKo = locale === 'ko'
+      const countryNamesByLocale: Record<string, string> = {
+        KR: isKo ? '대한민국 (Korea)' : 'South Korea',
+        US: isKo ? '미국 (USA)' : 'United States',
+        ID: isKo ? '인도네시아 (Indonesia)' : 'Indonesia',
+        TH: isKo ? '태국 (Thailand)' : 'Thailand',
+        VN: isKo ? '베트남 (Vietnam)' : 'Vietnam',
+        MM: isKo ? '미얀마 (Myanmar)' : 'Myanmar',
+        IN: isKo ? '인도 (India)' : 'India',
+        NP: isKo ? '네팔 (Nepal)' : 'Nepal',
+        JP: isKo ? '일본 (Japan)' : 'Japan',
+        KH: isKo ? '캄보디아 (Cambodia)' : 'Cambodia',
+        LA: isKo ? '라오스 (Laos)' : 'Laos',
+        MN: isKo ? '몽골 (Mongolia)' : 'Mongolia',
+        TW: isKo ? '대만 (Taiwan)' : 'Taiwan',
+        HK: isKo ? '홍콩 (Hong Kong)' : 'Hong Kong',
+        PH: isKo ? '필리핀 (Philippines)' : 'Philippines',
+      }
+      return countryNamesByLocale[cCode] || countryFlags[cCode].replace(/^[^\s]+\s*/, '')
+    }
+
+    return rawLoc || cCode || 'Asia'
+  }
+
+  const handleOpenPhotoModal = () => {
+    setPhotoTitle('')
+    setPhotoDesc('')
+    setPhotoTags('')
+    setPhotoImageUrls([])
+    setPhotoImageUrl('')
+    const user = getStoredUser()
+    const uCountry = user?.country_code || 'KR'
+    const defaultCountryName = countryFlags[uCountry] ? countryFlags[uCountry].replace(/^[^\s]+\s*/, '') : ''
+    setPhotoLocation(defaultCountryName)
+    setIsPhotoModalOpen(true)
+  }
 
   // 🌐 실시간 번역 캐시 상태 (DB에 번역본이 없는 기존 글 자동 번역)
   const [runtimeTitles, setRuntimeTitles] = useState<Record<string, string>>({})
@@ -1012,7 +1063,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
     const primaryImg = photoImageUrl || allImages[0] || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80'
 
     const extraData = {
-      location: photoLocation.trim() || 'Asia',
+      location: photoLocation.trim() || (countryFlags[userCountry] ? countryFlags[userCountry].replace(/^[^\s]+\s*/, '') : 'Asia'),
       date: photoDate,
       attendees: photoAttendees.trim() || '참석',
       tags: parsedTags,
@@ -1818,7 +1869,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   <p className="text-xs text-gray-400 mb-4">사진등록 버튼을 눌러 은혜로운 사역 현장을 공유해 보세요.</p>
                   {canWritePhoto && (
                     <button
-                      onClick={() => setIsPhotoModalOpen(true)}
+                      onClick={handleOpenPhotoModal}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 shadow-xs cursor-pointer"
                     >
                       <Camera size={14} />
@@ -1832,7 +1883,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                     const extra = parseExtra(photo)
                     const imgUrl = photo.image_url || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80'
                     const flagText = extra.flag || countryFlags[photo.author_country]?.split(' ')[0] || '🌐'
-                    const locationText = extra.location || photo.author_country || 'Asia'
+                    const locationText = getPhotoLocationText(photo, extra)
                     const dateText = extra.date || photo.created_at.substring(0, 10)
                     const attendeesText = extra.attendees || ''
                     const tagsList: string[] = Array.isArray(extra.tags) ? extra.tags : []
@@ -1973,7 +2024,7 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
         const currentImgUrl = allImages[currentImgIndex] || allImages[0]
 
         const flagText = extra.flag || countryFlags[activeLightbox.author_country]?.split(' ')[0] || '🌐'
-        const locationText = extra.location || activeLightbox.author_country || 'Asia'
+        const locationText = getPhotoLocationText(activeLightbox, extra)
         const dateText = extra.date || activeLightbox.created_at.substring(0, 10)
         const attendeesText = extra.attendees || ''
         const tagsList: string[] = Array.isArray(extra.tags) ? extra.tags : []
@@ -2789,6 +2840,19 @@ export default function CommunityView({ initialTab = 'announce' }: Props) {
                   onChange={(e) => setPhotoTitle(e.target.value)}
                   placeholder={t.photo_title_placeholder}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  {locale === 'ko' ? '사역 국가 / 장소' : 'Ministry Country / Location'}
+                </label>
+                <input
+                  type="text"
+                  value={photoLocation}
+                  onChange={(e) => setPhotoLocation(e.target.value)}
+                  placeholder={locale === 'ko' ? '예: 인도 (India), 양곤, 도쿄 등' : 'e.g., India, Yangon, Tokyo'}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
                 />
               </div>
 
