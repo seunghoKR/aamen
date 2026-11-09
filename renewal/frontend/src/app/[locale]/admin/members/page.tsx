@@ -39,6 +39,9 @@ import {
   Wrench,
   CheckCircle2,
   User,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react'
 
 // 등급 메타데이터 (0단계 비회원 ~ 5단계 총괄관리자)
@@ -174,6 +177,44 @@ const countryNameMapEn: Record<string, string> = {
   US: 'United States',
 }
 
+const countryNameMapKo: Record<string, string> = {
+  KR: '대한민국',
+  US: '미국',
+  ID: '인도네시아',
+  TH: '태국',
+  VN: '베트남',
+  MM: '미얀마',
+  IN: '인도',
+  NP: '네팔',
+  JP: '일본',
+  KH: '캄보디아',
+  LA: '라오스',
+  MN: '몽골',
+  TW: '대만',
+  HK: '홍콩',
+  PH: '필리핀',
+}
+
+const countryFlagsMap: Record<string, string> = {
+  KR: '🇰🇷',
+  US: '🇺🇸',
+  ID: '🇮🇩',
+  TH: '🇹🇭',
+  VN: '🇻🇳',
+  MM: '🇲🇲',
+  IN: '🇮🇳',
+  NP: '🇳🇵',
+  JP: '🇯🇵',
+  KH: '🇰🇭',
+  LA: '🇱🇦',
+  MN: '🇲🇳',
+  TW: '🇹🇼',
+  HK: '🇭🇰',
+  PH: '🇵🇭',
+}
+
+const ALL_15_COUNTRIES = ['KR', 'US', 'ID', 'TH', 'VN', 'MM', 'IN', 'NP', 'JP', 'KH', 'LA', 'MN', 'TW', 'HK', 'PH']
+
 const sampleIds = new Set(['m2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9'])
 const sampleEmails = new Set([
   'zawmin@aamen.net',
@@ -276,6 +317,7 @@ export default function AdminMembersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLevel, setFilterLevel] = useState<string>('ALL')
   const [filterCountry, setFilterCountry] = useState<string>('ALL')
+  const [sortOption, setSortOption] = useState<string>('date_desc')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // 🌟 수동 저장 상태: 아직 서버에 저장되지 않은 회원별 등급 변경 임시 상태
@@ -932,6 +974,74 @@ export default function AdminMembersPage() {
     return matchesSearch && matchesLevel && matchesCountry
   })
 
+  // 🌍 15개국 국가별 실시간 회원 통계 계산
+  const validMembersForStats = members.filter(
+    (m) =>
+      m.role !== ('developer' as any) &&
+      !m.name.includes('개발자') &&
+      m.email !== 'admin@aamen.net' &&
+      !isSampleMember(m)
+  )
+
+  const countryStats = ALL_15_COUNTRIES.map((code) => {
+    const count = validMembersForStats.filter((m) => m.countryCode === code).length
+    return {
+      code,
+      name: isEn ? (countryNameMapEn[code] || code) : (countryNameMapKo[code] || code),
+      flag: countryFlagsMap[code] || '🏳️',
+      count,
+    }
+  }).sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count
+    return a.code.localeCompare(b.code)
+  })
+
+  const countriesWithMembersCount = countryStats.filter((c) => c.count > 0).length
+
+  // 🔀 다기능 정렬 로직 (가입일, 국가, 등급, 이름)
+  const sortedMembers = [...filtered].sort((a, b) => {
+    const [field, dir] = sortOption.split('_')
+    const isAsc = dir === 'asc'
+
+    if (field === 'date') {
+      const dateA = a.created_at || a.joinedDate || ''
+      const dateB = b.created_at || b.joinedDate || ''
+      return isAsc ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA)
+    }
+
+    if (field === 'country') {
+      const cA = isEn ? (countryNameMapEn[a.countryCode] || a.countryName) : (countryNameMapKo[a.countryCode] || a.countryName)
+      const cB = isEn ? (countryNameMapEn[b.countryCode] || b.countryName) : (countryNameMapKo[b.countryCode] || b.countryName)
+      const cmp = cA.localeCompare(cB)
+      return isAsc ? cmp : -cmp
+    }
+
+    if (field === 'level') {
+      const lvlA = pendingLevels[a.id] !== undefined ? pendingLevels[a.id] : (a.level || getMemberLevel(a.role))
+      const lvlB = pendingLevels[b.id] !== undefined ? pendingLevels[b.id] : (b.level || getMemberLevel(b.role))
+      return isAsc ? lvlA - lvlB : lvlB - lvlA
+    }
+
+    if (field === 'name') {
+      const nameA = a.name || ''
+      const nameB = b.name || ''
+      const cmp = nameA.localeCompare(nameB)
+      return isAsc ? cmp : -cmp
+    }
+
+    return 0
+  })
+
+  const handleHeaderSort = (field: 'date' | 'country' | 'level' | 'name') => {
+    const [curField, curDir] = sortOption.split('_')
+    if (curField === field) {
+      setSortOption(`${field}_${curDir === 'asc' ? 'desc' : 'asc'}`)
+    } else {
+      const defaultDir = field === 'level' || field === 'date' ? 'desc' : 'asc'
+      setSortOption(`${field}_${defaultDir}`)
+    }
+  }
+
   return (
     <div className="space-y-8">
       {/* 알림 토스트 */}
@@ -1043,6 +1153,72 @@ export default function AdminMembersPage() {
       {/* ============================================================== */}
       {activeTab === 'members' && (
         <div className="space-y-6">
+          {/* 🌍 15개국 국가별 회원 인원 통계 (상시 표기) */}
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🌍</span>
+                <h3 className="font-black text-sm text-gray-900">
+                  {isEn ? '15 Nations Member Demographics' : '아시아 15개국 국가별 회원 인원 통계'}
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  {isEn
+                    ? `${countriesWithMembersCount} Active Nations · ${validMembersForStats.length} Total Members`
+                    : `${countriesWithMembersCount}개국 활성 · 총 ${validMembersForStats.length}명`}
+                </span>
+              </div>
+
+              {filterCountry !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => setFilterCountry('ALL')}
+                  className="text-xs text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw size={12} />
+                  <span>{isEn ? 'Show All Nations (Clear Filter)' : '전체 국가 보기 (필터 해제)'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* 국가별 뱃지 그리드 (클릭 시 해당 국가로 즉시 필터링) */}
+            <div className="flex flex-wrap items-center gap-2">
+              {countryStats.map((c) => {
+                const isSelected = filterCountry === c.code
+                const hasMembers = c.count > 0
+
+                return (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => setFilterCountry(isSelected ? 'ALL' : c.code)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-400/30'
+                        : hasMembers
+                        ? 'bg-gray-50 hover:bg-emerald-50 text-gray-800 border-gray-200 hover:border-emerald-300'
+                        : 'bg-gray-50/50 text-gray-400 border-gray-100 hover:border-gray-200'
+                    }`}
+                    title={isEn ? `Filter by ${c.name}` : `${c.name} 회원 목록 필터링`}
+                  >
+                    <span>{c.flag}</span>
+                    <span>{c.name}</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : hasMembers
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-gray-200/60 text-gray-400'
+                      }`}
+                    >
+                      {c.count}{isEn ? '' : '명'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* 검색 및 필터 바 */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-1 min-w-[240px] items-center gap-2 bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-200">
@@ -1094,6 +1270,23 @@ export default function AdminMembersPage() {
                 <option value="HK">🇭🇰 {isEn ? 'Hong Kong' : '홍콩'}</option>
                 <option value="PH">🇵🇭 {isEn ? 'Philippines' : '필리핀'}</option>
               </select>
+
+              {/* 정렬 순서 선택 드롭다운 */}
+              <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-2xs">
+                <ArrowUpDown size={13} className="text-gray-400 shrink-0" />
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-gray-700 focus:outline-none cursor-pointer"
+                >
+                  <option value="date_desc">{isEn ? 'Join Date: Newest' : '가입일: 최신순 (기본)'}</option>
+                  <option value="date_asc">{isEn ? 'Join Date: Oldest' : '가입일: 오래된순'}</option>
+                  <option value="country_asc">{isEn ? 'Country: A to Z' : '국가: 가나다/코드순'}</option>
+                  <option value="level_desc">{isEn ? 'Tier: Highest First' : '등급: 높은순 (5단계→1단계)'}</option>
+                  <option value="level_asc">{isEn ? 'Tier: Lowest First' : '등급: 낮은순 (1단계→5단계)'}</option>
+                  <option value="name_asc">{isEn ? 'Name: A to Z' : '이름: 가나다/ABC순'}</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1180,22 +1373,74 @@ export default function AdminMembersPage() {
                       <input
                         type="checkbox"
                         aria-label="Select all"
-                        checked={filtered.length > 0 && filtered.every((m) => selectedMemberIds.includes(m.id))}
+                        checked={sortedMembers.length > 0 && sortedMembers.every((m) => selectedMemberIds.includes(m.id))}
                         onChange={handleToggleSelectAll}
                         className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 cursor-pointer"
                       />
                     </th>
-                    <th className="py-3.5 px-6">{isEn ? 'Member Info' : '회원 정보'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Country' : '국가'}</th>
+                    <th
+                      onClick={() => handleHeaderSort('name')}
+                      className="py-3.5 px-6 cursor-pointer hover:bg-gray-100 hover:text-emerald-700 select-none transition-colors"
+                      title={isEn ? 'Sort by Name' : '이름순 정렬'}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>{isEn ? 'Member Info' : '회원 정보'}</span>
+                        {sortOption.startsWith('name') ? (
+                          sortOption.endsWith('asc') ? <ArrowUp size={13} className="text-emerald-600" /> : <ArrowDown size={13} className="text-emerald-600" />
+                        ) : (
+                          <ArrowUpDown size={12} className="text-gray-300 opacity-60" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleHeaderSort('country')}
+                      className="py-3.5 px-4 cursor-pointer hover:bg-gray-100 hover:text-emerald-700 select-none transition-colors"
+                      title={isEn ? 'Sort by Country' : '국가순 정렬'}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>{isEn ? 'Country' : '국가'}</span>
+                        {sortOption.startsWith('country') ? (
+                          sortOption.endsWith('asc') ? <ArrowUp size={13} className="text-emerald-600" /> : <ArrowDown size={13} className="text-emerald-600" />
+                        ) : (
+                          <ArrowUpDown size={12} className="text-gray-300 opacity-60" />
+                        )}
+                      </div>
+                    </th>
                     <th className="py-3.5 px-4 text-center">{isEn ? 'Connected SNS' : 'SNS 연동'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Tier Adjustment (5 Levels)' : '회원 등급 조정 (5단계)'}</th>
+                    <th
+                      onClick={() => handleHeaderSort('level')}
+                      className="py-3.5 px-4 cursor-pointer hover:bg-gray-100 hover:text-emerald-700 select-none transition-colors"
+                      title={isEn ? 'Sort by Tier' : '등급순 정렬'}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>{isEn ? 'Tier Adjustment (5 Levels)' : '회원 등급 조정 (5단계)'}</span>
+                        {sortOption.startsWith('level') ? (
+                          sortOption.endsWith('asc') ? <ArrowUp size={13} className="text-emerald-600" /> : <ArrowDown size={13} className="text-emerald-600" />
+                        ) : (
+                          <ArrowUpDown size={12} className="text-gray-300 opacity-60" />
+                        )}
+                      </div>
+                    </th>
                     <th className="py-3.5 px-4">{isEn ? 'Account Status' : '계정 상태'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Joined Date' : '가입일'}</th>
+                    <th
+                      onClick={() => handleHeaderSort('date')}
+                      className="py-3.5 px-4 cursor-pointer hover:bg-gray-100 hover:text-emerald-700 select-none transition-colors"
+                      title={isEn ? 'Sort by Joined Date' : '가입일순 정렬'}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>{isEn ? 'Joined Date' : '가입일'}</span>
+                        {sortOption.startsWith('date') ? (
+                          sortOption.endsWith('asc') ? <ArrowUp size={13} className="text-emerald-600" /> : <ArrowDown size={13} className="text-emerald-600" />
+                        ) : (
+                          <ArrowUpDown size={12} className="text-gray-300 opacity-60" />
+                        )}
+                      </div>
+                    </th>
                     <th className="py-3.5 px-6 text-right">{isEn ? 'Actions' : '관리'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filtered.map((member) => {
+                  {sortedMembers.map((member) => {
                     const pendingLvl = pendingLevels[member.id]
                     const currentLvl = pendingLvl !== undefined ? pendingLvl : (member.level || getMemberLevel(member.role))
                     const isTierChanged = pendingLvl !== undefined
