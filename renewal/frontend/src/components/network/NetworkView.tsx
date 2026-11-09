@@ -40,16 +40,13 @@ function isCoordinatorOnly(c: CountryCoordinator): boolean {
   const r = (c.role || '').toLowerCase()
   if (
     r.includes('boss') ||
-    r.includes('디렉터') ||
-    r.includes('director') ||
     r.includes('개발자') ||
     r.includes('developer') ||
-    r.includes('helper') ||
     r.includes('최고관리자')
   ) {
     return false
   }
-  return r.includes('코디네이터') || r.includes('coord')
+  return true
 }
 
 export default function NetworkView() {
@@ -97,28 +94,37 @@ export default function NetworkView() {
       }
       loadPartners()
 
-      // 2. 15개국 코디네이터 데이터 로드 및 최신 영문/현지어 데이터 병합
-      const savedCoords = localStorage.getItem('aamen_coordinators_data')
-      if (savedCoords) {
-        const parsed = JSON.parse(savedCoords)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const merged = initialCoordinators
-            .filter(isCoordinatorOnly)
-            .map((init) => {
-              const saved = parsed.find((p: any) => p.countryCode === init.countryCode || p.id === init.id)
-              if (!saved) return init
-              return {
-                ...init,
-                ...saved,
-                nameNative: init.nameNative,
-                nameEn: init.nameEn,
-                name: init.name,
-                email: saved.email || init.email,
-              }
-            })
-          setCoordinators(merged.filter(isCoordinatorOnly))
+      // 2. 국가별 코디네이터 데이터 로드 (서버 DB API 우선 연동 및 실시간 다자 코디네이터 지원)
+      const loadCoordinators = async () => {
+        try {
+          let res = await fetch('/api/coordinators.php')
+          if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+            res = await fetch('/api/coordinators')
+          }
+          if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+            const json = await res.json()
+            if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+              setCoordinators(json.data.filter(isCoordinatorOnly))
+              localStorage.setItem('aamen_coordinators_data', JSON.stringify(json.data))
+              return
+            }
+          }
+        } catch (e) {
+          console.warn('NetworkView coordinators API fetch fallback:', e)
+        }
+
+        const savedCoords = localStorage.getItem('aamen_coordinators_data')
+        if (savedCoords) {
+          try {
+            const parsed = JSON.parse(savedCoords)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setCoordinators(parsed.filter(isCoordinatorOnly))
+              return
+            }
+          } catch (e) {}
         }
       }
+      loadCoordinators()
     } catch (e) {
       console.error(e)
     }
@@ -381,7 +387,7 @@ export default function NetworkView() {
                             <h4 className="font-black text-lg text-gray-900 tracking-tight leading-snug">
                               {lead.nameNative || lead.name}
                             </h4>
-                            {lead.nameEn && (
+                            {lead.nameEn && lead.nameEn !== (lead.nameNative || lead.name) && (
                               <p className="text-xs font-bold text-gray-400 font-mono uppercase tracking-wider mt-0.5">
                                 {lead.nameEn}
                               </p>

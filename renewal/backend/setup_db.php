@@ -117,6 +117,27 @@ $queries = [
         INDEX idx_partners_order (display_order ASC, created_at ASC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
 
+    // 6-1. coordinators 테이블 (15개국 국가별 코디네이터)
+    "CREATE TABLE IF NOT EXISTS coordinators (
+        id VARCHAR(64) PRIMARY KEY,
+        country_code VARCHAR(10) NOT NULL,
+        country_name VARCHAR(100) NOT NULL,
+        flag VARCHAR(20) DEFAULT '',
+        name VARCHAR(200) NOT NULL,
+        name_native VARCHAR(200) DEFAULT '',
+        name_en VARCHAR(200) DEFAULT '',
+        role VARCHAR(200) NOT NULL,
+        email VARCHAR(200) DEFAULT '',
+        phone VARCHAR(50) DEFAULT '',
+        member_id VARCHAR(64) DEFAULT NULL,
+        is_registered_member TINYINT(1) DEFAULT 0,
+        display_order INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_coord_country (country_code),
+        INDEX idx_coord_order (display_order ASC, created_at ASC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
     // 7. internal_messages 테이블 (회원 간 1:1 쪽지 및 Level 4+ 그룹 공지 쪽지)
     "CREATE TABLE IF NOT EXISTS internal_messages (
         id VARCHAR(64) PRIMARY KEY,
