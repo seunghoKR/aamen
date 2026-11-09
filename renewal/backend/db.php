@@ -50,7 +50,9 @@ function send_json($data, $status = 200) {
     header('Content-Type: application/json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }

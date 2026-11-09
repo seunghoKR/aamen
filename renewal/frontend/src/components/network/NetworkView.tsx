@@ -66,17 +66,20 @@ export default function NetworkView() {
       // 1. 협력단체 데이터 로드 (서버 API 우선, 로컬 캐시 폴백)
       const loadPartners = async () => {
         try {
-          let res = await fetch('/api/partners.php')
-          if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
-            res = await fetch('/api/partners')
+          const cacheBuster = `?t=${Date.now()}`
+          let res = await fetch(`/api/partners.php${cacheBuster}`, { cache: 'no-store' })
+          if (!res.ok) {
+            res = await fetch(`/api/partners${cacheBuster}`, { cache: 'no-store' })
           }
-          if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
-            const json = await res.json()
-            if (json && json.success && Array.isArray(json.data)) {
-              setPartners(json.data)
-              localStorage.setItem('aamen_partner_orgs', JSON.stringify(json.data))
-              return
-            }
+          if (res.ok) {
+            try {
+              const json = await res.json()
+              if (json && json.success && Array.isArray(json.data)) {
+                setPartners(json.data)
+                localStorage.setItem('aamen_partner_orgs', JSON.stringify(json.data))
+                return
+              }
+            } catch (jsonErr) {}
           }
         } catch (e) {
           console.warn('NetworkView partners API fetch fallback:', e)
@@ -97,16 +100,21 @@ export default function NetworkView() {
       // 2. 국가별 코디네이터 데이터 로드 (서버 DB API 우선 연동 및 실시간 다자 코디네이터 지원)
       const loadCoordinators = async () => {
         try {
-          let res = await fetch('/api/coordinators.php')
-          if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
-            res = await fetch('/api/coordinators')
+          const cacheBuster = `?t=${Date.now()}`
+          let res = await fetch(`/api/coordinators.php${cacheBuster}`, { cache: 'no-store' })
+          if (!res.ok) {
+            res = await fetch(`/api/coordinators${cacheBuster}`, { cache: 'no-store' })
           }
-          if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
-            const json = await res.json()
-            if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
-              setCoordinators(json.data.filter(isCoordinatorOnly))
-              localStorage.setItem('aamen_coordinators_data', JSON.stringify(json.data))
-              return
+          if (res.ok) {
+            try {
+              const json = await res.json()
+              if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+                setCoordinators(json.data.filter(isCoordinatorOnly))
+                localStorage.setItem('aamen_coordinators_data', JSON.stringify(json.data))
+                return
+              }
+            } catch (jsonErr) {
+              console.warn('NetworkView coordinators JSON parse warning:', jsonErr)
             }
           }
         } catch (e) {

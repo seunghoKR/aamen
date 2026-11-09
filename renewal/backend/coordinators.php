@@ -6,6 +6,13 @@
 
 require_once __DIR__ . '/db.php';
 
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 // coordinators 테이블 자동 생성
@@ -332,12 +339,11 @@ if ($method === 'GET') {
         $result[] = formatCoordinatorRow($r);
     }
 
-    echo json_encode([
+    send_json([
         'success' => true,
         'count' => count($result),
         'data' => $result
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    ]);
 }
 
 // --- 2. POST: 추가, 수정, 삭제 ---
@@ -351,19 +357,16 @@ if ($method === 'POST') {
     if ($action === 'delete') {
         $id = $input['id'] ?? '';
         if (!$id) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Missing coordinator ID']);
-            exit;
+            send_json(['success' => false, 'error' => 'Missing coordinator ID'], 400);
         }
 
         $stmt = $pdo->prepare("DELETE FROM coordinators WHERE id = ?");
         $stmt->execute([$id]);
 
-        echo json_encode([
+        send_json([
             'success' => true,
             'message' => "Coordinator {$id} deleted successfully"
         ]);
-        exit;
     }
 
     // 추가 또는 수정 액션
@@ -382,9 +385,7 @@ if ($method === 'POST') {
     $displayOrder = isset($input['displayOrder']) ? (int)$input['displayOrder'] : (isset($input['display_order']) ? (int)$input['display_order'] : 0);
 
     if (empty($name)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Name is required']);
-        exit;
+        send_json(['success' => false, 'error' => 'Name is required'], 400);
     }
 
     // 기본값 보정
@@ -473,12 +474,11 @@ if ($method === 'POST') {
     $savedStmt->execute([$id]);
     $savedRow = $savedStmt->fetch();
 
-    echo json_encode([
+    send_json([
         'success' => true,
         'message' => 'Coordinator saved successfully',
         'data' => formatCoordinatorRow($savedRow)
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    ]);
 }
 
 // --- 3. DELETE (HTTP DELETE) ---
@@ -488,17 +488,14 @@ if ($method === 'DELETE') {
     $id = $_GET['id'] ?? $input['id'] ?? '';
 
     if (!$id) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Missing coordinator ID']);
-        exit;
+        send_json(['success' => false, 'error' => 'Missing coordinator ID'], 400);
     }
 
     $stmt = $pdo->prepare("DELETE FROM coordinators WHERE id = ?");
     $stmt->execute([$id]);
 
-    echo json_encode([
+    send_json([
         'success' => true,
         'message' => "Coordinator {$id} deleted successfully"
     ]);
-    exit;
 }

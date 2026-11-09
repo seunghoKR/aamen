@@ -137,17 +137,22 @@ export default function AdminCoordinatorsPage() {
   // 1. 데이터 로드 (서버 DB API 우선 연동)
   const loadCoordinatorsData = async () => {
     try {
-      let res = await fetch('/api/coordinators.php')
-      if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
-        res = await fetch('/api/coordinators')
+      const cacheBuster = `?t=${Date.now()}`
+      let res = await fetch(`/api/coordinators.php${cacheBuster}`, { cache: 'no-store' })
+      if (!res.ok) {
+        res = await fetch(`/api/coordinators${cacheBuster}`, { cache: 'no-store' })
       }
-      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
-        const json = await res.json()
-        if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const validCoords = json.data.filter(isStrictCoordinator)
-          setCoordinators(validCoords)
-          localStorage.setItem('aamen_coordinators_data', JSON.stringify(validCoords))
-          return
+      if (res.ok) {
+        try {
+          const json = await res.json()
+          if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+            const validCoords = json.data.filter(isStrictCoordinator)
+            setCoordinators(validCoords)
+            localStorage.setItem('aamen_coordinators_data', JSON.stringify(validCoords))
+            return
+          }
+        } catch (jsonErr) {
+          console.warn('Admin coordinators JSON parse error:', jsonErr)
         }
       }
     } catch (e) {
